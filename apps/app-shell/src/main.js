@@ -1,0 +1,577 @@
+import './styles.css';
+import * as parsers from '@parsers';
+
+const HISTORY_STORAGE = 'qushuiyin-app-history-v1';
+const THEME_STORAGE = 'qushuiyin-app-theme-v1';
+const WEIBO_COOKIE_STORAGE = 'qushuiyin-app-weibo-cookie-v1';
+const URL_PATTERN = /https?:\/\/[^\s"'<>，。；：！？【】（）《》]+/i;
+
+const shell = window.appShell || {};
+
+// 本地解析：传输层经 IPC 走主进程 net.fetch（无 CORS），与手机版共用同一套解析器
+const ipcTransport = {
+  async request({ url, method, headers, body, timeoutMs = 15000, credentialMode }) {
+    const request = credentialMode === 'weibo-session' && shell.weiboRequest
+      ? shell.weiboRequest
+      : shell.httpRequest;
+    const response = await request({ url, method, headers, body, timeoutMs });
+    return {
+      status: response.status,
+      data: response.data,
+      headers: response.headers || {},
+      url: response.url || url,
+    };
+  },
+};
+parsers.setTransport(ipcTransport);
+parsers.setWeiboCookie(localStorage.getItem(WEIBO_COOKIE_STORAGE) || '');
+
+const state = {
+  theme: localStorage.getItem(THEME_STORAGE) || 'dark',
+  view: 'single',
+  mode: 'single',
+  busy: false,
+  profile: null,
+  history: loadHistory(),
+  activeMediaRefresh: false,
+  currentSourceUrl: '',
+};
+
+const app = document.querySelector('#app');
+
+app.innerHTML = `
+  <div class="app-frame">
+    <header class="app-header">
+      <div class="brand-lockup">
+        <span class="brand-mark" aria-hidden="true">去</span>
+        <div class="brand-text">
+          <span class="brand-name">去水印解析</span>
+          <span class="brand-sub">DESKTOP WORKSPACE · v${__APP_VERSION__}</span>
+        </div>
+      </div>
+      <div class="header-actions">
+        <span id="service-state" class="service-state"><i></i><span>检查服务</span></span>
+        <button id="theme-button" class="icon-button" type="button" title="切换主题" aria-label="切换主题">◐</button>
+      </div>
+    </header>
+
+    <div class="app-body">
+      <nav class="side-nav" aria-label="主导航">
+        <div class="side-nav-label">工作区</div>
+        <button class="nav-button active" type="button" data-view="single"><span class="nav-name">解析</span><small>01</small></button>
+        <button class="nav-button" type="button" data-view="profile"><span class="nav-name">主页</span><small>02</small></button>
+        <button class="nav-button" type="button" data-view="history"><span class="nav-name">记录</span><small>03</small></button>
+        <button class="nav-button" type="button" data-view="about"><span class="nav-name">关于</span><small>04</small></button>
+        <div class="side-nav-note"><span>无水印</span><strong>把分享链接变成可用媒体</strong></div>
+      </nav>
+
+      <main class="content-column">
+        <section class="view active" data-view-panel="single">
+          <section class="tool-panel">
+            <div class="panel-heading">
+              <div class="panel-title">
+                <span class="panel-kicker">解析输入</span>
+                <h2>解析分享链接</h2>
+                <p class="panel-note">粘贴分享文案，自动提取真正的链接和无水印媒体。</p>
+              </div>
+              <div class="segmented" role="group" aria-label="解析模式">
+                <button class="segment active" type="button" data-mode="single">单条</button>
+                <button class="segment" type="button" data-mode="profile">主页</button>
+              </div>
+            </div>
+            <div class="input-row">
+              <input id="link-input" type="text" autocomplete="off" spellcheck="false" placeholder="粘贴视频链接或整段分享文案" />
+              <button id="clear-input" class="secondary-button" type="button">清除</button>
+              <button id="parse-button" class="primary-button" type="button">开始解析</button>
+            </div>
+            <p id="input-hint" class="field-hint">粘贴时会自动提取真正的链接。</p>
+            <div class="input-context"><span><i></i>本地优先解析</span><span><i></i>支持视频与图集</span><span><i></i>无后台上传</span></div>
+            <div class="quick-platforms" aria-label="支持平台"><span>抖音</span><span>快手</span><span>B站</span><span>小红书</span><span>微博</span><span>更多平台</span></div>
+          </section>
+
+          <section id="single-result" class="result-panel">
+            <div class="workspace-empty">
+              <span class="workspace-empty-mark" aria-hidden="true">→</span>
+              <div>
+                <strong>等待链接</strong>
+                <span>粘贴分享链接，解析结果会显示在这里。</span>
+              </div>
+            </div>
+          </section>
+        </section>
+
+        <section class="view" data-view-panel="profile" hidden>
+          <div class="page-intro compact-intro">
+            <span class="eyebrow">主页解析</span>
+            <h1>公开主页，按页整理。</h1>
+            <p>只在点击下一页时请求新内容，返回上一页直接恢复缓存。</p>
+          </div>
+          <section id="profile-panel" class="result-panel profile-panel">
+            <div class="workspace-empty">
+              <div>
+                <strong>尚未加载主页</strong>
+                <span>切换到“主页”模式并粘贴链接后，作品会显示在这里。</span>
+              </div>
+            </div>
+          </section>
+        </section>
+
+        <section class="view" data-view-panel="history" hidden>
+          <div class="page-intro compact-intro">
+            <span class="eyebrow">本地记录</span>
+            <h1>最近处理。</h1>
+            <p>历史记录仅保存在当前设备。</p>
+          </div>
+          <section id="history-panel" class="result-panel"></section>
+        </section>
+
+        <section class="view" data-view-panel="about" hidden>
+          <div class="page-intro compact-intro">
+            <span class="eyebrow">版本信息</span>
+            <h1>关于应用。</h1>
+            <p>查看当前版本、检查更新和更新日志。</p>
+          </div>
+          <section id="about-panel" class="about-panel"></section>
+        </section>
+
+      </main>
+    </div>
+    <footer class="app-footer"><span>去水印解析 App · v${__APP_VERSION__}</span><span id="platform-label">客户端</span></footer>
+    <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+  </div>
+`;
+
+const $ = (selector, root = document) => root.querySelector(selector);
+const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
+const linkInput = $('#link-input');
+const parseButton = $('#parse-button');
+const clearInputButton = $('#clear-input');
+const inputHint = $('#input-hint');
+const singleResult = $('#single-result');
+const profilePanel = $('#profile-panel');
+const historyPanel = $('#history-panel');
+const toast = $('#toast');
+
+function loadHistory() {
+  try {
+    const value = JSON.parse(localStorage.getItem(HISTORY_STORAGE) || '[]');
+    return Array.isArray(value) ? value : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveHistory() {
+  localStorage.setItem(HISTORY_STORAGE, JSON.stringify(state.history.slice(0, 100)));
+}
+
+function cleanUrl(value) {
+  const match = String(value || '').match(URL_PATTERN);
+  return (match ? match[0] : String(value || '').trim()).replace(/[),.。]+$/, '');
+}
+
+function mediaUrl(url) {
+  return shell.mediaProxyUrl ? shell.mediaProxyUrl(url) : url;
+}
+
+function downloadUrl(url, filename) {
+  return shell.mediaProxyUrl ? shell.mediaProxyUrl(url, filename) : url;
+}
+
+function escapeHtml(value) {
+  return String(value ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+
+function formatDate(value) {
+  if (!value) return '-';
+  const date = new Date(Number(value) * 1000);
+  return Number.isNaN(date.getTime()) ? String(value) : date.toLocaleDateString('zh-CN');
+}
+
+function formatCount(value) {
+  if (value === undefined || value === null || value === '') return '-';
+  const number = Number(value);
+  return Number.isFinite(number) ? new Intl.NumberFormat('zh-CN', { notation: 'compact', maximumFractionDigits: 1 }).format(number) : String(value);
+}
+
+function mediaType(item) {
+  return item?.media_type === 'image' ? 'image' : 'video';
+}
+
+function itemMedia(item) {
+  return Array.isArray(item?.images) && item.images.length ? item.images : item?.url ? [item.url] : [];
+}
+
+function notify(message) {
+  toast.textContent = message;
+  toast.hidden = false;
+  clearTimeout(notify.timer);
+  notify.timer = setTimeout(() => { toast.hidden = true; }, 2400);
+}
+
+function setBusy(on, message = '正在解析…') {
+  state.busy = on;
+  parseButton.disabled = on;
+  parseButton.textContent = on ? message : state.mode === 'profile' ? '解析主页' : '开始解析';
+}
+
+function setServiceState(label, status = 'ok') {
+  const service = $('#service-state');
+  service.className = 'service-state ' + status;
+  $('span', service).textContent = label;
+}
+
+function renderSingleResult(data, rawUrl) {
+  const type = mediaType(data);
+  const urls = itemMedia(data);
+  const first = urls[0] || data.url || '';
+  // 抖音等平台带背景音乐时给出下载入口
+  const musicUrl = /^https?:\/\//i.test(data.music?.url || '') ? data.music.url : '';
+  const musicHref = musicUrl ? downloadUrl(musicUrl, (data.title || 'media').replace(/[\\/:*?"<>|]/g, '_') + '-music.mp3') : '';
+  state.currentSourceUrl = rawUrl;
+  singleResult.hidden = false;
+  singleResult.innerHTML = `
+    <div class="result-heading"><div><span class="panel-kicker">解析结果</span><h2>${escapeHtml(data.title || '未命名内容')}</h2><p>${escapeHtml(data.author || '未知作者')} · ${type === 'image' ? '图集' : '视频'} · ${formatDate(data.time)}</p></div><span class="result-type">${type === 'image' ? '图集' : '视频'}</span></div>
+    <div class="result-media ${type === 'image' ? 'is-gallery' : ''}">${type === 'image' ? urls.map((url, index) => `<figure class="image-tile"><img src="${escapeHtml(mediaUrl(url))}" alt="${escapeHtml(data.title || '图片')} ${index + 1}" loading="lazy"><a class="tile-download" href="${escapeHtml(downloadUrl(url, (data.title || 'image-' + (index + 1)) + '.jpg'))}" download>下载</a></figure>`).join('') : `<video controls playsinline preload="metadata" poster="${escapeHtml(data.cover ? mediaUrl(data.cover) : '')}" src="${escapeHtml(mediaUrl(first))}"></video>`}</div>
+    <div class="result-details"><div><span>点赞</span><strong>${escapeHtml(formatCount(data.like))}</strong></div><div><span>平台</span><strong>${escapeHtml(platformName(rawUrl))}</strong></div><div><span>作者</span><strong>${escapeHtml(data.author || '未知作者')}</strong></div></div>
+    <div class="result-actions"><a class="primary-button" href="${escapeHtml(downloadUrl(first, (data.title || 'media') + (type === 'image' ? '.jpg' : '.mp4')))}" download>下载${type === 'image' ? '首图' : '视频'}</a>${musicHref ? `<a class="secondary-button" href="${escapeHtml(musicHref)}" download>下载音乐</a>` : ''}<button class="secondary-button" type="button" data-copy-url="${escapeHtml(downloadUrl(first, (data.title || 'media') + (type === 'image' ? '.jpg' : '.mp4')))}">复制无水印链接</button><button class="secondary-button" type="button" data-open-url="${escapeHtml(rawUrl)}">打开原链接</button></div>
+  `;
+  addHistory({ rawUrl, data });
+}
+
+function platformName(url) {
+  const host = (String(url).match(/^https?:\/\/([^/]+)/i) || [])[1] || '';
+  if (host.includes('douyin')) return '抖音';
+  if (host.includes('kuaishou')) return '快手';
+  if (host.includes('bilibili') || host.includes('b23.tv')) return 'B站';
+  if (host.includes('xiaohongshu') || host.includes('xhslink')) return '小红书';
+  if (host.includes('weibo')) return '微博';
+  return '短视频';
+}
+
+async function parseSingle() {
+  const url = cleanUrl(linkInput.value);
+  if (!/^https?:\/\//i.test(url)) return notify('请先粘贴有效链接');
+  linkInput.value = url;
+  state.activeMediaRefresh = false;
+  state.currentSourceUrl = url;
+  setBusy(true);
+  try {
+    const data = await parsers.parse(url);
+    renderSingleResult(data, url);
+    notify('解析完成');
+  } catch (error) {
+    notify(error.message || '解析失败');
+  } finally {
+    setBusy(false);
+  }
+}
+
+function profileItemId(item, index, pageIndex) {
+  return String(item?.aweme_id || item?.source_url || `${state.profile?.url || 'profile'}-${pageIndex}-${index}`);
+}
+
+function renderProfile() {
+  const profile = state.profile;
+  if (!profile) return;
+  const page = profile.pages[profile.current];
+  const items = page?.items || [];
+  profilePanel.innerHTML = `
+    <div class="panel-heading"><div><span class="panel-kicker">公开作品</span><h2>${escapeHtml(page?.profile?.author || '公开主页')}</h2><p class="panel-note">第 ${profile.current + 1} 页 · ${items.length} 个作品</p></div><div class="profile-tools"><label><input id="profile-select-all" type="checkbox"> 全选本页</label><button id="profile-selected-download" class="primary-button compact" type="button">下载选中</button><button id="profile-all-download" class="secondary-button compact" type="button">全部下载</button></div></div>
+    <div class="profile-list">${items.length ? items.map((item, index) => profileItemHtml(item, index, profile.current)).join('') : '<div class="empty-state">这一页没有可下载作品。</div>'}</div>
+    <div class="pagination"><button id="profile-prev" class="secondary-button compact" type="button" ${profile.current === 0 ? 'disabled' : ''}>上一页</button><span>第 ${profile.current + 1} 页</span><button id="profile-next" class="primary-button compact" type="button" ${page?.has_more ? '' : 'disabled'}>下一页</button></div>
+  `;
+  bindProfileControls();
+}
+
+function profileItemHtml(item, index, pageIndex) {
+  const type = mediaType(item);
+  const urls = itemMedia(item);
+  const thumb = item.cover || urls[0] || '';
+  const checked = state.profile.selected.has(profileItemId(item, index, pageIndex));
+  return `<article class="profile-item ${checked ? 'selected' : ''}" data-index="${index}"><input class="profile-checkbox" type="checkbox" ${checked ? 'checked' : ''} aria-label="选择作品"><img src="${escapeHtml(mediaUrl(thumb))}" alt="" loading="lazy"><div class="profile-copy"><h3>${escapeHtml(item.title || '未命名内容')}</h3><p>${type === 'image' ? `图集 ${urls.length} 张` : '视频'} · ${escapeHtml(item.author || '')}</p></div><button class="secondary-button compact" type="button" data-profile-download="${index}">下载</button></article>`;
+}
+
+async function parseProfile(url = cleanUrl(linkInput.value)) {
+  if (!/^https?:\/\//i.test(url)) return notify('请输入有效的主页链接');
+  linkInput.value = url;
+  setBusy(true, '读取第 1 页…');
+  try {
+    const data = await parsers.parseProfile(url, 0);
+    state.profile = { url, pages: [data], current: 0, selected: new Set() };
+    renderProfile();
+    notify('主页第 1 页已完成');
+  } catch (error) {
+    notify(error.message || '主页解析失败');
+  } finally {
+    setBusy(false);
+  }
+}
+
+async function loadNextProfilePage() {
+  const profile = state.profile;
+  const page = profile?.pages[profile.current];
+  if (!profile || !page?.has_more) return;
+  const next = profile.current + 1;
+  if (profile.pages[next]) {
+    profile.current = next;
+    renderProfile();
+    return;
+  }
+  setBusy(true, `读取第 ${next + 1} 页…`);
+  try {
+    profile.pages[next] = await parsers.parseProfile(profile.url, page.next_cursor);
+    profile.current = next;
+    renderProfile();
+    notify(`主页第 ${next + 1} 页已完成`);
+  } catch (error) {
+    notify(error.message || '下一页解析失败');
+  } finally {
+    setBusy(false);
+  }
+}
+
+function loadPreviousProfilePage() {
+  if (!state.profile || state.profile.current === 0) return;
+  state.profile.current -= 1;
+  renderProfile();
+}
+
+function selectedProfileItems() {
+  if (!state.profile) return [];
+  return state.profile.pages.flatMap((page, pageIndex) => (page.items || []).filter((item, index) => state.profile.selected.has(profileItemId(item, index, pageIndex))));
+}
+
+async function downloadItem(item, index) {
+  const extension = mediaType(item) === 'image' ? 'jpg' : 'mp4';
+  const urls = itemMedia(item);
+  for (let part = 0; part < urls.length; part += 1) {
+    const name = `${(item.title || `media-${index + 1}`).replace(/[\\/:*?"<>|]/g, '_').slice(0, 80)}${part ? `-${part + 1}` : ''}.${extension}`;
+    const anchor = document.createElement('a');
+    anchor.href = downloadUrl(urls[part], name);
+    anchor.download = name;
+    anchor.target = '_blank';
+    anchor.rel = 'noopener';
+    document.body.append(anchor);
+    anchor.click();
+    anchor.remove();
+    await new Promise((resolve) => setTimeout(resolve, 300));
+  }
+}
+
+async function downloadProfileItems(items) {
+  if (!items.length) return notify('请先选择作品');
+  for (let index = 0; index < items.length; index += 1) await downloadItem(items[index], index);
+  notify('下载任务已发送');
+}
+
+function bindProfileControls() {
+  const profile = state.profile;
+  if (!profile) return;
+  $('#profile-prev')?.addEventListener('click', loadPreviousProfilePage);
+  $('#profile-next')?.addEventListener('click', loadNextProfilePage);
+  $('#profile-selected-download')?.addEventListener('click', () => downloadProfileItems(selectedProfileItems()));
+  $('#profile-all-download')?.addEventListener('click', () => downloadProfileItems(profile.pages.flatMap((page) => page.items || [])));
+  $('#profile-select-all')?.addEventListener('change', (event) => {
+    const page = profile.pages[profile.current];
+    (page.items || []).forEach((item, index) => {
+      const id = profileItemId(item, index, profile.current);
+      if (event.target.checked) profile.selected.add(id); else profile.selected.delete(id);
+    });
+    renderProfile();
+  });
+  $$('.profile-checkbox').forEach((checkbox) => checkbox.addEventListener('change', (event) => {
+    const index = Number(event.target.closest('.profile-item').dataset.index);
+    const item = profile.pages[profile.current].items[index];
+    const id = profileItemId(item, index, profile.current);
+    if (event.target.checked) profile.selected.add(id); else profile.selected.delete(id);
+    event.target.closest('.profile-item').classList.toggle('selected', event.target.checked);
+  }));
+  $$('[data-profile-download]').forEach((button) => button.addEventListener('click', () => downloadItem(profile.pages[profile.current].items[Number(button.dataset.profileDownload)], Number(button.dataset.profileDownload))));
+}
+
+function addHistory(entry) {
+  const item = { rawUrl: entry.rawUrl, title: entry.data.title || '', author: entry.data.author || '', time: entry.data.time || 0, cover: entry.data.cover || '', mediaType: mediaType(entry.data), savedAt: Date.now() };
+  state.history = [item, ...state.history.filter((old) => old.rawUrl !== item.rawUrl)].slice(0, 100);
+  saveHistory();
+}
+
+function renderHistory() {
+  historyPanel.innerHTML = state.history.length ? `<div class="panel-heading"><div><span class="panel-kicker">本地记录</span><h2>最近处理</h2></div><button id="clear-history" class="secondary-button compact" type="button">清空记录</button></div><div class="history-list">${state.history.map((item, index) => `<article class="history-item"><div><span class="history-index">${String(index + 1).padStart(2, '0')}</span><div><h3>${escapeHtml(item.title || '未命名内容')}</h3><p>${escapeHtml(item.author || '未知作者')} · ${escapeHtml(item.mediaType === 'image' ? '图集' : '视频')} · ${formatDate(item.time)}</p></div></div><button class="secondary-button compact" type="button" data-history-url="${escapeHtml(item.rawUrl)}">重新解析</button></article>`).join('')}</div>` : '<div class="empty-state">还没有解析记录。</div>';
+  $('#clear-history')?.addEventListener('click', () => { state.history = []; saveHistory(); renderHistory(); });
+  $$('[data-history-url]').forEach((button) => button.addEventListener('click', () => { setView('single'); setMode('single'); linkInput.value = button.dataset.historyUrl; parseSingle(); }));
+}
+
+async function checkHealth() {
+  try {
+    const count = parsers.getSupportedPlatforms().length;
+    setServiceState(`本地解析 · ${count} 平台`, 'ok');
+  } catch {
+    setServiceState('解析器未就绪', 'offline');
+  }
+}
+
+let updateState = { status: 'idle' };
+
+function setUpdateStatus(payload) {
+  if (payload && payload.status) updateState = payload;
+  const el = $('#update-status');
+  if (!el) return;
+  const install = $('#update-install');
+  const s = updateState.status;
+  if (s === 'checking') el.textContent = '正在检查更新…';
+  else if (s === 'available') el.textContent = `发现新版本 v${updateState.version}，正在下载…`;
+  else if (s === 'downloading') el.textContent = `正在下载更新 ${updateState.percent || 0}%`;
+  else if (s === 'downloaded') { el.textContent = `新版本 v${updateState.version} 已就绪`; if (install) install.hidden = false; }
+  else if (s === 'none') el.textContent = '当前已是最新版本。';
+  else if (s === 'dev') el.textContent = '正常更新中。';
+  else if (s === 'error') el.textContent = updateState.message || '检查更新失败。';
+  else el.textContent = '正常更新中。';
+}
+
+async function renderAbout() {
+  const panel = $('#about-panel');
+  if (!panel) return;
+  panel.innerHTML = `
+    <div class="about-card">
+      <div class="panel-heading">
+        <div class="panel-title">
+          <span class="panel-kicker">版本信息</span>
+          <h2>去水印解析</h2>
+          <p class="panel-note" id="about-version">当前版本 —</p>
+        </div>
+        <button id="check-update" class="primary-button" type="button">检查更新</button>
+      </div>
+      <p id="update-status" class="update-status">正常更新中。</p>
+      <button id="update-install" class="secondary-button" type="button" hidden>立即重启安装</button>
+    </div>
+    <div class="about-card">
+      <div class="panel-title">
+        <span class="panel-kicker">账号设置</span>
+        <h2>微博凭据</h2>
+        <p class="panel-note">目前需要登录态的平台只有微博。先在微博网页版登录，再把 Cookie 粘贴到这里；凭据仅保存在本机。</p>
+      </div>
+      <div class="update-status" id="about-weibo-login-status">网页登录状态检查中…</div>
+      <div class="about-actions"><button id="about-weibo-login" class="primary-button compact" type="button">登录微博网页</button><button id="about-weibo-refresh" class="secondary-button compact" type="button">刷新状态</button><button id="about-weibo-logout" class="secondary-button compact" type="button">退出网页登录</button></div>
+      <div class="update-status" id="about-weibo-status">${localStorage.getItem(WEIBO_COOKIE_STORAGE) ? '手工凭据已配置' : '手工凭据未配置'}</div>
+      <input id="about-weibo-cookie" type="password" placeholder="粘贴微博网页版 Cookie" value="${escapeHtml(localStorage.getItem(WEIBO_COOKIE_STORAGE) || '')}" autocomplete="off" spellcheck="false" />
+      <p class="panel-note">优先使用网页登录；手工 Cookie 仅作为备用 fallback。</p>
+      <div class="about-actions"><button id="about-weibo-save" class="secondary-button compact" type="button">保存手工凭据</button><button id="about-weibo-clear" class="secondary-button compact" type="button">清除手工凭据</button></div>
+    </div>
+    <div class="about-card changelog-card">
+      <div class="panel-title">
+        <span class="panel-kicker">更新日志</span>
+        <h2>最近更新</h2>
+      </div>
+      <pre id="about-changelog" class="changelog"></pre>
+    </div>
+  `;
+  const version = await (shell.getVersion ? shell.getVersion() : '—');
+  const versionEl = $('#about-version');
+  if (versionEl) versionEl.textContent = `当前版本 v${version}`;
+  const changelog = await (shell.getChangelog ? shell.getChangelog() : '暂无更新日志。');
+  const logEl = $('#about-changelog');
+  if (logEl) logEl.textContent = changelog;
+  const bufferedUpdate = await (shell.getUpdateStatus ? shell.getUpdateStatus() : null);
+  if (bufferedUpdate?.status && bufferedUpdate.status !== 'idle') setUpdateStatus(bufferedUpdate);
+  $('#check-update')?.addEventListener('click', () => { setUpdateStatus({ status: 'checking' }); shell.checkForUpdates?.(); });
+  $('#update-install')?.addEventListener('click', () => shell.quitAndInstall?.());
+  const refreshWeiboLoginStatus = async () => {
+    const loginStatus = $('#about-weibo-login-status');
+    if (!loginStatus || !shell.getWeiboLoginStatus) return;
+    try {
+      const status = await shell.getWeiboLoginStatus();
+      loginStatus.textContent = status?.loggedIn ? `网页登录已登录（${status.cookieCount || 0} 个会话项）` : '网页登录未登录';
+    } catch (error) {
+      loginStatus.textContent = error.message || '网页登录状态检查失败';
+    }
+  };
+  $('#about-weibo-login')?.addEventListener('click', async () => {
+    await shell.openWeiboLogin?.();
+    await refreshWeiboLoginStatus();
+  });
+  $('#about-weibo-refresh')?.addEventListener('click', refreshWeiboLoginStatus);
+  $('#about-weibo-logout')?.addEventListener('click', async () => {
+    await shell.logoutWeibo?.();
+    await refreshWeiboLoginStatus();
+    notify('微博网页登录已退出');
+  });
+  $('#about-weibo-save')?.addEventListener('click', () => {
+    const value = $('#about-weibo-cookie').value.trim();
+    if (value) localStorage.setItem(WEIBO_COOKIE_STORAGE, value); else localStorage.removeItem(WEIBO_COOKIE_STORAGE);
+    parsers.setWeiboCookie(value);
+    const status = $('#about-weibo-status');
+    if (status) status.textContent = value ? '手工凭据已配置' : '手工凭据未配置';
+    notify(value ? '微博手工凭据已保存' : '微博手工凭据已清空');
+  });
+  $('#about-weibo-clear')?.addEventListener('click', () => {
+    localStorage.removeItem(WEIBO_COOKIE_STORAGE);
+    parsers.setWeiboCookie('');
+    $('#about-weibo-cookie').value = '';
+    const status = $('#about-weibo-status');
+    if (status) status.textContent = '手工凭据未配置';
+    notify('微博手工凭据已清空');
+  });
+  shell.onWeiboLoginChanged?.(refreshWeiboLoginStatus);
+  await refreshWeiboLoginStatus();
+  setUpdateStatus();
+}
+
+function setView(view) {
+  state.view = view;
+  $$('.nav-button').forEach((button) => button.classList.toggle('active', button.dataset.view === view));
+  $$('[data-view-panel]').forEach((panel) => { panel.hidden = panel.dataset.viewPanel !== view; panel.classList.toggle('active', panel.dataset.viewPanel === view); });
+  if (view === 'profile' && state.profile) renderProfile();
+  if (view === 'history') renderHistory();
+  if (view === 'about') renderAbout();
+}
+
+function setMode(mode) {
+  state.mode = mode;
+  $$('.segment').forEach((button) => button.classList.toggle('active', button.dataset.mode === mode));
+  inputHint.textContent = mode === 'profile' ? '只在点击下一页时请求下一页，上一页从缓存恢复。' : '粘贴时会自动提取真正的链接。';
+  parseButton.textContent = mode === 'profile' ? '解析主页' : '开始解析';
+  if (mode === 'profile') setView('profile'); else setView('single');
+}
+
+$$('[data-view]').forEach((button) => button.addEventListener('click', () => setView(button.dataset.view)));
+$$('[data-mode]').forEach((button) => button.addEventListener('click', () => setMode(button.dataset.mode)));
+parseButton.addEventListener('click', () => state.mode === 'profile' ? parseProfile() : parseSingle());
+clearInputButton.addEventListener('click', () => { linkInput.value = ''; linkInput.focus(); });
+linkInput.addEventListener('paste', (event) => { const value = event.clipboardData?.getData('text') || ''; if (value) { event.preventDefault(); linkInput.value = cleanUrl(value); } });
+linkInput.addEventListener('input', () => { const value = cleanUrl(linkInput.value); if (/^https?:\/\//i.test(value) && value !== linkInput.value) linkInput.value = value; });
+linkInput.addEventListener('keydown', (event) => { if (event.key === 'Enter') parseButton.click(); });
+document.addEventListener('click', async (event) => {
+  const copy = event.target.closest('[data-copy-url]');
+  const open = event.target.closest('[data-open-url]');
+  if (copy) { await navigator.clipboard?.writeText(copy.dataset.copyUrl); notify('无水印链接已复制'); }
+  if (open) { if (window.appShell?.openExternal) window.appShell.openExternal(open.dataset.openUrl); else window.open(open.dataset.openUrl, '_blank', 'noopener'); }
+});
+document.addEventListener('error', async (event) => {
+  if (!(event.target instanceof HTMLVideoElement) || !event.target.closest('#single-result')) return;
+  if (!state.currentSourceUrl || state.activeMediaRefresh) {
+    notify('视频播放失败，源站媒体地址可能已失效。');
+    return;
+  }
+  state.activeMediaRefresh = true;
+  notify('视频地址已失效，正在自动刷新…');
+  try {
+    const data = await parsers.parse(state.currentSourceUrl, { force: true });
+    renderSingleResult(data, state.currentSourceUrl);
+    notify('视频地址已刷新，请重新播放。');
+  } catch (error) {
+    notify(error.message || '无法刷新视频地址，请重新解析链接。');
+  }
+}, true);
+$('#theme-button').addEventListener('click', () => { state.theme = state.theme === 'dark' ? 'light' : 'dark'; applyTheme(); });
+
+function applyTheme() {
+  document.documentElement.dataset.theme = state.theme;
+  localStorage.setItem(THEME_STORAGE, state.theme);
+}
+
+$('#platform-label').textContent = shell.platform === 'desktop' ? '电脑版' : shell.platform === 'mobile' ? '手机版' : 'Web 客户端';
+applyTheme();
+renderHistory();
+checkHealth();
+shell.onUpdateStatus?.(setUpdateStatus);

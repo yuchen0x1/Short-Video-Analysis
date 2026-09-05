@@ -1,0 +1,11 @@
+.git
+.env
+vendor
+.phpunit.cache
+coverage
+upgrade-report
+storage/logs
+storage/cache
+*.log
+composer.phar
+composer-setup.php

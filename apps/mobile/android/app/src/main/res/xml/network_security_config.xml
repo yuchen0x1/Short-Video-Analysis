@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 仅放行本机回环地址的明文 HTTP（App 内本地媒体代理）；
+     对外请求一律要求 HTTPS，平台接口与 CDN 均为 HTTPS。 -->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="false" />
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="false">127.0.0.1</domain>
+    </domain-config>
+</network-security-config>

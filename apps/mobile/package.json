@@ -1,0 +1,27 @@
+{
+  "name": "qushuiyin-mobile-client",
+  "version": "1.0.0",
+  "private": true,
+  "description": "去水印解析手机版客户端",
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host 0.0.0.0",
+    "icons:generate": "node ../../scripts/generate_app_icons.cjs --mobile",
+    "build": "npm run icons:generate && vite build",
+    "mobile:sync": "npm run build && cap sync",
+    "mobile:add:android": "cap add android",
+    "mobile:add:ios": "cap add ios",
+    "mobile:android": "npm run mobile:sync && cap open android",
+    "mobile:ios": "npm run mobile:sync && cap open ios"
+  },
+  "dependencies": {
+    "@capacitor/android": "^7.6.8",
+    "@capacitor/core": "^7.4.3"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^7.4.3",
+    "sharp": "^0.35.3",
+    "typescript": "^5.8.3",
+    "vite": "^7.1.2"
+  }
+}

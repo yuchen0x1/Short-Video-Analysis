@@ -1,0 +1,14 @@
+{
+  "name": "@qushuiyin/update-checker",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Gitee Releases 在线版本检查器",
+  "type": "module",
+  "main": "src/index.js",
+  "exports": {
+    ".": "./src/index.js"
+  },
+  "scripts": {
+    "test": "node test/contract.mjs"
+  }
+}

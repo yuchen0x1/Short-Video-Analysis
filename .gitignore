@@ -1,0 +1,27 @@
+/vendor/
+.env
+/storage/logs/*.log
+/storage/*.log
+/storage/rate_limit/*.json
+/storage/cache/
+.DS_Store
+.phpunit.cache/
+/upgrade-report/ui-shots/
+/apps/app-shell/node_modules/
+/apps/app-shell/dist/
+/apps/app-shell/runtime/
+/apps/app-shell/release/
+/apps/app-shell/release-*/
+/apps/app-shell/android/
+/apps/app-shell/ios/
+/apps/mobile/node_modules/
+/apps/mobile/dist/
+/apps/mobile/ios/
+/.mimosa/
+/.zcode/
+/apps/mobile/.mimosa/
+/apps/mobile/android/.mimosa/
+/apps/app-shell/.mimosa/
+
+# 本地构建日志
+*.log

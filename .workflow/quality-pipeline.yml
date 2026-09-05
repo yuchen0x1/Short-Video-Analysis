@@ -1,0 +1,70 @@
+# Gitee Go 质量门禁流水线：push 到 main 或推送 v* 标签时自动运行。
+# PHP 侧：安装稳定版 PHP（镜像内置的 8.1 为 alpha 预发布版，Composer 无法在其上运行），
+# 随后跑语法检查、PHPUnit 单元测试与冒烟检查；
+# Node 侧：跑零依赖的共享解析包与更新检查器契约测试（纯 Node，无需安装依赖）。
+# 说明：Windows 安装包与移动端前端构建依赖 Node 20+ / Windows 环境，
+# 按现有发布流程在本地执行（见 README「构建」章节）。
+version: '1.0'
+name: quality-pipeline
+displayName: 质量门禁
+
+triggers:
+  push:
+    branches:
+      precise:
+        - main
+    tags:
+      include:
+        - ^v.*
+
+stages:
+  - name: php-quality
+    displayName: PHP 测试
+    strategy: naturally
+    trigger: auto
+    steps:
+      - step: build@php
+        name: php_tests
+        displayName: PHP lint + PHPUnit + 冒烟
+        phpVersion: 8.1
+        commands:
+          # 升级 Composer：composer.lock 由 2.10.3 生成，旧版 Composer 安装时崩溃；
+          # 优先使用与本地一致的 2.10.3，getcomposer.org 不可达时回退阿里云最新版
+          - >-
+            ( curl -fsSL https://getcomposer.org/download/2.10.3/composer.phar -o /usr/local/bin/composer
+            || curl -fsSL https://mirrors.aliyun.com/composer/composer.phar -o /usr/local/bin/composer )
+            && chmod +x /usr/local/bin/composer
+            && composer --version
+          # 安装稳定版 PHP 并执行全部检查；各发行版包名不同，按序回退；
+          # 关键：必须用 apt 安装的 /usr/bin/php（稳定版），镜像插件目录的 php 8.1 是
+          # alpha 预发布版（反射行为异常，会让 Composer 写 vendor 元数据时崩溃）
+          # 注意：流水线各条命令独立执行、互不中断，必须用 && 串联保证任一步失败即整体失败
+          - >-
+            apt-get update -qq && ( apt-get install -y -qq php-cli php-curl php-xml php-mbstring php-zip unzip
+            || apt-get install -y -qq php8.3-cli php8.3-curl php8.3-xml php8.3-mbstring php8.3-zip unzip
+            || ( grep -rl "Components:" /etc/apt/sources.list.d/ | xargs -r sed -i -E "/Components:/s/main/main universe/" && sed -i "/^deb /s/main/main universe/" /etc/apt/sources.list && apt-get update -qq && apt-get install -y -qq php-cli php-curl php-xml php-mbstring php-zip unzip ) )
+            && PHP="$(command -v php8.3 || command -v php8.2 || true)"
+            && { [ -x "$PHP" ] || PHP=/usr/bin/php; }
+            && $PHP -v
+            && $PHP /usr/local/bin/composer install --no-interaction --prefer-dist --no-progress
+            && $PHP /usr/local/bin/composer lint && $PHP vendor/bin/phpunit && $PHP /usr/local/bin/composer smoke
+
+  - name: js-contract
+    displayName: JS 契约测试
+    strategy: naturally
+    trigger: auto
+    steps:
+      # 插件自带 Node 最高仅 15.x，跑不了现代解析器测试脚本（缺少全局 atob、crypto.subtle 等）；
+      # 从 npmmirror 下载 Node 20 官方二进制执行两个契约测试
+      - step: build@nodejs
+        name: js_contract
+        displayName: 解析包 + 更新检查器契约测试
+        nodeVersion: 15.12.0
+        commands:
+          - >-
+            curl -fsSL https://npmmirror.com/mirrors/node/v20.19.5/node-v20.19.5-linux-x64.tar.gz -o /tmp/node20.tar.gz
+            && mkdir -p /opt/node20 && tar -xzf /tmp/node20.tar.gz -C /opt/node20 --strip-components=1
+            && export PATH=/opt/node20/bin:$PATH
+            && node -v
+            && cd packages/parsers && npm test
+            && cd ../update-checker && npm test

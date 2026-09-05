@@ -1,0 +1,196 @@
+const DEFAULT_OWNER = 'yuchen0x1';
+const DEFAULT_REPO = 'short-video-watermark-remover';
+
+export const UPDATE_REPOSITORY = Object.freeze({
+  owner: DEFAULT_OWNER,
+  repo: DEFAULT_REPO,
+  provider: 'gitee',
+  apiUrl: `https://gitee.com/${DEFAULT_OWNER}/${DEFAULT_REPO}/releases`,
+  releasesUrl: `https://gitee.com/${DEFAULT_OWNER}/${DEFAULT_REPO}/releases`,
+});
+
+function parseVersion(value) {
+  const match = String(value ?? '').trim().replace(/^v/i, '').match(/^(\d+)(?:\.(\d+))?(?:\.(\d+))?(?:-([0-9A-Za-z.-]+))?$/);
+  if (!match) return null;
+  return {
+    major: Number(match[1]),
+    minor: Number(match[2] || 0),
+    patch: Number(match[3] || 0),
+    prerelease: match[4] ? match[4].split('.') : [],
+  };
+}
+
+export function normalizeVersion(value) {
+  const parsed = parseVersion(value);
+  return parsed ? `${parsed.major}.${parsed.minor}.${parsed.patch}${parsed.prerelease.length ? `-${parsed.prerelease.join('.')}` : ''}` : '';
+}
+
+export function compareVersions(left, right) {
+  const a = parseVersion(left);
+  const b = parseVersion(right);
+  if (!a || !b) return 0;
+  for (const key of ['major', 'minor', 'patch']) {
+    if (a[key] !== b[key]) return a[key] > b[key] ? 1 : -1;
+  }
+  if (!a.prerelease.length && b.prerelease.length) return 1;
+  if (a.prerelease.length && !b.prerelease.length) return -1;
+  const length = Math.max(a.prerelease.length, b.prerelease.length);
+  for (let index = 0; index < length; index += 1) {
+    const av = a.prerelease[index];
+    const bv = b.prerelease[index];
+    if (av === bv) continue;
+    if (av === undefined) return -1;
+    if (bv === undefined) return 1;
+    const an = /^\d+$/.test(av);
+    const bn = /^\d+$/.test(bv);
+    if (an && bn) return Number(av) > Number(bv) ? 1 : -1;
+    if (an !== bn) return an ? -1 : 1;
+    return av > bv ? 1 : -1;
+  }
+  return 0;
+}
+
+async function browserRequest({ url, headers, timeoutMs = 12000 }) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), Math.max(1000, Math.min(Number(timeoutMs) || 12000, 30000)));
+  try {
+    const response = await fetch(url, { headers, cache: 'no-store', signal: controller.signal });
+    return { status: response.status, data: await response.text() };
+  } catch (error) {
+    if (error?.name === 'AbortError') throw new Error('版本检查超时');
+    throw error;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+function parseResponseData(data) {
+  if (data && typeof data === 'object') return data;
+  try {
+    return JSON.parse(String(data || ''));
+  } catch {
+    throw new Error('版本服务返回了无效数据');
+  }
+}
+
+function assertDomesticUpdateUrl(value) {
+  let parsed;
+  try {
+    parsed = new URL(String(value || ''));
+  } catch {
+    throw new Error('更新源地址无效');
+  }
+  if (!['http:', 'https:'].includes(parsed.protocol)) throw new Error('更新源仅支持 HTTP/HTTPS');
+  if (parsed.username || parsed.password) throw new Error('更新源地址不允许携带用户凭据');
+  const host = parsed.hostname.toLowerCase();
+  if (host !== 'gitee.com' && !host.endsWith('.gitee.com')) throw new Error('更新源必须使用 Gitee 域名');
+  return parsed.href;
+}
+
+function parseGiteeReleaseHtml(html, repository) {
+  const text = String(html || '');
+  const tagMatch = text.match(/class=["'][^"']*releases-sidebar-item[^"']*["'][^>]*data-tag=["']([^"']+)["']/i);
+  const tag = tagMatch ? tagMatch[1].trim() : '';
+  if (!tag) throw new Error('Gitee Release 页面缺少版本号');
+
+  const assets = [];
+  const assetPattern = new RegExp(
+    `href=["'](/${repository.owner}/${repository.repo}/releases/download/${tag.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}/[^"']+)["']`,
+    'gi'
+  );
+  for (const match of text.matchAll(assetPattern)) {
+    const href = match[1].replace(/&amp;/g, '&');
+    const name = decodeURIComponent(href.split('/').pop() || '');
+    if (!/^[A-Za-z0-9._+-]+$/.test(name)) continue;
+    assets.push({ name, browser_download_url: `https://gitee.com${href}`, size: 0, digest: '' });
+  }
+  return {
+    tag_name: tag,
+    html_url: `https://gitee.com/${repository.owner}/${repository.repo}/releases/tag/${encodeURIComponent(tag)}`,
+    published_at: '',
+    body: '',
+    assets,
+  };
+}
+
+function normalizeAssets(rawAssets) {
+  return Array.isArray(rawAssets) ? rawAssets.map((asset) => ({
+    name: String(asset.name || ''),
+    url: String(asset.browser_download_url || asset.url || ''),
+    size: Number(asset.size || 0),
+    digest: String(asset.digest || ''),
+  })).filter((asset) => {
+    if (!asset.name || !asset.url) return false;
+    try { assertDomesticUpdateUrl(asset.url); return true; } catch { return false; }
+  }) : [];
+}
+
+function preferredAndroidAsset(assets) {
+  const apkAssets = assets.filter((asset) => /\.apk$/i.test(asset.name || ''));
+  return apkAssets.find((asset) => !/(debug|unsigned)/i.test(asset.name))
+    || apkAssets.find((asset) => /debug/i.test(asset.name))
+    || apkAssets.find((asset) => !/unsigned/i.test(asset.name))
+    || apkAssets[0]
+    || null;
+}
+
+function preferredWindowsAsset(assets) {
+  return assets.find((asset) => /\.exe$/i.test(asset.name || '') && /setup/i.test(asset.name))
+    || assets.find((asset) => /\.exe$/i.test(asset.name || ''))
+    || null;
+}
+
+export async function checkForUpdate({ currentVersion, request = browserRequest, repository = UPDATE_REPOSITORY } = {}) {
+  const current = normalizeVersion(currentVersion);
+  if (!current) throw new Error('当前版本号无效');
+  const apiUrl = assertDomesticUpdateUrl(repository.apiUrl);
+  const releasesUrl = assertDomesticUpdateUrl(repository.releasesUrl);
+  repository = { ...repository, apiUrl, releasesUrl };
+  const response = await request({
+    url: apiUrl,
+    timeoutMs: 12000,
+    headers: repository.provider === 'gitee'
+      ? { Accept: 'text/html', 'User-Agent': 'qushuiyin-update-checker/2.3.2' }
+      : { Accept: 'application/json', 'User-Agent': 'qushuiyin-update-checker/2.3.2' },
+  });
+  if (!response || response.status < 200 || response.status >= 300) {
+    throw new Error(`无法获取最新版本（HTTP ${response?.status || 0}）`);
+  }
+  const payload = (repository.provider === 'gitee' || /gitee\.com\/.*\/releases(?:$|[/?])/i.test(repository.apiUrl))
+    && typeof response.data === 'string' && /releases-sidebar-item/i.test(response.data)
+    ? parseGiteeReleaseHtml(response.data, repository)
+    : parseResponseData(response.data);
+  // 网站 API 返回已整理的数据；允许移动端通过 VITE_UPDATE_API_URL 复用同一接口。
+  if (payload.success && payload.data && payload.data.latest_version) {
+    const data = payload.data;
+    const latest = normalizeVersion(data.latest_version);
+    if (!latest) throw new Error('最新版本号无效');
+    const assets = normalizeAssets(data.assets);
+    return {
+      currentVersion: current,
+      latestVersion: latest,
+      updateAvailable: compareVersions(latest, current) > 0,
+      releaseUrl: assertDomesticUpdateUrl(data.release_url || repository.releasesUrl),
+      publishedAt: data.published_at || '',
+      notes: String(data.notes || ''),
+      assets,
+      androidAsset: data.android_asset ? normalizeAssets([data.android_asset])[0] || preferredAndroidAsset(assets) : preferredAndroidAsset(assets),
+      windowsAsset: data.windows_asset ? normalizeAssets([data.windows_asset])[0] || preferredWindowsAsset(assets) : preferredWindowsAsset(assets),
+    };
+  }
+  if (repository.provider !== 'gitee' || !payload.tag_name) throw new Error('更新服务返回了不支持的数据');
+  const latest = normalizeVersion(payload.tag_name);
+  if (!latest) throw new Error('最新 Release 缺少有效版本号');
+  const assets = normalizeAssets(payload.assets);
+  return {
+    currentVersion: current,
+    latestVersion: latest,
+    updateAvailable: compareVersions(latest, current) > 0,
+    releaseUrl: assertDomesticUpdateUrl(payload.html_url || `${repository.releasesUrl}/tag/v${latest}`),
+    publishedAt: payload.published_at || '',
+    notes: String(payload.body || ''),
+    assets,
+    androidAsset: preferredAndroidAsset(assets),
+    windowsAsset: preferredWindowsAsset(assets),
+  };
+}

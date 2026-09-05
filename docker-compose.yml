@@ -1,0 +1,26 @@
+name: qushuiyin
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "${APP_PORT:-18180}:8000"
+    environment:
+      - APP_NAME=VideoSpider
+      - APP_PORT=8000
+      - A_BOGUS_PORT=9876
+      - APP_DEBUG=false
+      - RATE_LIMIT_ENABLED=true
+      - RATE_LIMIT_MAX_REQUESTS=60
+      - RATE_LIMIT_TIME_WINDOW=60
+      - PARSE_CACHE_TTL=86400
+    volumes:
+      - ./storage:/app/storage
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:8000/api/v1/health > /dev/null || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    restart: unless-stopped
