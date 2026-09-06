@@ -19,9 +19,10 @@ class HttpClient
      * @param array $headers 自定义请求头，格式为 ['Header' => 'value']
      * @param int|null $maxRetries 最大重试次数，null 则使用配置值
      * @param string|null $responseHeaders 通过引用返回原始响应头
+     * @param int|null $timeout 单次请求总超时秒数，null 则使用配置值
      * @return array 返回 ['success' => bool, 'data' => string, 'error' => string, 'http_code' => int]
      */
-    public static function request(string $url, $data = null, array $headers = [], ?int $maxRetries = null, ?string &$responseHeaders = null): array
+    public static function request(string $url, $data = null, array $headers = [], ?int $maxRetries = null, ?string &$responseHeaders = null, ?int $timeout = null): array
     {
         if (!extension_loaded('curl')) {
             Logger::error('HTTP 请求失败', [
@@ -37,7 +38,7 @@ class HttpClient
             ];
         }
 
-        $timeout = Config::get('curl.timeout', 10);
+        $timeout = $timeout ?? Config::get('curl.timeout', 10);
         $connectTimeout = Config::get('curl.connect_timeout', 5);
         $maxRetries = $maxRetries ?? Config::get('curl.max_retries', 3);
         

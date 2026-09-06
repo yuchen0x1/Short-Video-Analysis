@@ -366,6 +366,7 @@ footer{width:min(1320px,calc(100% - 40px));margin:0 auto;padding:0 0 34px;text-a
 <style>
 .result-images{width:100%;display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:10px;align-items:start}.result-image-card{position:relative;overflow:hidden;border-radius:6px;background:#0b1514}.result-image-card img{display:block;width:100%;height:auto;max-height:470px;object-fit:contain}.result-image-download{position:absolute;right:8px;bottom:8px;width:32px;height:32px;display:grid;place-items:center;border-radius:5px;background:rgba(0,0,0,.66);color:#fff;text-decoration:none}
 .profile-toolbar{display:flex;align-items:center;justify-content:flex-end;flex-wrap:wrap;gap:8px}.select-all-control{display:inline-flex;align-items:center;gap:7px;color:var(--ag-muted);font-size:13px;font-weight:700;white-space:nowrap}.select-all-control input,.profile-check{width:17px;height:17px;accent-color:var(--ag-coral)}.profile-list{display:grid}.profile-item{display:grid;grid-template-columns:22px 112px minmax(0,1fr) auto;gap:13px;align-items:center;padding:14px 22px;border-bottom:1px solid var(--ag-border)}.profile-item:last-child{border-bottom:0}.profile-check{margin:0}.profile-thumb{width:112px;height:72px;object-fit:cover;border-radius:5px;background:var(--soft)}.profile-content{min-width:0}.profile-title{margin:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:14px;font-weight:800;color:var(--ag-text)}.profile-meta{margin:4px 0 0;color:var(--ag-muted);font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.profile-actions{display:flex;align-items:center;gap:7px}.profile-actions .btn{min-height:34px;padding:0 10px;font-size:12px}.profile-item.is-selected{background:rgba(85,223,189,.12)}.profile-pagination{display:flex;align-items:center;justify-content:center;gap:12px;padding:16px 22px;border-top:1px solid var(--ag-border)}.profile-pagination span{min-width:70px;text-align:center;color:var(--ag-muted);font-size:13px;font-weight:700}
+.live-stream{display:grid;grid-template-columns:64px minmax(0,1fr) auto;gap:13px;align-items:center;padding:13px 22px;border-bottom:1px solid var(--ag-border)}.live-stream:last-child{border-bottom:0}.live-stream-format{display:inline-grid;place-items:center;height:34px;border:1px solid var(--ag-border-strong);border-radius:5px;font-family:"Cascadia Code","Consolas",monospace;font-size:11px;font-weight:800;letter-spacing:.06em;color:var(--ag-teal)}.live-stream-url{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--ag-muted);font-size:12px;font-family:"Cascadia Code","Consolas",monospace}.live-status-badge{display:inline-flex;align-items:center;min-height:26px;padding:0 10px;border-radius:4px;font-size:11px;font-weight:800}.live-status-badge.is-live{background:rgba(92,224,189,.14);color:var(--ag-teal)}.live-status-badge.is-offline{background:rgba(242,201,111,.16);color:var(--ag-amber)}
 @media(max-width:720px){.profile-toolbar{justify-content:flex-start}.profile-item{grid-template-columns:22px 76px minmax(0,1fr);padding:12px 14px}.profile-thumb{width:76px;height:54px}.profile-actions{grid-column:2/-1;justify-content:flex-start}}
 @media(max-width:520px){.mode-switch{width:100%}.mode-btn{flex:1;padding-left:8px;padding-right:8px}}
 </style>
@@ -380,20 +381,20 @@ footer{width:min(1320px,calc(100% - 40px));margin:0 auto;padding:0 0 34px;text-a
 <header class="topbar"><div class="topbar-inner"><div class="brand"><span class="brand-mark" aria-hidden="true">去</span><div><p class="brand-name">去水印解析</p><p class="brand-sub">短视频无水印工作台 · v<?= htmlspecialchars($webAppVersion, ENT_QUOTES, 'UTF-8') ?></p></div></div><div class="topbar-actions"><span id="service-status" class="online"><i class="online-dot"></i><span>检查服务</span></span><span id="update-status" class="update-status" aria-live="polite"><i></i><span>检查更新</span></span><button id="theme-toggle" class="theme-toggle" type="button" title="切换主题" aria-label="切换主题"></button></div></div></header>
 <main class="workspace">
   <div class="main-column">
-    <section class="intro" aria-labelledby="page-title"><span class="eyebrow">VIDEO WORKSPACE / 01</span><h1 id="page-title">分享链接，<em>直接变成</em>可用视频。</h1><p>粘贴短视频分享链接，快速整理出无水印视频。解析结果、下载和最近记录都在同一个工作区完成。</p><div class="intro-metrics" aria-label="工作台能力"><div><strong>11</strong><span>支持平台</span></div><div><strong>本地</strong><span>优先解析</span></div><div><strong>20</strong><span>批量上限</span></div></div></section>
+    <section class="intro" aria-labelledby="page-title"><span class="eyebrow">VIDEO WORKSPACE / 01</span><h1 id="page-title">分享链接，<em>直接变成</em>可用视频。</h1><p>粘贴短视频分享链接，快速整理出无水印视频。解析结果、下载和最近记录都在同一个工作区完成。</p><div class="intro-metrics" aria-label="工作台能力"><div><strong>12</strong><span>支持平台</span></div><div><strong>本地</strong><span>优先解析</span></div><div><strong>20</strong><span>批量上限</span></div></div></section>
     <section class="panel ingest-panel" aria-label="视频解析入口">
-      <div class="panel-heading"><div><p class="panel-kicker">Import link</p><h2 class="panel-title">从一个链接开始</h2><p class="panel-note">支持公开分享链接，不需要登录第三方平台。</p></div><div class="mode-switch" role="group" aria-label="解析模式"><button id="single-mode-btn" class="mode-btn active" type="button" aria-pressed="true">单个解析</button><button id="batch-mode-btn" class="mode-btn" type="button" aria-pressed="false">批量处理</button><button id="profile-mode-btn" class="mode-btn" type="button" aria-pressed="false">主页解析</button></div></div>
+      <div class="panel-heading"><div><p class="panel-kicker">Import link</p><h2 class="panel-title">从一个链接开始</h2><p class="panel-note">支持公开分享链接，不需要登录第三方平台。</p></div><div class="mode-switch" role="group" aria-label="解析模式"><button id="single-mode-btn" class="mode-btn active" type="button" aria-pressed="true">单个解析</button><button id="batch-mode-btn" class="mode-btn" type="button" aria-pressed="false">批量处理</button><button id="profile-mode-btn" class="mode-btn" type="button" aria-pressed="false">主页解析</button><button id="collection-mode-btn" class="mode-btn" type="button" aria-pressed="false">合集解析</button><button id="live-mode-btn" class="mode-btn" type="button" aria-pressed="false">直播解析</button><button id="discover-mode-btn" class="mode-btn" type="button" aria-pressed="false">发现</button></div></div>
       <div id="single-panel"><label id="mode-label" class="field-label" for="video-url">视频分享链接</label><div class="input-row"><div class="input-wrap"><input id="video-url" type="url" placeholder="粘贴抖音、快手、B站、小红书等链接" autocomplete="off" spellcheck="false"></div><button id="paste-btn" class="icon-btn" type="button" title="从剪贴板粘贴" aria-label="从剪贴板粘贴"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="8" y="3" width="8" height="4" rx="1"></rect><path d="M16 5h2a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h2"></path></svg></button><button id="parse-btn" class="btn btn-primary" type="button"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"></path><path d="m13 6 6 6-6 6"></path></svg><span>开始解析</span></button></div><p class="input-hint">小提示：也可以直接粘贴包含文字的整段分享文案，系统会自动提取链接。</p></div>
       <div class="input-context"><span><i></i>自动识别平台</span><span><i></i>视频与图集均支持</span><span><i></i>链接不会保存到服务器</span></div>
       <div id="batch-panel" hidden><label class="field-label" for="batch-input">每行放一个视频链接</label><textarea id="batch-input" class="batch-input" rows="5" placeholder="https://...&#10;https://...&#10;https://..." autocomplete="off" spellcheck="false" aria-label="批量视频链接"></textarea><p class="input-hint">最多处理 20 条链接，同时进行 3 路解析。</p><div class="batch-actions"><button id="batch-parse-btn" class="btn btn-primary" type="button"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 6h13"></path><path d="M8 12h13"></path><path d="M8 18h13"></path><path d="M3 6h.01"></path><path d="M3 12h.01"></path><path d="M3 18h.01"></path></svg><span>开始批量处理</span></button><button id="batch-stop-btn" class="btn btn-quiet" type="button" hidden>停止处理</button></div></div>
-      <div class="platform-strip" aria-label="支持平台"><span class="platform-chip" style="--chip:#2d6cdf"><i></i>抖音</span><span class="platform-chip" style="--chip:#10a77a"><i></i>快手</span><span class="platform-chip" style="--chip:#e86d94"><i></i>B站</span><span class="platform-chip" style="--chip:#e64555"><i></i>小红书</span><span class="platform-chip" style="--chip:#f19a42"><i></i>皮皮虾</span><span class="platform-chip" style="--chip:#5e83d7"><i></i>微博</span><span class="platform-chip" style="--chip:#4d9d91"><i></i>视频号</span><span class="platform-chip" style="--chip:#8d6fc1"><i></i>更多平台</span></div>
+      <div class="platform-strip" aria-label="支持平台"><span class="platform-chip" style="--chip:#2d6cdf"><i></i>抖音</span><span class="platform-chip" style="--chip:#10a77a"><i></i>快手</span><span class="platform-chip" style="--chip:#e86d94"><i></i>B站</span><span class="platform-chip" style="--chip:#e64555"><i></i>小红书</span><span class="platform-chip" style="--chip:#f19a42"><i></i>皮皮虾</span><span class="platform-chip" style="--chip:#5e83d7"><i></i>微博</span><span class="platform-chip" style="--chip:#4d9d91"><i></i>视频号</span><span class="platform-chip" style="--chip:#25f4ee"><i></i>TikTok</span><span class="platform-chip" style="--chip:#8d6fc1"><i></i>更多平台</span></div>
       <div id="loading" class="state-row" aria-live="polite" hidden><span class="spinner" aria-hidden="true"></span><span id="loading-text">正在读取视频信息…</span></div><div id="batch-progress" class="state-row" aria-live="polite" hidden><span class="spinner" aria-hidden="true"></span><span id="batch-progress-text"></span></div>
       <div id="error" class="error-alert" role="alert" aria-live="assertive" hidden><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M12 8v5"></path><path d="M12 16h.01"></path></svg><span id="error-text"></span></div>
     </section>
-    <section id="result" class="panel result-panel" hidden aria-label="解析结果"><div class="result-layout"><div class="result-video-wrap"><video id="result-video" controls playsinline preload="metadata"></video></div><div class="result-info"><span id="result-platform" class="result-tag">解析完成</span><h2 id="result-title" class="result-title"></h2><p id="result-meta" class="result-meta"></p><div class="creator-row"><img id="result-avatar" class="avatar" alt="" hidden><div><div class="creator-label">发布作者</div><div id="result-author" class="creator-name"></div></div></div><dl class="result-stats"><div class="result-stat"><dt>点赞</dt><dd id="result-like">-</dd></div><div class="result-stat"><dt>发布时间</dt><dd id="result-time">-</dd></div></dl><div class="result-actions"><a id="download-btn" class="btn btn-primary" download target="_blank" rel="noopener"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12"></path><path d="m7 10 5 5 5-5"></path><path d="M5 21h14"></path></svg><span>下载视频</span></a><a id="music-btn" class="btn" download target="_blank" rel="noopener" hidden><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18V5l12-2v13"></path><circle cx="6" cy="18" r="3"></circle><circle cx="18" cy="16" r="3"></circle></svg><span>下载音乐</span></a><button id="copy-btn" class="btn" type="button"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v1"></path></svg><span>复制链接</span></button><button id="copy-text-btn" class="btn" type="button"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><path d="M14 2v6h6"></path><path d="M8 13h8"></path><path d="M8 17h5"></path></svg><span>复制文案</span></button><a id="open-btn" class="btn btn-quiet" target="_blank" rel="noopener"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3h7v7"></path><path d="M10 14 21 3"></path><path d="M21 14v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5"></path></svg><span>打开视频</span></a></div></div></div></section>
-    <section id="batch-results" class="panel batch-panel" hidden aria-label="批量解析结果"><div class="section-heading"><div><h2>批量处理结果</h2><p>完成的项目可以直接播放、下载或复制文案。</p></div><span id="batch-summary" class="batch-summary"></span></div><div id="batch-list" class="batch-list"></div><div id="batch-empty" class="batch-empty" hidden>还没有批量任务。</div></section>
+    <section id="result" class="panel result-panel" hidden aria-label="解析结果"><div class="result-layout"><div class="result-video-wrap"><video id="result-video" controls playsinline preload="metadata"></video></div><div class="result-info"><span id="result-platform" class="result-tag">解析完成</span><h2 id="result-title" class="result-title"></h2><p id="result-meta" class="result-meta"></p><div class="creator-row"><img id="result-avatar" class="avatar" alt="" hidden><div><div class="creator-label">发布作者</div><div id="result-author" class="creator-name"></div></div></div><dl class="result-stats"><div class="result-stat"><dt>点赞</dt><dd id="result-like">-</dd></div><div class="result-stat"><dt>发布时间</dt><dd id="result-time">-</dd></div></dl><div class="result-actions"><a id="download-btn" class="btn btn-primary" download target="_blank" rel="noopener"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12"></path><path d="m7 10 5 5 5-5"></path><path d="M5 21h14"></path></svg><span>下载视频</span></a><a id="music-btn" class="btn" download target="_blank" rel="noopener" hidden><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18V5l12-2v13"></path><circle cx="6" cy="18" r="3"></circle><circle cx="18" cy="16" r="3"></circle></svg><span>下载音乐</span></a><button id="comments-btn" class="btn" type="button" hidden><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg><span>查看评论</span></a><button id="copy-btn" class="btn" type="button"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v1"></path></svg><span>复制链接</span></button><button id="copy-text-btn" class="btn" type="button"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><path d="M14 2v6h6"></path><path d="M8 13h8"></path><path d="M8 17h5"></path></svg><span>复制文案</span></button><a id="open-btn" class="btn btn-quiet" target="_blank" rel="noopener"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3h7v7"></path><path d="M10 14 21 3"></path><path d="M21 14v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5"></path></svg><span>打开视频</span></a></div></div></div></section>
+    <section id="batch-results" class="panel batch-panel" hidden aria-label="批量解析结果"><div class="section-heading"><div><h2>批量处理结果</h2><p>完成的项目可以直接播放、下载或复制文案。</p></div><div class="profile-toolbar"><button id="batch-export" class="btn" type="button" hidden>导出 CSV</button><span id="batch-summary" class="batch-summary"></span></div></div><div id="batch-list" class="batch-list"></div><div id="batch-empty" class="batch-empty" hidden>还没有批量任务。</div></section>
   </div>
-  <aside class="sidebar"><section id="history" class="panel side-panel" aria-label="最近解析"><div class="side-heading"><div><h2>最近处理</h2><p>只保存在当前浏览器</p></div><span id="history-count" class="count-badge">0</span></div><div id="history-list" class="history-list"></div><div id="history-empty" class="history-empty"><div class="history-empty-icon"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h16v14H4z"></path><path d="M8 9h8"></path><path d="M8 13h5"></path></svg></div><strong>这里还没有记录</strong><span>解析完成后会自动出现在这里</span></div><div class="side-divider"></div><button id="clear-history-btn" class="clear-btn" type="button"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2-2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg> 清空记录</button></section><section class="panel side-panel" aria-label="账号设置"><div class="side-heading"><div><h2>账号</h2><p>当前需要登录态的平台：微博</p></div><span id="weibo-cookie-status" class="account-status"><i></i><span>未配置</span></span></div><div class="account-form"><label class="field-label" for="weibo-cookie-input">微博凭据</label><input id="weibo-cookie-input" type="password" autocomplete="off" spellcheck="false" placeholder="粘贴微博网页版 Cookie"><p class="input-hint">在微博网页版登录后复制 Cookie；解析微博链接时仅随本次 POST 请求发送，不会写入 URL。</p><div class="account-actions"><button id="weibo-cookie-save" class="btn" type="button">保存到本浏览器</button><button id="weibo-cookie-clear" class="btn btn-quiet" type="button">清除</button></div></div></section><section class="panel side-panel" aria-label="工作台信息"><div class="side-heading"><div><h2>工作台</h2><p>让每次整理更顺手</p></div></div><div class="quick-list"><div class="quick-row"><span class="quick-label"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3 2"></path></svg>单个解析</span><strong class="quick-value">即时</strong></div><div class="quick-row"><span class="quick-label"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 6h13"></path><path d="M8 12h13"></path><path d="M8 18h13"></path><path d="M3 6h.01"></path><path d="M3 12h.01"></path><path d="M3 18h.01"></path></svg>批量处理</span><strong class="quick-value">最多 3 路</strong></div><div class="quick-row"><span class="quick-label"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v18"></path><path d="M3 12h18"></path></svg>记录方式</span><strong class="quick-value">本地保存</strong></div></div></section></aside>
+  <aside class="sidebar"><section id="history" class="panel side-panel" aria-label="最近解析"><div class="side-heading"><div><h2>最近处理</h2><p>只保存在当前浏览器</p></div><span id="history-count" class="count-badge">0</span></div><div id="history-list" class="history-list"></div><div id="history-empty" class="history-empty"><div class="history-empty-icon"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h16v14H4z"></path><path d="M8 9h8"></path><path d="M8 13h5"></path></svg></div><strong>这里还没有记录</strong><span>解析完成后会自动出现在这里</span></div><div class="side-divider"></div><div class="account-actions"><button id="history-export" class="btn" type="button">导出 CSV</button><button id="clear-history-btn" class="clear-btn" type="button"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2-2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg> 清空记录</button></div></section><section class="panel side-panel" aria-label="账号设置"><div class="side-heading"><div><h2>账号</h2><p>当前需要登录态的平台：微博</p></div><span id="weibo-cookie-status" class="account-status"><i></i><span>未配置</span></span></div><div class="account-form"><label class="field-label" for="weibo-cookie-input">微博凭据</label><input id="weibo-cookie-input" type="password" autocomplete="off" spellcheck="false" placeholder="粘贴微博网页版 Cookie"><p class="input-hint">在微博网页版登录后复制 Cookie；解析微博链接时仅随本次 POST 请求发送，不会写入 URL。</p><div class="account-actions"><button id="weibo-cookie-save" class="btn" type="button">保存到本浏览器</button><button id="weibo-cookie-clear" class="btn btn-quiet" type="button">清除</button></div></div></section><section class="panel side-panel" aria-label="工作台信息"><div class="side-heading"><div><h2>工作台</h2><p>让每次整理更顺手</p></div></div><div class="quick-list"><div class="quick-row"><span class="quick-label"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3 2"></path></svg>单个解析</span><strong class="quick-value">即时</strong></div><div class="quick-row"><span class="quick-label"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 6h13"></path><path d="M8 12h13"></path><path d="M8 18h13"></path><path d="M3 6h.01"></path><path d="M3 12h.01"></path><path d="M3 18h.01"></path></svg>批量处理</span><strong class="quick-value">最多 3 路</strong></div><div class="quick-row"><span class="quick-label"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v18"></path><path d="M3 12h18"></path></svg>记录方式</span><strong class="quick-value">本地保存</strong></div></div></section></aside>
 </main>
 <footer>去水印解析 · 仅用于个人学习与研究</footer>
 <script>
@@ -437,10 +438,10 @@ const WEB_APP_VERSION=<?= json_encode($webAppVersion, JSON_UNESCAPED_UNICODE|JSO
 // 主应用：单条 / 批量 / 抖音主页解析、图集展示、历史与主题。
 // 单一状态机；此前通过捕获阶段拦截事件和覆写 window.fetch 叠加的补丁逻辑已合并至此。
 const $=s=>document.querySelector(s);
-const input=$('#video-url'),parseBtn=$('#parse-btn'),pasteBtn=$('#paste-btn'),singleModeBtn=$('#single-mode-btn'),batchModeBtn=$('#batch-mode-btn'),profileModeBtn=$('#profile-mode-btn'),singlePanel=$('#single-panel'),batchPanel=$('#batch-panel'),batchInput=$('#batch-input'),batchParseBtn=$('#batch-parse-btn'),batchStopBtn=$('#batch-stop-btn'),loading=$('#loading'),loadingText=$('#loading-text'),batchProgress=$('#batch-progress'),batchProgressText=$('#batch-progress-text'),errorBox=$('#error'),errorText=$('#error-text'),result=$('#result'),video=$('#result-video'),avatar=$('#result-avatar'),titleEl=$('#result-title'),metaEl=$('#result-meta'),authorEl=$('#result-author'),likeEl=$('#result-like'),timeEl=$('#result-time'),platformEl=$('#result-platform'),downloadBtn=$('#download-btn'),musicBtn=$('#music-btn'),copyBtn=$('#copy-btn'),copyTextBtn=$('#copy-text-btn'),openBtn=$('#open-btn'),historyList=$('#history-list'),historyEmpty=$('#history-empty'),historyCount=$('#history-count'),clearHistoryBtn=$('#clear-history-btn'),batchSection=$('#batch-results'),batchList=$('#batch-list'),batchEmpty=$('#batch-empty'),batchSummary=$('#batch-summary'),themeToggle=$('#theme-toggle'),modeLabel=$('#mode-label'),serviceStatus=$('#service-status'),weiboCookieInput=$('#weibo-cookie-input'),weiboCookieSave=$('#weibo-cookie-save'),weiboCookieClear=$('#weibo-cookie-clear'),weiboCookieStatus=$('#weibo-cookie-status'),inputHint=document.querySelector('#single-panel .input-hint');
+const input=$('#video-url'),parseBtn=$('#parse-btn'),pasteBtn=$('#paste-btn'),singleModeBtn=$('#single-mode-btn'),batchModeBtn=$('#batch-mode-btn'),profileModeBtn=$('#profile-mode-btn'),collectionModeBtn=$('#collection-mode-btn'),liveModeBtn=$('#live-mode-btn'),discoverModeBtn=$('#discover-mode-btn'),singlePanel=$('#single-panel'),batchPanel=$('#batch-panel'),batchInput=$('#batch-input'),batchParseBtn=$('#batch-parse-btn'),batchStopBtn=$('#batch-stop-btn'),loading=$('#loading'),loadingText=$('#loading-text'),batchProgress=$('#batch-progress'),batchProgressText=$('#batch-progress-text'),errorBox=$('#error'),errorText=$('#error-text'),result=$('#result'),video=$('#result-video'),avatar=$('#result-avatar'),titleEl=$('#result-title'),metaEl=$('#result-meta'),authorEl=$('#result-author'),likeEl=$('#result-like'),timeEl=$('#result-time'),platformEl=$('#result-platform'),downloadBtn=$('#download-btn'),musicBtn=$('#music-btn'),copyBtn=$('#copy-btn'),copyTextBtn=$('#copy-text-btn'),openBtn=$('#open-btn'),historyList=$('#history-list'),historyEmpty=$('#history-empty'),historyCount=$('#history-count'),clearHistoryBtn=$('#clear-history-btn'),batchSection=$('#batch-results'),batchList=$('#batch-list'),batchEmpty=$('#batch-empty'),batchSummary=$('#batch-summary'),batchExportBtn=$('#batch-export'),themeToggle=$('#theme-toggle'),modeLabel=$('#mode-label'),serviceStatus=$('#service-status'),weiboCookieInput=$('#weibo-cookie-input'),weiboCookieSave=$('#weibo-cookie-save'),weiboCookieClear=$('#weibo-cookie-clear'),weiboCookieStatus=$('#weibo-cookie-status'),inputHint=document.querySelector('#single-panel .input-hint');
 const HISTORY_KEY='watermark-parse-history-v1',WEIBO_COOKIE_KEY='watermark-weibo-cookie-v1',HISTORY_LIMIT=20,BATCH_LIMIT=20,URL_PATTERN=/https?:\/\/[^\s"'<>，。；：！？【】（）《》]+/i;
 let ignoreMediaError=false,currentResult=null,batchItems=[],batchRunning=false,batchCancelRequested=false,singleAbortController=null,batchAbortController=null,mediaRefreshKey='';
-const state={mode:'single',profile:null};
+const state={mode:'single',profile:null,discover:{tab:'hot',platform:'bilibili',page:1,items:[],hasMore:false,total:0,keyword:''},comments:{url:'',page:1,total:0,comments:[],hasMore:false}};
 const PLAY_ICON='<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="6 3 20 12 6 21 6 3"></polygon></svg>',DOWNLOAD_ICON='<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12"></path><path d="m7 10 5 5 5-5"></path><path d="M5 21h14"></path></svg>',COPY_ICON='<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v1"></path></svg>',TRASH_ICON='<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>';
 
 // 图集展示容器（挂在播放器区域旁）
@@ -452,7 +453,7 @@ const videoWrap=document.querySelector('.result-video-wrap');
 if(videoWrap&&!document.querySelector('#result-images'))videoWrap.append(resultImages);
 
 function extractUrl(text){const m=String(text).match(URL_PATTERN);return m?m[0].replace(/[),.。]+$/,''):String(text).trim()}
-function platformName(url){const h=(String(url).match(/^https?:\/\/([^/]+)/i)||[])[1]||'';if(h.includes('douyin.com'))return'抖音';if(h.includes('kuaishou.com')||h.includes('kuaishou.cn'))return'快手';if(h.includes('bilibili.com')||h.includes('b23.tv'))return'B站';if(h.includes('xiaohongshu.com')||h.includes('xhslink.com'))return'小红书';if(h.includes('pipix.com'))return'皮皮虾';if(h.includes('weishi.qq.com'))return'微视';if(h.includes('weibo.com'))return'微博';if(h.includes('izuiyou.com')||h.includes('xiaochuankeji.cn'))return'最右';if(h.includes('ippzone.com')||h.includes('pipigx.com'))return'皮皮搞笑';if(h.includes('channels.weixin.qq.com'))return'视频号';if(h.includes('ixigua.com'))return'西瓜视频';return'短视频'}
+function platformName(url){const h=(String(url).match(/^https?:\/\/([^/]+)/i)||[])[1]||'';if(h.includes('douyin.com'))return'抖音';if(h.includes('kuaishou.com')||h.includes('kuaishou.cn'))return'快手';if(h.includes('bilibili.com')||h.includes('b23.tv'))return'B站';if(h.includes('xiaohongshu.com')||h.includes('xhslink.com'))return'小红书';if(h.includes('pipix.com'))return'皮皮虾';if(h.includes('weishi.qq.com'))return'微视';if(h.includes('weibo.com'))return'微博';if(h.includes('izuiyou.com')||h.includes('xiaochuankeji.cn'))return'最右';if(h.includes('ippzone.com')||h.includes('pipigx.com'))return'皮皮搞笑';if(h.includes('channels.weixin.qq.com'))return'视频号';if(h.includes('ixigua.com'))return'西瓜视频';if(h.includes('tiktok.com'))return'TikTok';if(h.includes('huya.com'))return'虎牙';if(h.includes('douyu.com'))return'斗鱼';return'短视频'}
 function formatTime(v){if(!v&&v!==0)return'';if(typeof v==='number'||/^\d{10}$/.test(String(v))){const s=typeof v==='number'?v:parseInt(v,10);if(s<1000000000)return'';const d=new Date(s*1000);if(Number.isNaN(d.getTime()))return'';return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')}return String(v)}
 function formatCount(v){if(v===undefined||v===null||v==='')return'-';const n=Number(v);return Number.isFinite(n)?new Intl.NumberFormat('zh-CN',{notation:'compact',maximumFractionDigits:1}).format(n):String(v)}
 function esc(v){return String(v??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;')}
@@ -463,13 +464,15 @@ function isWeiboUrl(url){return /(^|\.)weibo\.com$/i.test((String(url).match(/^h
 function getWeiboCookie(){return localStorage.getItem(WEIBO_COOKIE_KEY)||''}
 function updateWeiboCookieStatus(message){const ready=getWeiboCookie().trim()!=='';if(weiboCookieInput)weiboCookieInput.value=getWeiboCookie();if(weiboCookieStatus){weiboCookieStatus.classList.toggle('is-ready',ready);const label=weiboCookieStatus.querySelector('span');if(label)label.textContent=message||(ready?'已配置':'未配置')}}
 function isProfileUrl(value){return/douyin\.com\/user\//i.test(String(value))||/[?&](?:sec_user_id|sec_uid)=/i.test(String(value))}
+function isCollectionUrl(value){return/douyin\.com\/collection\//i.test(String(value))||/[?&]mix_id=\d+/i.test(String(value))}
+function isLiveUrl(value){const host=(String(value).match(/^https?:\/\/([^/]+)/i)||[])[1]||'';return/(^|\.)live\.douyin\.com$/i.test(host)||/(^|\.)live\.bilibili\.com$/i.test(host)||/(^|\.)huya\.com$/i.test(host)||/(^|\.)douyu\.com$/i.test(host)}
 function mediaType(item){return item&&item.media_type==='image'?'image':'video'}
 function mediaUrls(item){return Array.isArray(item&&item.images)&&item.images.length?item.images:(item&&item.url?[item.url]:[])}
 function safeName(item,index){return((item&&item.title)||'media-'+(index+1)).replace(/[\\/:*?"<>|]/g,'_').slice(0,80)}
 
 function setMode(mode){
   state.mode=mode;
-  const single=mode==='single',batch=mode==='batch',profile=mode==='profile';
+  const single=mode==='single',batch=mode==='batch',profile=mode==='profile',collection=mode==='collection',live=mode==='live',discover=mode==='discover';
   singlePanel.hidden=batch;
   batchPanel.hidden=!batch;
   singleModeBtn.classList.toggle('active',single);
@@ -478,17 +481,32 @@ function setMode(mode){
     profileModeBtn.classList.toggle('active',profile);
     profileModeBtn.setAttribute('aria-pressed',String(profile));
   }
+  if(collectionModeBtn){
+    collectionModeBtn.classList.toggle('active',collection);
+    collectionModeBtn.setAttribute('aria-pressed',String(collection));
+  }
+  if(liveModeBtn){
+    liveModeBtn.classList.toggle('active',live);
+    liveModeBtn.setAttribute('aria-pressed',String(live));
+  }
+  if(discoverModeBtn){
+    discoverModeBtn.classList.toggle('active',discover);
+    discoverModeBtn.setAttribute('aria-pressed',String(discover));
+  }
   singleModeBtn.setAttribute('aria-pressed',String(single));
   batchModeBtn.setAttribute('aria-pressed',String(batch));
-  modeLabel.textContent=profile?'抖音个人主页链接':(batch?'每行放一个视频链接':'视频分享链接');
-  input.placeholder=profile?'粘贴抖音个人主页链接':'粘贴抖音、快手、B站、小红书等链接';
-  if(inputHint)inputHint.textContent=profile
-    ?'将按页读取公开作品；上一页使用缓存，支持选择下载或全部下载'
-    :'小提示：也可以直接粘贴包含文字的整段分享文案，系统会自动提取链接';
+  modeLabel.textContent=profile?'抖音个人主页链接':(collection?'抖音合集链接':(live?'直播间链接':(discover?'搜索关键词':(batch?'每行放一个视频链接':'视频分享链接'))));
+  input.placeholder=profile?'粘贴抖音个人主页链接':(collection?'粘贴抖音合集链接':(live?'粘贴抖音直播或B站直播间链接':(discover?'输入关键词，配合上方「热榜 / 搜索」标签使用':'粘贴抖音、快手、B站、小红书等链接')));
+  if(inputHint)inputHint.textContent=profile||collection
+    ?'将按页读取公开作品；支持加载全部、选择下载或全部下载'
+    :(live?'解析直播间返回 flv/hls 拉流地址，可用 VLC、PotPlayer 等播放器打开'
+    :(discover?'热榜无需输入关键词；搜索请输入关键词后点「搜索」'
+    :'小提示：也可以直接粘贴包含文字的整段分享文案，系统会自动提取链接'));
   (batch?batchInput:input).focus();
+  if(discover&&!state.discover.items.length)loadDiscover(true);
 }
 
-function baseParseLabel(){return state.mode==='profile'?'解析主页':'开始解析'}
+function baseParseLabel(){return state.mode==='profile'?'解析主页':(state.mode==='collection'?'解析合集':(state.mode==='live'?'解析直播间':(state.mode==='discover'?'搜索':'开始解析')))}
 function setLoading(on,text){
   loading.hidden=!on;
   parseBtn.disabled=false;
@@ -509,6 +527,8 @@ function hideResult(){
   video.removeAttribute('src');
   video.removeAttribute('poster');
   video.load();
+  if(typeof commentsBtn!=='undefined'&&commentsBtn)commentsBtn.hidden=true;
+  if(typeof commentsSection!=='undefined'&&commentsSection)commentsSection.hidden=true;
 }
 
 async function requestParse(url,signal){const payload={url};if(isWeiboUrl(url)){const weiboCookie=getWeiboCookie().trim();if(weiboCookie)payload.weiboCookie=weiboCookie}const options={method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)};if(signal)options.signal=signal;const r=await fetch('api/v1/parse',options),j=await r.json().catch(()=>null);if(!r.ok||!j||!j.success||!j.data||!j.data.url)throw new Error(j&&j.message||'解析失败，请稍后再试');return{url,data:j.data}}
@@ -529,13 +549,25 @@ async function parseUrlIntoResult(url){
 }
 async function parseVideo(){
   if(singleAbortController){singleAbortController.abort();return}
+  // 发现模式：输入框承载搜索关键词；空输入=刷新当前标签（热榜）
+  if(state.mode==='discover'){
+    const keyword=input.value.trim();
+    if(!keyword&&state.discover.tab==='search'){showError('请输入搜索关键词');input.focus();return}
+    state.discover.keyword=keyword;
+    await loadDiscover(true);
+    return;
+  }
   const raw=input.value.trim();
   if(!raw){showError('请先粘贴一个视频分享链接');input.focus();return}
   const url=extractUrl(raw);
   if(!/^https?:\/\//i.test(url)){
-    showError(state.mode==='profile'?'请输入有效的抖音个人主页链接':'请输入有效的视频链接');
+    showError(state.mode==='profile'?'请输入有效的抖音个人主页链接':(state.mode==='collection'?'请输入有效的抖音合集链接':(state.mode==='live'?'请输入有效的直播间链接':'请输入有效的视频链接')));
     return;
   }
+  // 合集优先：合集模式下或输入本身是合集链接时走合集分页解析
+  if(state.mode==='collection'||isCollectionUrl(url)){input.value=url;await parseCollection(url);return}
+  // 直播间链接走直播解析入口
+  if(state.mode==='live'||isLiveUrl(url)){input.value=url;await parseLive(url);return}
   // 主页模式下或输入本身就是抖音主页链接时走主页分页解析
   if(state.mode==='profile'||isProfileUrl(url)){input.value=url;await parseProfile(url);return}
   await parseUrlIntoResult(url);
@@ -555,6 +587,8 @@ function renderResult(data,raw){
   const music=/^https?:\/\//i.test(data.music&&data.music.url||'')?data.music:null;
   if(music){musicBtn.hidden=false;musicBtn.href=downloadUrl(music.url,safeName(data,0)+'-music','mp3');musicBtn.setAttribute('download',safeName(data,0)+'-music.mp3')}
   else{musicBtn.hidden=true;musicBtn.removeAttribute('href')}
+  // B站视频提供公开评论查看入口
+  if(commentsBtn)commentsBtn.hidden=platformName(raw)!=='B站';
 
   if(mediaType(data)==='image'){
     // 图集：隐藏播放器，逐张展示并支持单张下载
@@ -594,7 +628,7 @@ function renderResult(data,raw){
 function loadHistory(){try{const x=JSON.parse(localStorage.getItem(HISTORY_KEY)||'[]');return Array.isArray(x)?x:[]}catch(e){return[]}}function saveHistory(x){localStorage.setItem(HISTORY_KEY,JSON.stringify(x))}function addHistory(item){const list=loadHistory().filter(x=>x.rawUrl!==item.url);list.unshift({rawUrl:item.url,title:item.data.title||'',author:item.data.author||'',like:item.data.like??0,time:item.data.time??0,cover:item.data.cover||'',videoUrl:item.data.url||'',savedAt:Date.now()});saveHistory(list.slice(0,HISTORY_LIMIT))}function removeHistory(i){const list=loadHistory();list.splice(i,1);saveHistory(list);renderHistory()}
 function historyItemHtml(item,i){const t=item.cover?mediaUrl(item.cover):'';return'<article class="history-entry" data-index="'+i+'"><img class="history-thumb" src="'+esc(t)+'" alt="" loading="lazy"><div class="history-copy"><h3 class="history-title">'+esc(item.title||'未命名视频')+'</h3><p class="history-meta">'+esc([platformName(item.rawUrl),formatTime(item.time)].filter(Boolean).join(' · '))+'</p></div><div class="history-actions"><button type="button" data-action="reparse" title="重新解析" aria-label="重新解析">'+PLAY_ICON+'</button><button type="button" data-action="copy" title="复制链接" aria-label="复制链接">'+COPY_ICON+'</button><button type="button" data-action="delete" title="删除记录" aria-label="删除记录">'+TRASH_ICON+'</button></div></article>'}
 function renderHistory(){const list=loadHistory();historyCount.textContent=String(list.length);historyEmpty.hidden=list.length>0;historyList.innerHTML=list.map(historyItemHtml).join('')}
-function setBatchRunning(on){batchRunning=on;batchParseBtn.disabled=on;batchStopBtn.hidden=!on;batchProgress.hidden=!on;batchParseBtn.querySelector('span').textContent=on?'处理中…':'开始批量处理'}function updateBatchSummary(){const ok=batchItems.filter(x=>x&&x.data).length,fail=batchItems.filter(x=>x&&x.error).length;batchSummary.textContent=[ok?'成功 '+ok:'',fail?'失败 '+fail:''].filter(Boolean).join(' · ')}
+function setBatchRunning(on){batchRunning=on;batchParseBtn.disabled=on;batchStopBtn.hidden=!on;batchProgress.hidden=!on;batchParseBtn.querySelector('span').textContent=on?'处理中…':'开始批量处理'}function updateBatchSummary(){const ok=batchItems.filter(x=>x&&x.data).length,fail=batchItems.filter(x=>x&&x.error).length;batchSummary.textContent=[ok?'成功 '+ok:'',fail?'失败 '+fail:''].filter(Boolean).join(' · ');if(batchExportBtn)batchExportBtn.hidden=ok===0}
 function batchItemHtml(item,i){if(item.loading)return'<article class="batch-item is-loading" data-index="'+i+'"><div class="batch-thumb"></div><div class="batch-content"><h3 class="batch-title">处理中</h3><p class="batch-meta">正在读取视频信息…</p></div><div class="batch-actions"><span class="batch-meta">请稍候</span></div></article>';if(item.error)return'<article class="batch-item is-error" data-index="'+i+'"><div class="batch-content"><h3 class="batch-title">'+esc(item.url)+'</h3><p class="batch-meta">'+esc(item.error)+'</p></div><div class="batch-actions"><button class="btn" type="button" data-action="retry">重试</button></div></article>';const d=item.data,t=d.cover?mediaUrl(d.cover):'';return'<article class="batch-item" data-index="'+i+'"><img class="batch-thumb" src="'+esc(t)+'" alt="" loading="lazy"><div class="batch-content"><h3 class="batch-title">'+esc(d.title||'未命名视频')+'</h3><p class="batch-meta">'+esc(platformName(item.url))+' · '+esc(d.author||'未知作者')+' · 点赞 '+esc(formatCount(d.like))+'</p></div><div class="batch-actions"><button class="btn" type="button" data-action="play">'+PLAY_ICON+'播放</button><a class="btn" href="'+esc(buildDownloadUrl(d.url,d.title))+'" download="'+esc((d.title||'video')+'.mp4')+'" target="_blank" rel="noopener">'+DOWNLOAD_ICON+'下载</a><button class="btn" type="button" data-action="copy">'+COPY_ICON+'复制</button></div></article>'}
 function renderBatchList(){batchEmpty.hidden=batchItems.length>0;batchList.innerHTML=batchItems.map(batchItemHtml).join('');updateBatchSummary()}
 async function parseBatch(){
@@ -636,18 +670,24 @@ function buildShareText(x){return[x.data.title||'未命名视频',platformName(x
 // ---- 抖音主页分页解析 ----
 function itemId(item,index,page){return String((item&&item.aweme_id)||(item&&item.source_url)||(((state.profile&&state.profile.url)||'profile')+'-'+page+'-'+index))}
 const profileSection=document.createElement('section');
-profileSection.id='profile-results';profileSection.className='panel profile-panel';profileSection.hidden=true;profileSection.setAttribute('aria-label','个人主页作品');
-profileSection.innerHTML='<div class="section-heading"><div><h2>个人主页作品</h2><p id="profile-summary">正在整理主页作品</p></div><div class="profile-toolbar"><label class="select-all-control"><input id="profile-select-all" type="checkbox"><span>全选本页</span></label><button id="profile-download-selected" class="btn btn-primary" type="button">下载选中</button><button id="profile-download-all" class="btn btn-teal" type="button">全部下载</button></div></div><div id="profile-list" class="profile-list"></div><div id="profile-empty" class="batch-empty" hidden>这个主页暂时没有可下载作品。</div><div class="profile-pagination"><button id="profile-prev" class="btn" type="button">上一页</button><span id="profile-page-label">第 1 页</span><button id="profile-next" class="btn btn-teal" type="button">下一页</button></div>';
+profileSection.id='profile-results';profileSection.className='panel profile-panel';profileSection.hidden=true;profileSection.setAttribute('aria-label','作品列表');
+profileSection.innerHTML='<div class="section-heading"><div><h2 id="profile-heading">作品列表</h2><p id="profile-summary">正在整理作品</p></div><div class="profile-toolbar"><label class="select-all-control"><input id="profile-select-all" type="checkbox"><span>全选本页</span></label><button id="profile-download-selected" class="btn btn-primary" type="button">下载选中</button><button id="profile-load-all" class="btn" type="button">加载全部</button><button id="profile-download-all" class="btn btn-teal" type="button">全部下载</button><button id="profile-export" class="btn" type="button">导出 CSV</button></div></div><div id="profile-list" class="profile-list"></div><div id="profile-empty" class="batch-empty" hidden>暂时没有可下载作品。</div><div class="profile-pagination"><button id="profile-prev" class="btn" type="button">上一页</button><span id="profile-page-label">第 1 页</span><button id="profile-next" class="btn btn-teal" type="button">下一页</button></div>';
 if(batchSection)batchSection.after(profileSection);else result.after(profileSection);
-const profileList=profileSection.querySelector('#profile-list'),profileSummary=profileSection.querySelector('#profile-summary'),profileEmpty=profileSection.querySelector('#profile-empty'),profileSelectAll=profileSection.querySelector('#profile-select-all'),profileSelectedButton=profileSection.querySelector('#profile-download-selected'),profileAllButton=profileSection.querySelector('#profile-download-all'),profilePrev=profileSection.querySelector('#profile-prev'),profileNext=profileSection.querySelector('#profile-next'),profilePageLabel=profileSection.querySelector('#profile-page-label');
+const profileList=profileSection.querySelector('#profile-list'),profileSummary=profileSection.querySelector('#profile-summary'),profileEmpty=profileSection.querySelector('#profile-empty'),profileSelectAll=profileSection.querySelector('#profile-select-all'),profileSelectedButton=profileSection.querySelector('#profile-download-selected'),profileAllButton=profileSection.querySelector('#profile-download-all'),profileLoadAll=profileSection.querySelector('#profile-load-all'),profileHeading=profileSection.querySelector('#profile-heading'),profilePrev=profileSection.querySelector('#profile-prev'),profileNext=profileSection.querySelector('#profile-next'),profilePageLabel=profileSection.querySelector('#profile-page-label');
 
 function renderProfilePage(pageIndex){
   if(!state.profile||!state.profile.pages[pageIndex])return;
   state.profile.current=pageIndex;
   const page=state.profile.pages[pageIndex],items=Array.isArray(page.items)?page.items:[];
+  const isCollection=state.profile.kind==='collection';
   profileSection.hidden=false;
   profileEmpty.hidden=items.length>0;
-  profileSummary.textContent=((page.profile&&page.profile.author)?page.profile.author+' · ':'')+'第 '+(pageIndex+1)+' 页 · 本页 '+items.length+' 个公开作品';
+  profileHeading.textContent=isCollection?'合集作品':'个人主页作品';
+  const head=isCollection&&page.collection
+    ?((page.collection.title||'')+(page.collection.author?' · '+page.collection.author:''))
+    :((page.profile&&page.profile.author)?page.profile.author:'');
+  const totalLabel=isCollection&&page.collection&&page.collection.total?(' · 共 '+page.collection.total+' 集'):'';
+  profileSummary.textContent=(head?head+' · ':'')+'第 '+(pageIndex+1)+' 页 · 本页 '+items.length+' 个公开作品'+totalLabel;
   profilePageLabel.textContent='第 '+(pageIndex+1)+' 页';
   profileList.innerHTML=items.map((item,index)=>{
     const urls=mediaUrls(item),thumb=item.cover||urls[0]||'',type=mediaType(item);
@@ -664,11 +704,12 @@ function renderProfilePage(pageIndex){
   profileNext.disabled=!page.has_more;
 }
 async function requestProfile(url,cursor){const response=await fetch('api/v1/profile',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({url,cursor})}),json=await response.json().catch(()=>null);if(!response.ok||!json||!json.success||!json.data||!Array.isArray(json.data.items))throw new Error(json&&json.message||'主页解析失败，请稍后再试');return json.data}
+async function requestCollection(url,cursor){const response=await fetch('api/v1/collection',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({url,cursor})}),json=await response.json().catch(()=>null);if(!response.ok||!json||!json.success||!json.data||!Array.isArray(json.data.items))throw new Error(json&&json.message||'合集解析失败，请稍后再试');return json.data}
 async function parseProfile(url){
-  clearError();setMode('profile');
+  hideError();setMode('profile');
   profileSection.hidden=false;profileList.innerHTML='';
   profileSummary.textContent='正在读取第 1 页作品…';
-  state.profile={url,pages:[],current:0,selected:new Set()};
+  state.profile={url,pages:[],current:0,selected:new Set(),kind:'profile'};
   setLoading(true,'正在读取第 1 页作品…');
   try{
     state.profile.pages[0]=await requestProfile(url,0);
@@ -681,6 +722,235 @@ async function parseProfile(url){
     setLoading(false);
   }
 }
+async function parseCollection(url){
+  hideError();setMode('collection');
+  profileSection.hidden=false;profileList.innerHTML='';
+  profileSummary.textContent='正在读取第 1 页作品…';
+  state.profile={url,pages:[],current:0,selected:new Set(),kind:'collection'};
+  setLoading(true,'正在读取第 1 页作品…');
+  try{
+    state.profile.pages[0]=await requestCollection(url,0);
+    renderProfilePage(0);
+    profileSection.scrollIntoView({behavior:'smooth',block:'start'});
+  }catch(error){
+    profileSummary.textContent='';
+    showError(error.message||'合集解析失败，请稍后再试');
+  }finally{
+    setLoading(false);
+  }
+}
+async function loadAllPages(){
+  if(!state.profile)return;
+  profileLoadAll.disabled=true;profileNext.disabled=true;profilePrev.disabled=true;
+  try{
+    while(state.profile.pages[state.profile.pages.length-1]&&state.profile.pages[state.profile.pages.length-1].has_more){
+      const last=state.profile.pages[state.profile.pages.length-1];
+      const pageIndex=state.profile.pages.length;
+      profileSummary.textContent='正在加载第 '+(pageIndex+1)+' 页作品…';
+      state.profile.pages[pageIndex]=state.profile.kind==='collection'
+        ?await requestCollection(state.profile.url,last.next_cursor)
+        :await requestProfile(state.profile.url,last.next_cursor);
+      // 限速保护：页间稍作停顿，避免触发平台风控
+      await new Promise(resolve=>setTimeout(resolve,450));
+    }
+    const loaded=state.profile.pages.flatMap(p=>p.items||[]).length;
+    profileSummary.textContent='已加载全部 '+loaded+' 个作品，可以开始下载';
+  }catch(error){
+    const loaded=state.profile.pages.flatMap(p=>p.items||[]).length;
+    showError((error.message||'加载失败')+'（已加载 '+loaded+' 个作品）');
+  }finally{
+    profileLoadAll.disabled=false;
+    if(state.profile&&state.profile.pages[state.profile.current]){
+      profileNext.disabled=!state.profile.pages[state.profile.current].has_more;
+      profilePrev.disabled=state.profile.current===0;
+    }
+  }
+}
+
+// ---- 直播间解析 ----
+const liveSection=document.createElement('section');
+liveSection.id='live-results';liveSection.className='panel profile-panel';liveSection.hidden=true;liveSection.setAttribute('aria-label','直播间解析');
+liveSection.innerHTML='<div class="section-heading"><div><h2>直播间信息</h2><p id="live-summary">正在解析直播间</p></div><span id="live-status-badge" class="live-status-badge">检查中</span></div><div id="live-stream-list" class="profile-list"></div><div id="live-empty" class="batch-empty" hidden>当前未开播，开播后再来获取拉流地址。</div>';
+if(typeof profileSection!=='undefined'&&profileSection)profileSection.after(liveSection);else if(batchSection)batchSection.after(liveSection);
+const liveList=liveSection.querySelector('#live-stream-list'),liveSummary=liveSection.querySelector('#live-summary'),liveEmpty=liveSection.querySelector('#live-empty'),liveStatusBadge=liveSection.querySelector('#live-status-badge');
+
+async function requestLive(url){const response=await fetch('api/v1/live',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({url})}),json=await response.json().catch(()=>null);if(!response.ok||!json||!json.success||!json.data)throw new Error(json&&json.message||'直播解析失败，请稍后再试');return json.data}
+function renderLive(data){
+  const live=data.live||{};
+  const isLive=live.status==='live';
+  liveSection.hidden=false;
+  liveStatusBadge.textContent=isLive?'直播中':'未开播';
+  liveStatusBadge.classList.toggle('is-live',isLive);
+  liveStatusBadge.classList.toggle('is-offline',!isLive);
+  liveSummary.textContent=[live.title||'未命名直播间',live.anchor,live.viewers?'人气 '+formatCount(live.viewers):''].filter(Boolean).join(' · ');
+  const streams=Array.isArray(data.streams)?data.streams:[];
+  liveEmpty.hidden=streams.length>0;
+  // 「打开」走媒体代理（服务端注入 Referer，douyin/bilibili 实测可用）；
+  // 虎牙拉流 302 跳边缘裸 IP，代理按 SSRF 策略不放行，故虎牙直接给原始地址；
+  // 复制出去的原始地址在 PotPlayer/VLC 中播放时需自行设置 Referer
+  const proxiedOpen=data.platform==='douyin'||data.platform==='bilibili'||data.platform==='douyu';
+  liveList.innerHTML=streams.map(stream=>{
+    const url=String(stream.url||'');
+    const openHref=proxiedOpen?mediaUrl(url):url;
+    return'<div class="live-stream"><span class="live-stream-format">'+esc(String(stream.format||'').toUpperCase())+'</span><div class="profile-content"><h3 class="profile-title">'+esc(stream.quality||'默认画质')+'</h3><p class="live-stream-url">'+esc(url)+'</p></div><div class="profile-actions"><button class="btn" type="button" data-live-copy="'+esc(url)+'">'+COPY_ICON+'复制地址</button><a class="btn" href="'+esc(openHref)+'" target="_blank" rel="noopener">'+PLAY_ICON+'打开</a></div></div>';
+  }).join('')+'<p class="batch-empty" style="border-top:1px solid var(--ag-border)">复制到播放器播放时需设置 Referer：B站为 https://live.bilibili.com/ ，抖音为 https://live.douyin.com/ ，虎牙为 https://huya.com/ ，斗鱼为 https://www.douyu.com/ 。</p>';
+}
+async function parseLive(url){
+  hideError();setMode('live');
+  liveSection.hidden=false;liveList.innerHTML='';
+  liveSummary.textContent='正在解析直播间…';
+  setLoading(true,'正在解析直播间…');
+  try{
+    const data=await requestLive(url);
+    renderLive(data);
+    liveSection.scrollIntoView({behavior:'smooth',block:'start'});
+  }catch(error){
+    liveSummary.textContent='';
+    showError(error.message||'直播解析失败，请稍后再试');
+  }finally{
+    setLoading(false);
+  }
+}
+liveList.addEventListener('click',async e=>{
+  const button=e.target.closest('[data-live-copy]');
+  if(!button)return;
+  await copyText(button.getAttribute('data-live-copy'));
+  button.innerHTML='✓ 已复制';
+  setTimeout(()=>{button.innerHTML=COPY_ICON+'复制地址'},1200);
+});
+
+// ---- 发现：热榜与搜索（合规边界：仅用户主动查询，按需分页，不落库） ----
+const discoverSection=document.createElement('section');
+discoverSection.id='discover-results';discoverSection.className='panel profile-panel';discoverSection.hidden=true;discoverSection.setAttribute('aria-label','发现内容');
+discoverSection.innerHTML='<div class="section-heading"><div><h2>发现内容</h2><p id="discover-summary">查看平台公开热榜，或按关键词搜索</p></div><div class="profile-toolbar"><button id="discover-tab-hot" class="mode-btn active" type="button">热榜</button><button id="discover-tab-search" class="mode-btn" type="button">搜索</button><button id="discover-platform-bilibili" class="mode-btn active" type="button">B站</button><button id="discover-platform-douyin" class="mode-btn" type="button">抖音</button><button id="discover-refresh" class="btn btn-teal" type="button">刷新</button></div></div><div id="discover-list" class="batch-list"></div><div id="discover-empty" class="batch-empty" hidden>暂无内容。</div><div class="profile-pagination"><button id="discover-more" class="btn btn-teal" type="button" hidden>加载更多</button></div>';
+if(typeof liveSection!=='undefined'&&liveSection)liveSection.after(discoverSection);else if(batchSection)batchSection.after(discoverSection);
+const discoverList=discoverSection.querySelector('#discover-list'),discoverSummary=discoverSection.querySelector('#discover-summary'),discoverEmpty=discoverSection.querySelector('#discover-empty'),discoverMore=discoverSection.querySelector('#discover-more'),discoverRefresh=discoverSection.querySelector('#discover-refresh');
+const discoverTabHot=discoverSection.querySelector('#discover-tab-hot'),discoverTabSearch=discoverSection.querySelector('#discover-tab-search'),discoverPlatformBili=discoverSection.querySelector('#discover-platform-bilibili'),discoverPlatformDouyin=discoverSection.querySelector('#discover-platform-douyin');
+
+async function fetchDiscoverJson(url){const r=await fetch(url),j=await r.json().catch(()=>null);if(!r.ok||!j||!j.success||!j.data)throw new Error(j&&j.message||'请求失败，请稍后再试');return j.data}
+function isParseableVideoUrl(url){return/^https?:\/\/(www\.)?(bilibili\.com|b23\.tv)\//i.test(String(url))}
+function renderDiscover(){
+  const d=state.discover;
+  discoverSummary.textContent=d.tab==='hot'
+    ?(d.platform==='bilibili'?'B站综合热门 · 用户主动查看，按需加载':'抖音热点榜 · 条目为热点词，可打开原页')
+    :'搜索「'+d.keyword+'」 · 共 '+d.total+' 条结果';
+  discoverEmpty.hidden=d.items.length>0;
+  discoverList.innerHTML=d.items.map(item=>{
+    const parseable=isParseableVideoUrl(item.url);
+    const cover=item.cover?mediaUrl(item.cover):'';
+    return'<article class="batch-item"><img class="batch-thumb" src="'+esc(cover)+'" alt="" loading="lazy"><div class="batch-content"><h3 class="batch-title">'+esc(item.title||'未命名内容')+'</h3><p class="batch-meta">'+esc(item.author||'')+(item.hot?' · 热度 '+esc(formatCount(item.hot)):'')+'</p></div><div class="batch-actions">'+(parseable?'<button class="btn" type="button" data-discover-parse="'+esc(item.url)+'">'+PLAY_ICON+'解析</button>':'')+'<a class="btn" href="'+esc(item.url)+'" target="_blank" rel="noopener">打开</a></div></article>';
+  }).join('');
+  discoverMore.hidden=!d.hasMore;
+}
+async function loadDiscover(reset){
+  const d=state.discover;
+  if(d.tab==='search'&&!d.keyword){showError('请先在上方输入搜索关键词');return}
+  if(reset){d.page=1;d.items=[];discoverSection.hidden=false;discoverList.innerHTML=''}
+  setLoading(true,d.tab==='hot'?'正在获取热榜…':'正在搜索…');
+  try{
+    const data=d.tab==='hot'
+      ?await fetchDiscoverJson('api/v1/hot?platform='+d.platform+'&page='+d.page)
+      :await fetchDiscoverJson('api/v1/search?platform='+d.platform+'&keyword='+encodeURIComponent(d.keyword)+'&page='+d.page);
+    d.items=reset?(data.items||[]):d.items.concat(data.items||[]);
+    d.hasMore=Boolean(data.has_more);
+    d.total=data.total||d.items.length;
+    renderDiscover();
+    discoverSection.scrollIntoView({behavior:'smooth',block:'start'});
+  }catch(error){
+    showError(error.message||'获取失败，请稍后再试');
+  }finally{
+    setLoading(false);
+  }
+}
+function setDiscoverTab(tab){
+  state.discover.tab=tab;
+  discoverTabHot.classList.toggle('active',tab==='hot');
+  discoverTabSearch.classList.toggle('active',tab==='search');
+}
+function setDiscoverPlatform(platform){
+  state.discover.platform=platform;
+  discoverPlatformBili.classList.toggle('active',platform==='bilibili');
+  discoverPlatformDouyin.classList.toggle('active',platform==='douyin');
+}
+discoverTabHot.addEventListener('click',()=>{setDiscoverTab('hot');loadDiscover(true)});
+discoverTabSearch.addEventListener('click',()=>{setDiscoverTab('search');if(state.discover.keyword)loadDiscover(true);else{showError('请先在上方输入搜索关键词');input.focus()}});
+discoverPlatformBili.addEventListener('click',()=>{setDiscoverPlatform('bilibili');loadDiscover(true)});
+discoverPlatformDouyin.addEventListener('click',()=>{setDiscoverPlatform('douyin');loadDiscover(true)});
+discoverRefresh.addEventListener('click',()=>loadDiscover(true));
+discoverMore.addEventListener('click',()=>{state.discover.page+=1;loadDiscover(false)});
+discoverList.addEventListener('click',async e=>{
+  const button=e.target.closest('[data-discover-parse]');
+  if(!button)return;
+  await parseUrlIntoResult(button.getAttribute('data-discover-parse'));
+});
+
+// ---- B站公开评论（用户主动查看，按需分页） ----
+const commentsSection=document.createElement('section');
+commentsSection.id='comments-results';commentsSection.className='panel profile-panel';commentsSection.hidden=true;commentsSection.setAttribute('aria-label','视频评论');
+commentsSection.innerHTML='<div class="section-heading"><div><h2>公开评论</h2><p id="comments-summary">仅查看公开评论，不会保存</p></div></div><div id="comments-list" class="batch-list"></div><div id="comments-empty" class="batch-empty" hidden>暂无公开评论。</div><div class="profile-pagination"><button id="comments-more" class="btn btn-teal" type="button" hidden>加载更多</button></div>';
+discoverSection.after(commentsSection);
+const commentsList=commentsSection.querySelector('#comments-list'),commentsSummary=commentsSection.querySelector('#comments-summary'),commentsEmpty=commentsSection.querySelector('#comments-empty'),commentsMore=commentsSection.querySelector('#comments-more'),commentsBtn=$('#comments-btn');
+
+function renderComments(){
+  const c=state.comments;
+  commentsSummary.textContent='共 '+formatCount(c.total)+' 条公开评论 · 仅查看，不会保存';
+  commentsEmpty.hidden=c.comments.length>0;
+  commentsList.innerHTML=c.comments.map(item=>'<article class="batch-item"><img class="batch-thumb" style="border-radius:50%;object-fit:cover" src="'+esc(item.avatar?mediaUrl(item.avatar):'')+'" alt="" loading="lazy"><div class="batch-content"><h3 class="batch-title">'+esc(item.user||'匿名用户')+' · 赞 '+esc(formatCount(item.likes))+'</h3><p class="batch-meta">'+esc(item.content||'')+'</p></div><div class="batch-actions"><span class="batch-meta">'+esc(formatTime(item.time))+'</span></div></article>').join('');
+  commentsMore.hidden=!c.hasMore;
+}
+async function loadComments(reset){
+  const c=state.comments;
+  if(!c.url)return;
+  if(reset){c.page=1;c.comments=[];commentsSection.hidden=false;commentsList.innerHTML=''}
+  setLoading(true,'正在获取评论…');
+  try{
+    const data=await fetchDiscoverJson('api/v1/comments?url='+encodeURIComponent(c.url)+'&page='+c.page);
+    c.comments=reset?(data.comments||[]):c.comments.concat(data.comments||[]);
+    c.total=data.total||0;
+    c.hasMore=Boolean(data.has_more);
+    if(data.has_more)c.page=data.next_page||c.page+1;
+    renderComments();
+    commentsSection.scrollIntoView({behavior:'smooth',block:'start'});
+  }catch(error){
+    showError(error.message||'评论获取失败，请稍后再试');
+  }finally{
+    setLoading(false);
+  }
+}
+commentsBtn?.addEventListener('click',()=>{
+  if(!currentResult||!currentResult.url)return;
+  state.comments={url:currentResult.url,page:1,total:0,comments:[],hasMore:false};
+  loadComments(true);
+});
+commentsMore.addEventListener('click',()=>{state.comments.page+=1;loadComments(false)});
+
+// ---- CSV 导出（仅导出本机已有数据） ----
+function exportCsv(filename,rows){
+  const csv=rows.map(row=>row.map(cell=>'"'+String(cell??'').replace(/"/g,'""')+'"').join(',')).join('\r\n');
+  const blob=new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8'});
+  const link=document.createElement('a');
+  link.href=URL.createObjectURL(blob);
+  link.download=filename;
+  document.body.append(link);link.click();link.remove();
+  setTimeout(()=>URL.revokeObjectURL(link.href),1000);
+}
+$('#history-export')?.addEventListener('click',()=>{
+  const rows=loadHistory().map(item=>[item.title||'',item.author||'',platformName(item.rawUrl),item.rawUrl,formatTime(item.time)]);
+  if(!rows.length){showError('还没有可导出的记录');return}
+  exportCsv('parse-history.csv',[['标题','作者','平台','链接','时间'],...rows]);
+});
+$('#batch-export')?.addEventListener('click',()=>{
+  const rows=batchItems.filter(x=>x&&x.data).map(x=>[x.data.title||'',x.data.author||'',platformName(x.url),buildDownloadUrl(x.data.url,x.data.title)]);
+  if(!rows.length){showError('还没有可导出的结果');return}
+  exportCsv('batch-results.csv',[['标题','作者','平台','无水印链接'],...rows]);
+});
+const profileExportButton=profileSection.querySelector('#profile-export');
+profileExportButton?.addEventListener('click',()=>{
+  if(!state.profile){showError('请先解析主页或合集');return}
+  const rows=state.profile.pages.flatMap(p=>p.items||[]).map(item=>[item.title||'',item.author||'',mediaType(item)==='image'?'图集':'视频',item.source_url||'']);
+  if(!rows.length){showError('还没有可导出的作品');return}
+  exportCsv((state.profile.kind==='collection'?'collection':'profile')+'-works.csv',[['标题','作者','类型','链接'],...rows]);
+});
 async function downloadItem(item,index){
   const urls=mediaUrls(item),extension=mediaType(item)==='image'?'jpg':'mp4';
   for(let i=0;i<urls.length;i++){
@@ -704,9 +974,24 @@ function selectedItems(){
 }
 async function downloadItems(items){
   if(!items.length){showError('请先选择至少一个作品');return}
-  profileSelectedButton.disabled=true;profileAllButton.disabled=true;
-  try{for(let i=0;i<items.length;i++)await downloadItem(items[i],i)}
-  finally{profileSelectedButton.disabled=false;profileAllButton.disabled=false}
+  profileSelectedButton.disabled=true;profileAllButton.disabled=true;profileLoadAll.disabled=true;
+  try{
+    // 3 路并发下载队列：作品级并发，单个作品内的图集仍按序下载
+    const total=items.length;
+    let done=0,next=0;
+    async function worker(){
+      while(next<total){
+        const index=next++;
+        await downloadItem(items[index],index);
+        done++;
+        profileSummary.textContent='正在下载 '+done+'/'+total+' 个作品…';
+      }
+    }
+    await Promise.all(Array.from({length:Math.min(3,total)},()=>worker()));
+    profileSummary.textContent='已完成 '+total+' 个作品下载';
+  }finally{
+    profileSelectedButton.disabled=false;profileAllButton.disabled=false;profileLoadAll.disabled=false;
+  }
 }
 
 // ---- 事件绑定 ----
@@ -753,7 +1038,14 @@ profileNext.addEventListener('click',async()=>{
   }
 });
 profileSelectedButton.addEventListener('click',()=>downloadItems(selectedItems()));
-profileAllButton.addEventListener('click',()=>downloadItems(state.profile?state.profile.pages.flatMap(page=>page.items||[]):[]));
+profileAllButton.addEventListener('click',async()=>{
+  if(!state.profile)return;
+  // 全部下载：先把剩余分页全部加载出来，再整体下载
+  const last=state.profile.pages[state.profile.pages.length-1];
+  if(last&&last.has_more){await loadAllPages()}
+  await downloadItems(state.profile.pages.flatMap(page=>page.items||[]));
+});
+profileLoadAll.addEventListener('click',()=>loadAllPages());
 
 historyList.addEventListener('click',async e=>{const card=e.target.closest('.history-entry'),a=e.target.closest('[data-action]');if(!card||!a)return;const item=loadHistory()[Number(card.dataset.index)];if(!item)return;const action=a.dataset.action;if(action==='reparse'){setMode('single');input.value=item.rawUrl;await parseUrlIntoResult(item.rawUrl)}if(action==='copy'){await copyText(item.rawUrl);a.innerHTML='✓';setTimeout(()=>a.innerHTML=COPY_ICON,1000)}if(action==='delete')removeHistory(Number(card.dataset.index))});clearHistoryBtn.addEventListener('click',()=>{saveHistory([]);renderHistory()});
 weiboCookieSave?.addEventListener('click',()=>{const value=weiboCookieInput?.value.trim()||'';if(value)localStorage.setItem(WEIBO_COOKIE_KEY,value);else localStorage.removeItem(WEIBO_COOKIE_KEY);updateWeiboCookieStatus(value?'已保存':'已清空');setTimeout(()=>updateWeiboCookieStatus(),1200)});
@@ -763,6 +1055,9 @@ batchList.addEventListener('click',async e=>{const card=e.target.closest('.batch
 singleModeBtn.addEventListener('click',()=>setMode('single'));
 batchModeBtn.addEventListener('click',()=>setMode('batch'));
 profileModeBtn?.addEventListener('click',()=>setMode('profile'));
+collectionModeBtn?.addEventListener('click',()=>setMode('collection'));
+liveModeBtn?.addEventListener('click',()=>setMode('live'));
+discoverModeBtn?.addEventListener('click',()=>setMode('discover'));
 
 // 粘贴分享文案时自动提取链接；输入过程中同步归一化
 pasteBtn.addEventListener('click',async()=>{try{const text=await navigator.clipboard.readText(),target=singlePanel.hidden?batchInput:input;target.value=extractUrl(text);target.focus()}catch(e){showError('无法读取剪贴板，请手动粘贴')}});
@@ -801,7 +1096,7 @@ themeToggle.addEventListener('click',()=>applyTheme(document.documentElement.cla
 <script>
 (function(){
   const strip=document.querySelector('.platform-strip');
-  const labels={douyin:'抖音',kuaishou:'快手',bilibili:'B站',pipixia:'皮皮虾',weibo:'微博',ixigua:'西瓜视频',shipinhao:'视频号',izuiyou:'最右',pipigx:'皮皮搞笑',weishi:'微视',xiaohongshu:'小红书'};
+  const labels={douyin:'抖音',kuaishou:'快手',bilibili:'B站',pipixia:'皮皮虾',weibo:'微博',ixigua:'西瓜视频',shipinhao:'视频号',izuiyou:'最右',pipigx:'皮皮搞笑',weishi:'微视',xiaohongshu:'小红书',tiktok:'TikTok'};
   const colors=['#55dfbd','#ff866b','#f2cc72','#8db8ff','#d39bff','#7ce2d4'];
   function renderPlatforms(keys){
     if(!strip)return;

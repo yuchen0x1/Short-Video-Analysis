@@ -12,11 +12,18 @@ declare(strict_types=1);
  * - GET /api/v1/health
  * - GET /api/v1/update
  * - GET/POST /api/v1/profile
+ * - GET/POST /api/v1/collection
+ * - GET/POST /api/v1/live
+ * - GET /api/v1/hot
+ * - GET /api/v1/search
+ * - GET /api/v1/comments
  */
 
 require_once __DIR__ . "/../../vendor/autoload.php";
 
 use App\Services\VideoParser;
+use App\Services\LiveParser;
+use App\Services\Discovery;
 use App\Services\MediaProxy;
 use App\Services\RateLimiter;
 use App\Utils\Response;
@@ -301,7 +308,7 @@ if ($path === "/api/v1/profile" || $path === "/api/v1/profile/") {
     $profilePath = (string) parse_url($url, PHP_URL_PATH);
     $profileQuery = (string) parse_url($url, PHP_URL_QUERY);
     $isDouyinProfile = ($profileHost === 'douyin.com' || str_ends_with($profileHost, '.douyin.com'))
-        && (preg_match('#^/user/[^/?#]+#i', $profilePath) === 1
+        && (preg_match('~^/user/[^/?#]+~i', $profilePath) === 1
             || preg_match('/(?:^|&)(?:sec_user_id|sec_uid)=[^&]+/i', $profileQuery) === 1);
     if (!$isDouyinProfile) {
         Response::validationError(["url" => "仅支持明确的抖音个人主页链接，不支持短链主页"]);
@@ -319,6 +326,202 @@ if ($path === "/api/v1/profile" || $path === "/api/v1/profile/") {
     } catch (\Throwable $e) {
         Logger::exception($e, ["url" => $url, "cursor" => $cursor, "ip" => $ip]);
         Response::error("主页解析失败，请稍后再试", 500);
+    }
+}
+
+// GET/POST /api/v1/collection
+if ($path === "/api/v1/collection" || $path === "/api/v1/collection/") {
+    if (Config::get("rate_limit.enabled", true)) {
+        $rateLimitResult = RateLimiter::check($ip);
+        if (!$rateLimitResult["allowed"]) {
+            Response::error("请求过于频繁，请稍后再试", 429);
+        }
+    }
+
+    $url = trim($_GET["url"] ?? $_POST["url"] ?? "");
+    $cursor = max(0, (int) ($_GET["cursor"] ?? $_POST["cursor"] ?? 0));
+
+    if ($url === "" && $method === "POST") {
+        $body = file_get_contents("php://input");
+        if ($body !== false && $body !== "") {
+            $json = json_decode($body, true);
+            if (is_array($json)) {
+                if (!empty($json["url"])) {
+                    $url = trim($json["url"]);
+                }
+                if (isset($json["cursor"])) {
+                    $cursor = max(0, (int) $json["cursor"]);
+                }
+            }
+        }
+    }
+
+    if ($url === "") {
+        Response::validationError(["url" => "合集 URL 参数不能为空"]);
+    }
+
+    if (!filter_var($url, FILTER_VALIDATE_URL) || !preg_match("/^https?:\/\//i", $url)) {
+        Response::validationError(["url" => "无效的合集 URL 格式"]);
+    }
+
+    // 入口处限定仅允许抖音合集链接，避免服务端发起任意 URL 请求（SSRF）
+    $collectionHost = strtolower((string) parse_url($url, PHP_URL_HOST));
+    $collectionHost = preg_replace("/^www\./", "", $collectionHost);
+    $collectionPath = (string) parse_url($url, PHP_URL_PATH);
+    $collectionQuery = (string) parse_url($url, PHP_URL_QUERY);
+    $isDouyinCollection = ($collectionHost === 'douyin.com' || str_ends_with($collectionHost, '.douyin.com'))
+        && (preg_match('#^/collection/\d+#i', $collectionPath) === 1
+            || preg_match('/(?:^|&)mix_id=\d+/i', $collectionQuery) === 1);
+    if (!$isDouyinCollection) {
+        Response::validationError(["url" => "仅支持明确的抖音合集链接，不支持短链合集"]);
+    }
+
+    try {
+        $parser = new VideoParser();
+        $data = $parser->parseValidatedCollection($url, $cursor);
+        Response::success($data, "合集作品解析成功");
+    } catch (\InvalidArgumentException $e) {
+        Response::error($e->getMessage(), 400);
+    } catch (\RuntimeException $e) {
+        Logger::error("合集解析失败", ["url" => $url, "cursor" => $cursor, "ip" => $ip, "error" => $e->getMessage()]);
+        Response::error($e->getMessage(), 500);
+    } catch (\Throwable $e) {
+        Logger::exception($e, ["url" => $url, "cursor" => $cursor, "ip" => $ip]);
+        Response::error("合集解析失败，请稍后再试", 500);
+    }
+}
+
+// GET/POST /api/v1/live
+if ($path === "/api/v1/live" || $path === "/api/v1/live/") {
+    if (Config::get("rate_limit.enabled", true)) {
+        $rateLimitResult = RateLimiter::check($ip);
+        if (!$rateLimitResult["allowed"]) {
+            Response::error("请求过于频繁，请稍后再试", 429);
+        }
+    }
+
+    $url = SharedUrl::extract((string) ($_GET["url"] ?? $_POST["url"] ?? ""));
+    if ($url === "" && $method === "POST") {
+        $jsonBody = requestJsonBody();
+        if (!empty($jsonBody["url"])) {
+            $url = SharedUrl::extract((string) $jsonBody["url"]);
+        }
+    }
+
+    if ($url === "") {
+        Response::validationError(["url" => "直播间 URL 参数不能为空"]);
+    }
+
+    if (!filter_var($url, FILTER_VALIDATE_URL) || !preg_match("/^https?:\/\//i", $url)) {
+        Response::validationError(["url" => "无效的直播间 URL 格式"]);
+    }
+
+    // LiveParser::parse 内部先按白名单域名路由，非直播平台直接拒绝，不会发起任意请求（SSRF）
+    try {
+        $parser = new LiveParser();
+        $data = $parser->parse($url);
+        Response::success($data, "直播间解析成功");
+    } catch (\InvalidArgumentException $e) {
+        Response::error($e->getMessage(), 400);
+    } catch (\RuntimeException $e) {
+        Logger::error("直播解析失败", ["url" => $url, "ip" => $ip, "error" => $e->getMessage()]);
+        Response::error($e->getMessage(), 500);
+    } catch (\Throwable $e) {
+        Logger::exception($e, ["url" => $url, "ip" => $ip]);
+        Response::error("直播解析失败，请稍后再试", 500);
+    }
+}
+
+// GET /api/v1/hot?platform=bilibili&page=1
+if ($path === "/api/v1/hot" || $path === "/api/v1/hot/") {
+    if (Config::get("rate_limit.enabled", true)) {
+        $rateLimitResult = RateLimiter::check($ip);
+        if (!$rateLimitResult["allowed"]) {
+            Response::error("请求过于频繁，请稍后再试", 429);
+        }
+    }
+
+    $platform = strtolower(trim((string) ($_GET["platform"] ?? "bilibili")));
+    $page = max(1, (int) ($_GET["page"] ?? 1));
+
+    try {
+        $discovery = new Discovery();
+        $data = $discovery->hotList($platform, $page);
+        Response::success($data, "热榜获取成功");
+    } catch (\InvalidArgumentException $e) {
+        Response::error($e->getMessage(), 400);
+    } catch (\RuntimeException $e) {
+        Logger::error("热榜获取失败", ["platform" => $platform, "ip" => $ip, "error" => $e->getMessage()]);
+        Response::error($e->getMessage(), 502);
+    } catch (\Throwable $e) {
+        Logger::exception($e, ["platform" => $platform, "ip" => $ip]);
+        Response::error("热榜获取失败，请稍后再试", 500);
+    }
+}
+
+// GET /api/v1/search?platform=bilibili&keyword=...&page=1
+if ($path === "/api/v1/search" || $path === "/api/v1/search/") {
+    if (Config::get("rate_limit.enabled", true)) {
+        $rateLimitResult = RateLimiter::check($ip);
+        if (!$rateLimitResult["allowed"]) {
+            Response::error("请求过于频繁，请稍后再试", 429);
+        }
+    }
+
+    $platform = strtolower(trim((string) ($_GET["platform"] ?? "bilibili")));
+    $keyword = trim((string) ($_GET["keyword"] ?? ""));
+    $page = max(1, (int) ($_GET["page"] ?? 1));
+
+    if ($keyword === "") {
+        Response::validationError(["keyword" => "搜索关键词不能为空"]);
+    }
+
+    try {
+        $discovery = new Discovery();
+        $data = $discovery->search($platform, $keyword, $page);
+        Response::success($data, "搜索完成");
+    } catch (\InvalidArgumentException $e) {
+        Response::error($e->getMessage(), 400);
+    } catch (\RuntimeException $e) {
+        Logger::error("搜索失败", ["platform" => $platform, "ip" => $ip, "error" => $e->getMessage()]);
+        Response::error($e->getMessage(), 502);
+    } catch (\Throwable $e) {
+        Logger::exception($e, ["platform" => $platform, "ip" => $ip]);
+        Response::error("搜索失败，请稍后再试", 500);
+    }
+}
+
+// GET /api/v1/comments?url=<video-url>&page=1
+if ($path === "/api/v1/comments" || $path === "/api/v1/comments/") {
+    if (Config::get("rate_limit.enabled", true)) {
+        $rateLimitResult = RateLimiter::check($ip);
+        if (!$rateLimitResult["allowed"]) {
+            Response::error("请求过于频繁，请稍后再试", 429);
+        }
+    }
+
+    $url = trim((string) ($_GET["url"] ?? ""));
+    $page = max(1, (int) ($_GET["page"] ?? 1));
+
+    if ($url === "") {
+        Response::validationError(["url" => "视频 URL 参数不能为空"]);
+    }
+    if (!filter_var($url, FILTER_VALIDATE_URL) || !preg_match("/^https?:\/\//i", $url)) {
+        Response::validationError(["url" => "无效的视频 URL 格式"]);
+    }
+
+    try {
+        $discovery = new Discovery();
+        $data = $discovery->comments($url, $page);
+        Response::success($data, "评论获取成功");
+    } catch (\InvalidArgumentException $e) {
+        Response::error($e->getMessage(), 400);
+    } catch (\RuntimeException $e) {
+        Logger::error("评论获取失败", ["url" => $url, "ip" => $ip, "error" => $e->getMessage()]);
+        Response::error($e->getMessage(), 502);
+    } catch (\Throwable $e) {
+        Logger::exception($e, ["url" => $url, "ip" => $ip]);
+        Response::error("评论获取失败，请稍后再试", 500);
     }
 }
 

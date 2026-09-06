@@ -122,8 +122,116 @@ class DouyinParser extends BaseParser
         ];
     }
 
+    /**
+     * 读取抖音合集（collection）的单页作品。
+     * cursor=0 表示第一页，后续使用上一次响应返回的 next_cursor。
+     */
+    public static function parseCollection(string $url, int $cursor = 0): array
+    {
+        $mixId = self::extractMixId($url);
+        if ($mixId === null) {
+            throw new \InvalidArgumentException('无法识别抖音合集链接');
+        }
+
+        $cursor = max(0, $cursor);
+        $pageData = self::fetchCollectionPage($mixId, $cursor);
+        if ($pageData === null) {
+            throw new \RuntimeException('获取抖音合集作品失败，合集可能已失效或接口暂时受限');
+        }
+
+        $items = [];
+        $awemeList = $pageData['aweme_list'] ?? [];
+        if (!is_array($awemeList)) {
+            $awemeList = [];
+        }
+
+        foreach ($awemeList as $item) {
+            if (!is_array($item)) {
+                continue;
+            }
+
+            $result = self::buildResult($item);
+            $awemeId = (string) ($item['aweme_id'] ?? $item['group_id'] ?? '');
+            $result['aweme_id'] = $awemeId;
+            $result['source_url'] = $awemeId !== ''
+                ? 'https://www.douyin.com/video/' . $awemeId
+                : '';
+            $items[] = $result;
+        }
+
+        $collection = [
+            'mix_id' => $mixId,
+            'title' => '',
+            'author' => '',
+            'avatar' => '',
+            'desc' => '',
+            'total' => 0,
+        ];
+        $mixInfo = self::fetchMixInfo($mixId);
+        if ($mixInfo !== null) {
+            $collection['title'] = (string) ($mixInfo['mix_name'] ?? '');
+            $creator = is_array($mixInfo['creator'] ?? null) ? $mixInfo['creator'] : ($mixInfo['author'] ?? []);
+            if (!is_array($creator)) {
+                $creator = [];
+            }
+            $collection['author'] = (string) ($creator['nickname'] ?? '');
+            $collection['avatar'] = self::firstUrl($creator['avatar_medium']['url_list'] ?? null)
+                ?? self::firstUrl($creator['avatar_thumb']['url_list'] ?? null)
+                ?? '';
+            $collection['desc'] = (string) ($mixInfo['desc'] ?? $mixInfo['mix_desc'] ?? '');
+            $collection['total'] = (int) ($mixInfo['statis']['updated_to_eposide'] ?? $mixInfo['eposide_count'] ?? 0);
+        }
+
+        return [
+            'platform' => 'douyin',
+            'collection' => $collection,
+            'items' => $items,
+            'total' => count($items),
+            'cursor' => $cursor,
+            'next_cursor' => (int) ($pageData['cursor'] ?? $pageData['max_cursor'] ?? $cursor),
+            'has_more' => (int) ($pageData['has_more'] ?? 0) === 1,
+            'page_size' => count($items),
+        ];
+    }
+
+    /**
+     * 判断是否为抖音合集链接（/collection/<id> 或带 mix_id 参数的链接）。
+     */
+    public static function isCollectionUrl(string $url): bool
+    {
+        return preg_match('#/collection/\d+#i', $url) === 1
+            || preg_match('/[?&]mix_id=\d+/i', $url) === 1;
+    }
+
+    protected static function extractMixId(string $url): ?string
+    {
+        if (preg_match('#/collection/(\d+)#i', $url, $match)) {
+            return $match[1];
+        }
+
+        $query = parse_url($url, PHP_URL_QUERY);
+        if (is_string($query)) {
+            parse_str($query, $params);
+            if (!empty($params['mix_id']) && is_string($params['mix_id'])) {
+                return trim($params['mix_id']);
+            }
+        }
+
+        return null;
+    }
+
     protected static function extractVideoId(string $url): ?string
     {
+        // 合集链接的 mix_id 不能当作单条视频 ID 解析
+        if (self::isCollectionUrl($url)) {
+            return null;
+        }
+
+        // 直播间房间号不能当作单条视频 ID 解析
+        if (Live\DouyinLiveParser::isDouyinLiveUrl($url)) {
+            return null;
+        }
+
         if (preg_match('#/(?:video|note|share/video)/(\d+)#i', $url, $match)) {
             return $match[1];
         }
@@ -186,9 +294,41 @@ class DouyinParser extends BaseParser
 
     private static function fetchProfilePage(string $secUserId, int $cursor): ?array
     {
+        return self::fetchSignedPage(
+            'douyin-profile-session|' . $secUserId,
+            'https://www.douyin.com/aweme/v1/web/aweme/post/',
+            'https://www.douyin.com/user/' . rawurlencode($secUserId),
+            ['sec_user_id' => $secUserId, 'count' => 18],
+            $cursor
+        );
+    }
+
+    private static function fetchCollectionPage(string $mixId, int $cursor): ?array
+    {
+        return self::fetchSignedPage(
+            'douyin-collection-session|' . $mixId,
+            'https://www.douyin.com/aweme/v1/web/mix/aweme/',
+            'https://www.douyin.com/collection/' . $mixId,
+            ['mix_id' => $mixId, 'count' => 15],
+            $cursor,
+            'cursor'
+        );
+    }
+
+    /**
+     * 带 a_bogus 签名的作品列表分页请求；主页与合集共用同一套 ttwid/msToken 会话与重试逻辑。
+     */
+    private static function fetchSignedPage(
+        string $sessionKey,
+        string $endpoint,
+        string $referer,
+        array $staticParams,
+        int $cursor,
+        string $cursorKey = 'max_cursor'
+    ): ?array {
         $ua = self::DESKTOP_UA;
-        $sessionKey = ParseCache::makeKey('douyin-profile-session|' . $secUserId);
-        $session = ParseCache::get($sessionKey) ?? [];
+        $cacheKey = ParseCache::makeKey($sessionKey);
+        $session = ParseCache::get($cacheKey) ?? [];
 
         if (self::$profileTtwid === null && is_string($session['ttwid'] ?? null)) {
             self::$profileTtwid = $session['ttwid'];
@@ -224,7 +364,7 @@ class DouyinParser extends BaseParser
                 self::$profileVerifyFp = self::randomVerifyFp();
             }
 
-            ParseCache::set($sessionKey, [
+            ParseCache::set($cacheKey, [
                 'ttwid' => $ttwid,
                 'ms_token' => self::$profileMsToken,
                 'verify_fp' => self::$profileVerifyFp,
@@ -232,16 +372,14 @@ class DouyinParser extends BaseParser
                 'web_id' => self::$profileWebId,
             ], 1800);
 
-            $query = http_build_query([
+            $params = array_merge([
                 'device_platform' => 'webapp',
                 'aid' => '6383',
                 'channel' => 'channel_pc_web',
                 'verifyFp' => self::$profileVerifyFp,
                 'fp' => self::$profileVerifyFp,
                 'webid' => self::$profileWebId ?? '',
-                'sec_user_id' => $secUserId,
-                'count' => 18,
-                'max_cursor' => $cursor > 0 ? (string) $cursor : '',
+                $cursorKey => $cursor > 0 ? (string) $cursor : '',
                 'locate_query' => 'false',
                 'show_live_replay_strategy' => 1,
                 'need_time_list' => 1,
@@ -250,20 +388,20 @@ class DouyinParser extends BaseParser
                 'cut_version' => '1',
                 'publish_video_strategy_type' => 2,
                 'msToken' => self::$profileMsToken,
-            ]);
+            ], $staticParams);
+            $query = http_build_query($params);
             $aBogus = self::generateABogus($query, $ua);
             if ($aBogus === '') {
                 throw new \RuntimeException('抖音签名生成失败，请启动本地 a_bogus 签名服务（node scripts/a_bogus_server.js）');
             }
 
-            $endpoint = 'https://www.douyin.com/aweme/v1/web/aweme/post/?' . $query
-                . '&a_bogus=' . rawurlencode($aBogus);
+            $url = $endpoint . '?' . $query . '&a_bogus=' . rawurlencode($aBogus);
             $rawHeaders = '';
-            $result = HttpClient::request($endpoint, null, [
+            $result = HttpClient::request($url, null, [
                 'User-Agent' => $ua,
                 'Accept' => 'application/json, text/plain, */*',
                 'Accept-Language' => 'zh-CN,zh;q=0.9,en;q=0.8',
-                'Referer' => 'https://www.douyin.com/user/' . rawurlencode($secUserId),
+                'Referer' => $referer,
                 'Cookie' => 'ttwid=' . $ttwid
                     . '; s_v_web_id=' . self::$profileVerifyFp
                     . '; msToken=' . self::$profileMsToken,
@@ -280,7 +418,7 @@ class DouyinParser extends BaseParser
             if ($webId !== null) {
                 self::$profileWebId = $webId;
             }
-            ParseCache::set($sessionKey, [
+            ParseCache::set($cacheKey, [
                 'ttwid' => $ttwid,
                 'ms_token' => self::$profileMsToken,
                 'verify_fp' => self::$profileVerifyFp,
@@ -293,8 +431,8 @@ class DouyinParser extends BaseParser
                 return $json;
             }
 
-            Logger::error('抖音主页作品接口返回空数据', [
-                'sec_user_id' => $secUserId,
+            Logger::error('抖音作品列表接口返回空数据', [
+                'endpoint' => $endpoint,
                 'cursor' => $cursor,
                 'attempt' => $attempt + 1,
                 'error' => $result['error'] ?? '',
@@ -302,7 +440,7 @@ class DouyinParser extends BaseParser
                 'body' => mb_substr((string) ($result['data'] ?? ''), 0, 300),
             ]);
             if ($cursor > 0 && $attempt === 0) {
-                ParseCache::delete($sessionKey);
+                ParseCache::delete($cacheKey);
                 self::$profileTtwid = null;
                 self::$profileMsToken = null;
                 self::$profileVerifyFp = null;
@@ -313,6 +451,45 @@ class DouyinParser extends BaseParser
         }
 
         return null;
+    }
+
+    /**
+     * 读取合集详情（标题/作者/总条数）；失败时返回 null，不影响作品列表解析。
+     */
+    private static function fetchMixInfo(string $mixId): ?array
+    {
+        try {
+            $ua = self::DESKTOP_UA;
+            $ttwid = self::getTtwid($ua);
+            if ($ttwid === null) {
+                return null;
+            }
+
+            $query = http_build_query([
+                'device_platform' => 'webapp',
+                'aid' => '6383',
+                'channel' => 'channel_pc_web',
+                'mix_id' => $mixId,
+                'msToken' => self::randomToken(107),
+            ]);
+            $aBogus = self::generateABogus($query, $ua);
+            $url = 'https://www.douyin.com/aweme/v1/web/mix/detail/?' . $query
+                . '&a_bogus=' . rawurlencode($aBogus);
+            $result = HttpClient::request($url, null, [
+                'User-Agent' => $ua,
+                'Accept' => 'application/json, text/plain, */*',
+                'Referer' => 'https://www.douyin.com/collection/' . $mixId,
+                'Cookie' => 'ttwid=' . $ttwid,
+            ]);
+
+            if (!$result['success']) {
+                return null;
+            }
+            $json = self::parseJson($result['data']);
+            return is_array($json) && is_array($json['mix_info'] ?? null) ? $json['mix_info'] : null;
+        } catch (\Throwable $e) {
+            return null;
+        }
     }
 
     private static function fetchAwemeDetail(string $videoId): ?array
@@ -373,7 +550,7 @@ class DouyinParser extends BaseParser
         return $json['aweme_detail'];
     }
 
-    private static function getTtwid(string $ua): ?string
+    public static function getTtwid(string $ua): ?string
     {
         $payload = json_encode([
             'region' => 'cn',
@@ -408,7 +585,7 @@ class DouyinParser extends BaseParser
         return null;
     }
 
-    private static function generateABogus(string $query, string $ua): string
+    public static function generateABogus(string $query, string $ua): string
     {
         // Try persistent signing server first (much faster)
         $serverPort = Config::env('A_BOGUS_PORT', '9876');

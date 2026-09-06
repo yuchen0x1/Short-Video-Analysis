@@ -68,6 +68,10 @@ class MediaProxy
         $currentUrl = $url;
         $range = $_SERVER['HTTP_RANGE'] ?? '';
         $maxFileSize = max(0, (int) Config::get('media_proxy.max_file_size', 524288000));
+        // m3u8 播放列表走改写模式：不透传上游头，正文缓冲后把分片/子列表 URI 改写回本代理，
+        // 让整条 HLS 链路都经过同一套防盗链头注入与逐跳安全校验。
+        $playlistMode = !$download
+            && str_ends_with(strtolower((string) (parse_url($url, PHP_URL_PATH) ?? '')), '.m3u8');
 
         // 不让 cURL 自动跟随重定向；每一跳都重新执行 SSRF、私网 IP 和域名白名单校验。
         for ($redirectCount = 0; $redirectCount <= 5; $redirectCount++) {
@@ -92,6 +96,8 @@ class MediaProxy
                 'bytesWritten' => 0,
                 'maxFileSize' => $maxFileSize,
                 'maxExceeded' => false,
+                'playlist' => $playlistMode,
+                'playlistBuffer' => '',
             ];
 
             $curlOptions = [
@@ -113,6 +119,15 @@ class MediaProxy
                         return 0;
                     }
                     if (!$state['forward']) {
+                        return strlen($chunk);
+                    }
+                    if (!empty($state['playlist'])) {
+                        // 播放列表缓冲（上限 2MB，防伪播放列表拖垮内存），改写后统一输出
+                        if (strlen($state['playlistBuffer']) + strlen($chunk) > 2097152) {
+                            $state['maxExceeded'] = true;
+                            return 0;
+                        }
+                        $state['playlistBuffer'] .= $chunk;
                         return strlen($chunk);
                     }
 
@@ -190,10 +205,59 @@ class MediaProxy
                 return;
             }
 
+            if ($playlistMode) {
+                if (!headers_sent()) {
+                    $isPlaylist = str_starts_with(ltrim($state['playlistBuffer']), '#EXTM3U');
+                    header('Content-Type: ' . ($isPlaylist ? 'application/vnd.apple.mpegurl' : 'application/octet-stream'));
+                    header('Cache-Control: no-store');
+                }
+                echo self::rewritePlaylist($state['playlistBuffer'], $currentUrl);
+                return;
+            }
+
             return;
         }
 
         self::respondError(502, '媒体源重定向次数过多');
+    }
+
+    /**
+     * 把 m3u8 文本中的分片、子播放列表与密钥 URI 改写为本代理地址。
+     * 相对 URI 基于播放列表自身地址解析；改写后的每一跳都经过 action=media 的完整校验。
+     */
+    public static function rewritePlaylist(string $playlist, string $playlistUrl): string
+    {
+        $lines = preg_split('/\r\n|\r|\n/', $playlist) ?: [];
+        $rewritten = [];
+        foreach ($lines as $line) {
+            $trimmed = trim($line);
+            if ($trimmed === '') {
+                $rewritten[] = $line;
+                continue;
+            }
+
+            if ($trimmed[0] === '#') {
+                // 仅改写标签属性中的 URI="..."（EXT-X-KEY / EXT-X-MAP 等）
+                $rewritten[] = preg_replace_callback('/URI="([^"]+)"/i', static function (array $match) use ($playlistUrl): string {
+                    return 'URI="' . self::proxiedPlaylistUrl($playlistUrl, $match[1]) . '"';
+                }, $line) ?? $line;
+                continue;
+            }
+
+            $rewritten[] = self::proxiedPlaylistUrl($playlistUrl, $trimmed);
+        }
+
+        return implode("\n", $rewritten);
+    }
+
+    private static function proxiedPlaylistUrl(string $playlistUrl, string $uri): string
+    {
+        if (!preg_match('#^https?://#i', $uri)) {
+            $resolved = HttpClient::resolveLocation($playlistUrl, $uri);
+            $uri = $resolved !== false ? $resolved : $uri;
+        }
+
+        return '/index.php?action=media&url=' . rawurlencode($uri);
     }
 
     private static function handleUpstreamHeader(string $line, array &$state, bool $download, string $filename): void
@@ -208,6 +272,19 @@ class MediaProxy
             $state['acceptRangesSeen'] = false;
             if ($state['forward']) {
                 http_response_code($status);
+            }
+            return;
+        }
+
+        // 播放列表模式：不透传任何上游头（含 content-length/content-disposition），仅捕获重定向地址。
+        if (!empty($state['playlist'])) {
+            $colonPos = strpos($line, ':');
+            if ($colonPos !== false) {
+                $headerName = strtolower(trim(substr($line, 0, $colonPos)));
+                $headerValue = trim(substr($line, $colonPos + 1));
+                if ($state['status'] >= 300 && $state['status'] < 400 && $headerName === 'location') {
+                    $state['redirectUrl'] = $headerValue;
+                }
             }
             return;
         }

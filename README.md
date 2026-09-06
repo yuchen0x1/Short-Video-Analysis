@@ -5,7 +5,7 @@
 > **粘贴一条分享链接，还你一份干净的无水印视频。**
 > 覆盖 11 个主流短视频平台，一次解析视频、图集、封面与作者信息，并提供网页版、电脑版、Android 端与版本化 HTTP API。
 
-当前版本 **v1.0.0** ｜ 开源协议 **AGPL-3.0-only** ｜ 支持平台 **11 个** ｜ 产品形态 **网页版 · 电脑版 · Android 端 · API**
+当前版本 **v1.0.0** ｜ 开源协议 **AGPL-3.0-only** ｜ 支持平台 **12 个** ｜ 产品形态 **网页版 · 电脑版 · Android 端 · API**
 
 ---
 
@@ -36,7 +36,7 @@
 - **`apps/mobile`**：Capacitor Android 移动端客户端，同样使用共享 JS 解析器，并带 Android 原生下载桥。
 - **`packages/parsers`**：平台无关的 JS 解析器包，供桌面端和移动端复用。
 
-目前已接入 11 个平台的平台识别与解析入口。部分平台的可用性取决于公开接口状态、分享链接类型或登录 Cookie，平台接口变更后可能需要同步修复解析器。
+目前已接入 12 个平台的平台识别与解析入口。部分平台的可用性取决于公开接口状态、分享链接类型或登录 Cookie，平台接口变更后可能需要同步修复解析器。
 
 ## 功能全景
 
@@ -45,6 +45,12 @@
 - **音乐下载** —— 抖音等平台解析出背景音乐播放地址时，网页版、电脑版与手机版都会提供「下载音乐」入口。
 - **批量解析** —— 网页版每行一个链接，单次最多 20 条。
 - **主页解析** —— `/api/v1/profile` 与客户端支持抖音公开主页分页解析；必须使用明确的抖音主页链接，不支持短链主页。
+- **合集解析** —— `/api/v1/collection` 与客户端支持抖音合集分页解析，返回合集标题、作者与逐页作品列表；网页版、电脑版与手机版均支持「加载全部 + 全部下载」。
+- **直播解析** —— `/api/v1/live` 支持抖音直播（live.douyin.com）、B站直播（live.bilibili.com）、虎牙直播（huya.com/房间号）与斗鱼直播（douyu.com/房间号）直播间解析，返回主播、标题、人气与拉流地址列表；虎牙下发 FLV 原画（按 CDN 线去重），斗鱼下发 FLV 多画质（原画2K60/蓝光8M/蓝光4M/超清/高清），支持用 VLC、PotPlayer、IINA 等播放器打开。
+- **发现（热榜/搜索）** —— `/api/v1/hot` 支持抖音热点榜与 B站综合热门；`/api/v1/search` 支持 B站关键词搜索。合规边界：仅响应用户主动查询、按需分页、不落库。
+- **公开评论** —— `/api/v1/comments` 支持 B站单视频公开评论查看（按需分页，仅查看不保存）。
+- **CSV 导出** —— 网页版支持导出最近记录、批量结果与主页/合集列表为 CSV（UTF-8 BOM，Excel 可直接打开）。
+- **HLS 支持** —— 媒体代理对 m3u8 播放列表自动改写，分片/子列表/密钥 URI 全部经由代理转发（注入 Referer/UA 并逐跳校验），带防盗链的 HLS 流（如 B站直播）可直接打开播放。
 - **历史记录** —— 网页版和移动端各保存最近 20 条，桌面端保存最近 100 条，均为本地浏览器/客户端存储。
 - **媒体代理** —— PHP、Electron、Android 三端均提供本地或服务端媒体代理，注入 Referer/UA 并支持 Range 播放。
 - **API 鉴权** —— `API_KEY_ENABLED=true` 后，除 `/api/v1/health` 外的接口均需 API Key。
@@ -69,6 +75,7 @@
 - **皮皮搞笑**：`ippzone.com`、`pipigx.com` —— 支持单条解析。
 - **视频号**：`channels.weixin.qq.com` —— 支持单条解析。
 - **西瓜视频**：`ixigua.com` —— 支持单条解析。
+- **TikTok 国际版**：`tiktok.com`、`vm.tiktok.com`、`vt.tiktok.com` —— 支持视频与图集解析，无需登录；TikTok 主页批量与直播暂不支持。部署环境需能访问 TikTok（国内网络需自备代理，不可达时接口会快速返回受控错误）。
 
 ## 技术选型与环境要求
 
@@ -200,14 +207,16 @@ npm run mobile:add:android
 2. 点击「开始解析」或按回车；
 3. 解析成功后，可播放、下载、复制无水印链接或打开原链接；
 4. 切换到「批量处理」，每行提交一个链接，单次最多 20 条；
-5. 切换到「主页解析」，提交明确的抖音主页链接，按页浏览公开作品。
+5. 切换到「主页解析」，提交明确的抖音主页链接，按页浏览公开作品；
+6. 切换到「合集解析」，提交抖音合集链接，支持「加载全部」后整组合集下载。
 
 ### 电脑版与 Android 端
 
 1. 直接粘贴分享文案或链接；
-2. 「主页」模式仅支持抖音公开主页分页；
-3. 「记录」页查看本机历史；
-4. 微博解析失败时，在「关于」页配置微博 Cookie；电脑版还可使用内置微博网页登录。
+2. 「主页」模式仅支持抖音公开主页分页；「合集」模式支持抖音合集分页，两者均支持全量加载与批量下载；
+3. 「发现」页查看 B站热门 / 抖音热点榜，或关键词搜索 B站视频，条目可一键解析；
+4. B站视频解析结果提供「查看评论」入口（电脑版）；
+5. 微博解析失败时，在「关于」页配置微博 Cookie；电脑版还可使用内置微博网页登录。
 
 ## API 手册
 
@@ -220,6 +229,11 @@ OpenAPI 定义位于 [`public/openapi.yaml`](public/openapi.yaml)，base path �
 | `/api/v1/parse?url=...` | GET | 解析单条链接。 |
 | `/api/v1/parse` | POST | 从 JSON 或表单 body 解析单条链接。 |
 | `/api/v1/profile` | GET/POST | 抖音公开主页单页作品解析。 |
+| `/api/v1/collection` | GET/POST | 抖音合集单页作品解析。 |
+| `/api/v1/live` | GET/POST | 直播间解析（抖音直播、B站直播、虎牙直播、斗鱼直播）。 |
+| `/api/v1/hot` | GET | 平台公开热榜（B站热门、抖音热点榜）。 |
+| `/api/v1/search` | GET | 关键词搜索公开视频（仅 B站）。 |
+| `/api/v1/comments` | GET | 单视频公开评论（仅 B站，按需分页）。 |
 
 开启 API Key 后，除 `/api/v1/health` 外的请求需携带以下任一请求头：
 
@@ -271,6 +285,26 @@ curl -X POST "http://127.0.0.1:18180/api/v1/profile" \
 
 响应 `data` 包含 `profile`、`items`、`has_more`、`next_cursor`、`cursor` 和 `page_size`。请求下一页时，把上一页返回的 `next_cursor` 作为 `cursor` 传入。
 
+### 抖音合集解析示例
+
+```bash
+curl -X POST "http://127.0.0.1:18180/api/v1/collection" \
+  -H "Content-Type: application/json" \
+  -d '{"url":"https://www.douyin.com/collection/7190000000000000000","cursor":0}'
+```
+
+响应 `data` 包含 `collection`（`mix_id`、`title`、`author`、`avatar`、`desc`、`total`）、`items`、`has_more`、`next_cursor`、`cursor` 和 `page_size`。请求下一页时，把上一页返回的 `next_cursor` 作为 `cursor` 传入。
+
+### 直播解析示例
+
+```bash
+curl -X POST "http://127.0.0.1:18180/api/v1/live" \
+  -H "Content-Type: application/json" \
+  -d '{"url":"https://live.bilibili.com/6"}'
+```
+
+响应 `data` 包含 `platform`、`live`（`room_id`、`title`、`anchor`、`avatar`、`cover`、`viewers`、`status`，`status` 为 `live` 或 `offline`）与 `streams` 拉流地址数组（每项含 `format`（`flv`/`hls`）、`quality`、`url`）。未开播时 `streams` 为空数组。
+
 ### 健康检查示例
 
 ```bash
@@ -279,13 +313,23 @@ curl "http://127.0.0.1:18180/api/v1/health"
 
 响应包含 `status`、`version`、`php_version`、`ready`、`dependencies` 和 `timestamp`。
 
+### 热榜与搜索示例
+
+```bash
+curl "http://127.0.0.1:18180/api/v1/hot?platform=bilibili&page=1"
+curl "http://127.0.0.1:18180/api/v1/search?platform=bilibili&keyword=%E5%93%94%E5%93%A9%E5%93%94%E5%93%A9&page=1"
+curl "http://127.0.0.1:18180/api/v1/comments?url=https%3A%2F%2Fwww.bilibili.com%2Fvideo%2FBV1GJ411x7h7&page=1"
+```
+
+响应 `data` 包含 `platform`、`items`（`title`/`url`/`cover`/`author`/`hot`）、`has_more` 与 `next_page`；评论接口额外返回 `total`、`comments`（`user`/`content`/`likes`/`time`）。抖音热榜条目为热点词（指向抖音搜索页），不支持直接解析；抖音搜索与评论需要完整登录态，暂不开放。
+
 ### 媒体代理入口
 
 ```text
 GET /index.php?action=media&url=<encoded-media-url>&download=1&filename=video.mp4
 ```
 
-代理的行为：校验 URL 只允许 `http`/`https`；拒绝 localhost、环回地址、私有地址和保留地址；默认按 `MEDIA_PROXY_ALLOWED_DOMAINS` 白名单放行媒体域名；对每一次重定向重新校验目标 URL 和解析后的 IP；注入 Referer/UA、透传 Range 请求并限制单次转发大小；`API_KEY_ENABLED=true` 时同样校验媒体代理请求。安全细节见下文「安全设计」。
+代理的行为：校验 URL 只允许 `http`/`https`；拒绝 localhost、环回地址、私有地址和保留地址；默认按 `MEDIA_PROXY_ALLOWED_DOMAINS` 白名单放行媒体域名；对每一次重定向重新校验目标 URL 和解析后的 IP；注入 Referer/UA、透传 Range 请求并限制单次转发大小；m3u8 播放列表自动改写，分片、子播放列表与密钥 URI 均经由代理逐跳校验转发；`API_KEY_ENABLED=true` 时同样校验媒体代理请求。安全细节见下文「安全设计」。
 
 ## 配置手册
 
@@ -469,6 +513,9 @@ A：配置有效 `WEIBO_COOKIE`，或在网页/客户端「关于」区域配置
 
 **Q：抖音主页解析失败？**
 A：只支持明确的 `douyin.com/user/...` 或带 `sec_user_id` / `sec_uid` 的抖音主页链接，不支持短链主页。
+
+**Q：抖音合集解析失败？**
+A：只支持明确的 `douyin.com/collection/<mix_id>` 或带 `mix_id` 参数的抖音合集链接；合集可能已失效或接口暂时受限，可稍后重试。
 
 **Q：Docker 健康检查失败？**
 A：查看容器日志，确认容器内 `8000` 服务和 `a_bogus` 服务已启动。

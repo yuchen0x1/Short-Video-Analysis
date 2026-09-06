@@ -83,6 +83,8 @@ final class CoreBehaviorTest extends TestCase
             'bilibili short link' => ['https://b23.tv/abc', 'bilibili'],
             'kuaishou cn' => ['https://www.kuaishou.cn/x', 'kuaishou'],
             'weishi exact host' => ['https://weishi.qq.com/x', 'weishi'],
+            'tiktok www' => ['https://www.tiktok.com/@user/video/7100000000000000001', 'tiktok'],
+            'tiktok short link' => ['https://vm.tiktok.com/abc/', 'tiktok'],
             'lookalike domain rejected' => ['https://evildouyin.com/video/1', null],
             'unknown platform' => ['https://example.com/a', null],
             'no host' => ['not-a-url', null],

@@ -11,6 +11,7 @@ export const PLATFORMS = {
   pipigx: { domains: ['ippzone.com', 'pipigx.com'] },
   weishi: { domains: ['weishi.qq.com'] },
   xiaohongshu: { domains: ['xiaohongshu.com', 'xhslink.com'] },
+  tiktok: { domains: ['tiktok.com'] },
 };
 
 export function detectPlatform(url) {

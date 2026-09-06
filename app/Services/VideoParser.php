@@ -52,6 +52,10 @@ class VideoParser
             "class" => \App\Parsers\XiaohongshuParser::class,
             "domains" => ["xiaohongshu.com", "xhslink.com"],
         ],
+        "tiktok" => [
+            "class" => \App\Parsers\TiktokParser::class,
+            "domains" => ["tiktok.com"],
+        ],
     ];
 
     /**
@@ -59,6 +63,11 @@ class VideoParser
      */
     public function parse(string $url): array
     {
+        // 直播间链接走直播解析入口
+        if ((new LiveParser())->isLiveUrl($url)) {
+            throw new \InvalidArgumentException('直播间链接请使用直播解析入口');
+        }
+
         // Check cache first
         $cacheKey = ParseCache::makeKey($url);
         $cached = ParseCache::get($cacheKey);
@@ -102,6 +111,27 @@ class VideoParser
         return self::PLATFORMS['douyin']['class']::parseProfile($validatedUrl, $cursor);
     }
 
+    /**
+     * 解析抖音合集（collection）中的作品列表。
+     */
+    public function parseValidatedCollection(string $url, int $cursor = 0): array
+    {
+        if (!$this->isExplicitDouyinCollectionUrl($url)) {
+            throw new \InvalidArgumentException('目前仅支持明确的抖音合集链接');
+        }
+        return $this->parseCollection($url, $cursor);
+    }
+
+    public function parseCollection(string $url, int $cursor = 0): array
+    {
+        $platform = $this->getPlatform($url);
+        if ($platform !== 'douyin' || !$this->isExplicitDouyinCollectionUrl($url)) {
+            throw new \InvalidArgumentException('目前仅支持明确的抖音合集链接');
+        }
+
+        return self::PLATFORMS['douyin']['class']::parseCollection($url, $cursor);
+    }
+
     private function isExplicitDouyinProfileUrl(string $url): bool
     {
         $host = strtolower((string) parse_url($url, PHP_URL_HOST));
@@ -109,8 +139,19 @@ class VideoParser
         $path = (string) parse_url($url, PHP_URL_PATH);
         $query = (string) parse_url($url, PHP_URL_QUERY);
         return ($host === 'douyin.com' || str_ends_with($host, '.douyin.com'))
-            && (preg_match('#^/user/[^/?#]+#i', $path) === 1
+            && (preg_match('~^/user/[^/?#]+~i', $path) === 1
                 || preg_match('/(?:^|&)(?:sec_user_id|sec_uid)=[^&]+/i', $query) === 1);
+    }
+
+    private function isExplicitDouyinCollectionUrl(string $url): bool
+    {
+        $host = strtolower((string) parse_url($url, PHP_URL_HOST));
+        $host = preg_replace('/^www\./', '', $host);
+        $path = (string) parse_url($url, PHP_URL_PATH);
+        $query = (string) parse_url($url, PHP_URL_QUERY);
+        return ($host === 'douyin.com' || str_ends_with($host, '.douyin.com'))
+            && (preg_match('#^/collection/\d+#i', $path) === 1
+                || preg_match('/(?:^|&)mix_id=\d+/i', $query) === 1);
     }
 
     private function getPlatform(string $url): ?string

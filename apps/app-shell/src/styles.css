@@ -856,3 +856,141 @@ textarea:focus-visible {
   background: var(--faint);
   background-clip: padding-box;
 }
+
+/* 直播解析：拉流地址列表 */
+.live-streams {
+  display: grid;
+}
+
+.live-stream {
+  display: grid;
+  grid-template-columns: 56px minmax(0, 1fr) auto auto;
+  gap: 12px;
+  align-items: center;
+  padding: 13px 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.live-stream:last-child {
+  border-bottom: 0;
+}
+
+.live-stream-format {
+  display: inline-grid;
+  place-items: center;
+  height: 30px;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  font-family: "Cascadia Code", "Consolas", monospace;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  color: var(--accent);
+}
+
+.live-stream-copy {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.live-stream-copy strong {
+  font-size: 13px;
+}
+
+.live-stream-copy span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--dim);
+  font-family: "Cascadia Code", "Consolas", monospace;
+  font-size: 11px;
+}
+
+@media (max-width: 720px) {
+  .live-stream {
+    grid-template-columns: 56px minmax(0, 1fr);
+  }
+
+  .live-stream .secondary-button {
+    grid-column: 2 / -1;
+    justify-self: start;
+  }
+}
+
+/* 发现与评论 */
+.discover-list,
+.comment-list {
+  display: grid;
+}
+
+.discover-item,
+.comment-item {
+  display: grid;
+  grid-template-columns: 96px minmax(0, 1fr) auto;
+  gap: 13px;
+  align-items: center;
+  padding: 13px 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.discover-item:last-child,
+.comment-item:last-child {
+  border-bottom: 0;
+}
+
+.discover-item img {
+  width: 96px;
+  height: 60px;
+  object-fit: cover;
+  border-radius: 5px;
+  background: var(--surface-2);
+}
+
+.discover-actions {
+  display: flex;
+  gap: 7px;
+}
+
+.discover-more {
+  display: grid;
+  place-items: center;
+  padding: 14px;
+}
+
+.comment-item img {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  object-fit: cover;
+  background: var(--surface-2);
+}
+
+.comment-item h3 {
+  font-size: 12px;
+}
+
+.comment-item p {
+  margin-top: 3px;
+  color: var(--dim);
+  font-size: 12px;
+  line-height: 1.55;
+  overflow-wrap: anywhere;
+}
+
+.comment-time {
+  color: var(--faint);
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+@media (max-width: 720px) {
+  .discover-item {
+    grid-template-columns: 76px minmax(0, 1fr);
+  }
+
+  .discover-actions {
+    grid-column: 2 / -1;
+    justify-self: start;
+  }
+}

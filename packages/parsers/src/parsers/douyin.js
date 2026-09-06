@@ -10,12 +10,12 @@ const DESKTOP_UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36
 
 const session = { ttwid: null, msToken: null, verifyFp: null, whaleCutToken: null, webId: null };
 
-function profileHeaders(secUserId, ttwid) {
+function pageHeaders(referer, ttwid) {
   return {
     'User-Agent': DESKTOP_UA,
     Accept: 'application/json, text/plain, */*',
     'Accept-Language': 'zh-CN,zh;q=0.9,en;q=0.8',
-    Referer: 'https://www.douyin.com/user/' + encodeURIComponent(secUserId),
+    Referer: referer,
     Cookie: `ttwid=${ttwid}; s_v_web_id=${session.verifyFp}; msToken=${session.msToken}`,
     'Sec-Fetch-Dest': 'empty',
     'Sec-Fetch-Mode': 'cors',
@@ -249,6 +249,9 @@ async function fetchLegacy(videoId) {
 }
 
 async function extractVideoId(url) {
+  // 合集链接的 mix_id 不能当作单条视频 ID 解析
+  if (isCollectionUrl(url)) return null;
+
   const direct = url.match(/\/(?:video|note|share\/video)\/(\d+)/i)?.[1];
   if (direct) return direct;
 
@@ -292,8 +295,27 @@ async function extractSecUserId(url) {
   return url.match(/\bMS4w[^\s/?#]+/i)?.[0] || null;
 }
 
-function loadSession(secUserId) {
-  const cached = cacheGet(makeParseKey('douyin-profile-session', secUserId)) || {};
+function isCollectionUrl(url) {
+  return /\/collection\/\d+/i.test(url) || /[?&]mix_id=\d+/i.test(url);
+}
+
+function extractMixId(url) {
+  const fromPath = url.match(/\/collection\/(\d+)/i)?.[1];
+  if (fromPath) return fromPath;
+  try {
+    const parsed = new URL(url);
+    const candidate = parsed.searchParams.get('mix_id');
+    if (candidate && /^\d+$/.test(candidate.trim())) {
+      return candidate.trim();
+    }
+  } catch {
+    // 忽略 URL 解析失败，继续兜底
+  }
+  return null;
+}
+
+function loadSession(sessionKey) {
+  const cached = cacheGet(makeParseKey(sessionKey)) || {};
   if (!session.ttwid && typeof cached.ttwid === 'string') session.ttwid = cached.ttwid;
   if (!session.msToken && typeof cached.ms_token === 'string') session.msToken = cached.ms_token;
   if (!session.verifyFp && typeof cached.verify_fp === 'string') session.verifyFp = cached.verify_fp;
@@ -301,8 +323,8 @@ function loadSession(secUserId) {
   if (!session.webId && typeof cached.web_id === 'string') session.webId = cached.web_id;
 }
 
-function persistSession(secUserId, ttwid) {
-  cacheSet(makeParseKey('douyin-profile-session', secUserId), {
+function persistSession(sessionKey, ttwid) {
+  cacheSet(makeParseKey(sessionKey), {
     ttwid,
     ms_token: session.msToken,
     verify_fp: session.verifyFp,
@@ -319,8 +341,30 @@ function resetSession() {
   session.webId = null;
 }
 
-async function fetchProfilePage(secUserId, cursor) {
-  loadSession(secUserId);
+function fetchProfilePage(secUserId, cursor) {
+  return fetchSignedPage(
+    'douyin-profile-session|' + secUserId,
+    'https://www.douyin.com/aweme/v1/web/aweme/post/',
+    'https://www.douyin.com/user/' + encodeURIComponent(secUserId),
+    { sec_user_id: secUserId, count: '18' },
+    cursor
+  );
+}
+
+function fetchCollectionPage(mixId, cursor) {
+  return fetchSignedPage(
+    'douyin-collection-session|' + mixId,
+    'https://www.douyin.com/aweme/v1/web/mix/aweme/',
+    'https://www.douyin.com/collection/' + mixId,
+    { mix_id: mixId, count: '15' },
+    cursor,
+    'cursor'
+  );
+}
+
+// 带 a_bogus 签名的作品列表分页请求；主页与合集共用同一套 ttwid/msToken 会话与重试逻辑。
+async function fetchSignedPage(sessionKey, base, referer, staticParams, cursor, cursorKey = 'max_cursor') {
+  loadSession(sessionKey);
   const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
   for (let attempt = 0; attempt < 3; attempt += 1) {
@@ -335,18 +379,16 @@ async function fetchProfilePage(secUserId, cursor) {
 
     if (!session.msToken) session.msToken = randomToken(107);
     if (!session.verifyFp) session.verifyFp = randomVerifyFp();
-    persistSession(secUserId, ttwid);
+    persistSession(sessionKey, ttwid);
 
-    const url = signedUrl('https://www.douyin.com/aweme/v1/web/aweme/post/', {
+    const params = {
       device_platform: 'webapp',
       aid: '6383',
       channel: 'channel_pc_web',
       verifyFp: session.verifyFp,
       fp: session.verifyFp,
       webid: session.webId || '',
-      sec_user_id: secUserId,
-      count: '18',
-      max_cursor: cursor > 0 ? String(cursor) : '',
+      [cursorKey]: cursor > 0 ? String(cursor) : '',
       locate_query: 'false',
       show_live_replay_strategy: '1',
       need_time_list: '1',
@@ -355,11 +397,13 @@ async function fetchProfilePage(secUserId, cursor) {
       cut_version: '1',
       publish_video_strategy_type: '2',
       msToken: session.msToken,
-    });
+      ...staticParams,
+    };
+    const url = signedUrl(base, params);
 
     let response = null;
     try {
-      response = await httpGet(url, profileHeaders(secUserId, ttwid), { maxRetries: 1 });
+      response = await httpGet(url, pageHeaders(referer, ttwid), { maxRetries: 1 });
     } catch {
       response = null;
     }
@@ -370,7 +414,7 @@ async function fetchProfilePage(secUserId, cursor) {
       const webId = headerValue(response.headers, 'cookie_ttwidinfo_webid');
       if (webId) session.webId = webId;
     }
-    persistSession(secUserId, ttwid);
+    persistSession(sessionKey, ttwid);
 
     const json = response && response.status === 200 ? parseJson(response.data) : null;
     if (json && Array.isArray(json.aweme_list)) {
@@ -378,13 +422,37 @@ async function fetchProfilePage(secUserId, cursor) {
     }
 
     if (cursor > 0 && attempt === 0) {
-      cacheDelete(makeParseKey('douyin-profile-session', secUserId));
+      cacheDelete(makeParseKey(sessionKey));
       resetSession();
     }
     await sleep(250 * (attempt + 1));
   }
 
   return null;
+}
+
+async function fetchMixInfo(mixId) {
+  try {
+    const ttwid = session.ttwid || await getTtwid();
+    if (!ttwid) return null;
+    const url = signedUrl('https://www.douyin.com/aweme/v1/web/mix/detail/', {
+      device_platform: 'webapp',
+      aid: '6383',
+      channel: 'channel_pc_web',
+      mix_id: mixId,
+      msToken: randomToken(107),
+    });
+    const response = await fetchOk(url, null, {
+      'User-Agent': DESKTOP_UA,
+      Accept: 'application/json, text/plain, */*',
+      Referer: 'https://www.douyin.com/collection/' + mixId,
+      Cookie: `ttwid=${ttwid}`,
+    }, { maxRetries: 1 });
+    const json = response ? parseJson(response.data) : null;
+    return json?.mix_info ?? null;
+  } catch {
+    return null;
+  }
 }
 
 export async function parse(url) {
@@ -455,6 +523,59 @@ export async function parseProfile(url, cursor = 0) {
     total: items.length,
     cursor: pageCursor,
     next_cursor: Number(pageData.max_cursor ?? pageCursor) || 0,
+    has_more: Number(pageData.has_more ?? 0) === 1,
+    page_size: items.length,
+  };
+}
+
+export { isCollectionUrl };
+export { getTtwid };
+
+export async function parseCollection(url, cursor = 0) {
+  const mixId = extractMixId(url);
+  if (!mixId) {
+    throw new Error('无法识别抖音合集链接');
+  }
+
+  const pageCursor = Math.max(0, cursor);
+  const pageData = await fetchCollectionPage(mixId, pageCursor);
+  if (!pageData) {
+    throw new Error('获取抖音合集作品失败，合集可能已失效或接口暂时受限');
+  }
+
+  const items = [];
+  const awemeList = Array.isArray(pageData.aweme_list) ? pageData.aweme_list : [];
+  for (const item of awemeList) {
+    if (!item || typeof item !== 'object') continue;
+    const result = buildResult(item);
+    const awemeId = String(item.aweme_id ?? item.group_id ?? '');
+    result.aweme_id = awemeId;
+    result.source_url = awemeId !== '' ? 'https://www.douyin.com/video/' + awemeId : '';
+    items.push(result);
+  }
+
+  const mixInfo = await fetchMixInfo(mixId);
+  const creator = mixInfo?.creator && typeof mixInfo.creator === 'object'
+    ? mixInfo.creator
+    : (mixInfo?.author ?? {});
+
+  return {
+    platform: 'douyin',
+    collection: {
+      mix_id: mixId,
+      title: mixInfo?.mix_name ?? '',
+      author: creator?.nickname ?? '',
+      avatar:
+        firstUrl(creator?.avatar_medium?.url_list) ??
+        firstUrl(creator?.avatar_thumb?.url_list) ??
+        '',
+      desc: mixInfo?.desc ?? mixInfo?.mix_desc ?? '',
+      total: Number(mixInfo?.statis?.updated_to_eposide ?? mixInfo?.eposide_count ?? 0) || 0,
+    },
+    items,
+    total: items.length,
+    cursor: pageCursor,
+    next_cursor: Number(pageData.cursor ?? pageData.max_cursor ?? pageCursor) || 0,
     has_more: Number(pageData.has_more ?? 0) === 1,
     page_size: items.length,
   };

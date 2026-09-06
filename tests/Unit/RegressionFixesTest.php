@@ -125,19 +125,26 @@ final class RegressionFixesTest extends TestCase
         $openapi = (string) file_get_contents($this->root . '/public/openapi.yaml');
 
         $this->assertStringContainsString('parseProfile(string $url, int $cursor = 0)', $parser);
-        $this->assertStringContainsString("'max_cursor' => \$cursor", $parser);
-        $this->assertStringContainsString("'max_cursor' => \$cursor > 0 ? (string) \$cursor : ''", $parser);
+        $this->assertStringContainsString("string \$cursorKey = 'max_cursor'", $parser);
+        $this->assertStringContainsString("\$cursorKey => \$cursor > 0 ? (string) \$cursor : ''", $parser);
         $this->assertStringContainsString("'next_cursor'", $parser);
         $this->assertStringContainsString("'has_more'", $parser);
+        $this->assertStringContainsString('parseCollection(string $url, int $cursor = 0)', $parser);
         $this->assertStringContainsString('parseValidatedProfile($url, $cursor)', $api);
+        $this->assertStringContainsString('parseValidatedCollection($url, $cursor)', $api);
         $this->assertStringContainsString('parseProfile($validatedUrl, $cursor)', $service);
+        $this->assertStringContainsString('isExplicitDouyinCollectionUrl', $service);
         $this->assertStringContainsString('json["cursor"]', $api);
         $this->assertStringContainsString('state.profile.pages[nextPage]', $frontend);
         $this->assertStringContainsString('state.profile.selected', $frontend);
         $this->assertStringContainsString('profilePrev.addEventListener', $frontend);
         $this->assertStringContainsString('profileNext.addEventListener', $frontend);
+        $this->assertStringContainsString('profileLoadAll', $frontend);
+        $this->assertStringContainsString('loadAllPages', $frontend);
         $this->assertStringNotContainsString('max_pages', $readme);
         $this->assertStringNotContainsString('max_pages', $openapi);
+        $this->assertStringContainsString('/api/v1/collection', $readme);
+        $this->assertStringContainsString('/collection:', $openapi);
     }
 
     public function testDouyinProfilePaginationReadsContinuationHeaders(): void

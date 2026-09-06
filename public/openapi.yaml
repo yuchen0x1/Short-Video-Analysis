@@ -160,6 +160,164 @@ paths:
           $ref: "#/components/responses/RateLimited"
         "500":
           description: 主页解析失败或平台接口异常
+  /collection:
+    post:
+      summary: 解析抖音合集公开作品单页
+      operationId: parseCollection
+      security:
+        - ApiKeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [url]
+              properties:
+                url:
+                  type: string
+                  description: 抖音合集链接
+                  example: https://www.douyin.com/collection/7190000000000000000
+                cursor:
+                  type: integer
+                  minimum: 0
+                  default: 0
+                  description: 上一页响应中的 next_cursor；0 表示第一页
+      responses:
+        "200":
+          description: 合集作品解析成功
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CollectionResult"
+        "400":
+          description: 合集 URL 无效或暂不支持的平台
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        "500":
+          description: 合集解析失败或平台接口异常
+  /live:
+    post:
+      summary: 解析直播间拉流地址
+      operationId: parseLive
+      security:
+        - ApiKeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [url]
+              properties:
+                url:
+                  type: string
+                  description: 直播间链接（抖音直播 / B站直播 / 虎牙直播 / 斗鱼直播）
+                  example: https://live.bilibili.com/6
+      responses:
+        "200":
+          description: 直播间解析成功
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LiveResult"
+        "400":
+          description: 直播间 URL 无效或暂不支持的平台
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        "500":
+          description: 直播解析失败或平台接口异常
+  /hot:
+    get:
+      summary: 平台公开热榜（用户主动查看）
+      operationId: hotList
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - name: platform
+          in: query
+          schema: { type: string, enum: [bilibili, douyin], default: bilibili }
+        - name: page
+          in: query
+          schema: { type: integer, minimum: 1, default: 1 }
+      responses:
+        "200":
+          description: 热榜获取成功
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DiscoverResult"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        "502":
+          description: 平台接口暂时受限
+  /search:
+    get:
+      summary: 关键词搜索公开视频（仅 B站）
+      operationId: searchVideos
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - name: platform
+          in: query
+          schema: { type: string, enum: [bilibili], default: bilibili }
+        - name: keyword
+          in: query
+          required: true
+          schema: { type: string, maxLength: 100 }
+        - name: page
+          in: query
+          schema: { type: integer, minimum: 1, default: 1 }
+      responses:
+        "200":
+          description: 搜索完成
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DiscoverResult"
+        "400":
+          description: 参数无效或平台不支持
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        "502":
+          description: 平台接口暂时受限
+  /comments:
+    get:
+      summary: 单视频公开评论（仅 B站，按需分页，不存储）
+      operationId: videoComments
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - name: url
+          in: query
+          required: true
+          schema: { type: string, format: uri }
+        - name: page
+          in: query
+          schema: { type: integer, minimum: 1, default: 1 }
+      responses:
+        "200":
+          description: 评论获取成功
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CommentsResult"
+        "400":
+          description: URL 无效或平台不支持
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        "502":
+          description: 平台接口暂时受限
 components:
   securitySchemes:
     ApiKeyAuth:
@@ -296,6 +454,146 @@ components:
                       type: string
                     signature:
                       type: string
+                total:
+                  type: integer
+                  description: 当前页作品数量
+                cursor:
+                  type: integer
+                next_cursor:
+                  type: integer
+                has_more:
+                  type: boolean
+                page_size:
+                  type: integer
+                items:
+                  type: array
+                  items:
+                    $ref: "#/components/schemas/ParseResult"
+    LiveResult:
+      allOf:
+        - $ref: "#/components/schemas/Success"
+        - type: object
+          properties:
+            data:
+              type: object
+              properties:
+                platform:
+                  type: string
+                live:
+                  type: object
+                  properties:
+                    room_id:
+                      type: string
+                    title:
+                      type: string
+                    anchor:
+                      type: string
+                    avatar:
+                      type: string
+                    cover:
+                      type: string
+                    viewers:
+                      type: integer
+                      nullable: true
+                    status:
+                      type: string
+                      enum: [live, offline]
+                streams:
+                  type: array
+                  description: 拉流地址列表；未开播时为空数组
+                  items:
+                    type: object
+                    properties:
+                      format:
+                        type: string
+                        enum: [flv, hls]
+                      quality:
+                        type: string
+                      url:
+                        type: string
+    DiscoverResult:
+      allOf:
+        - $ref: "#/components/schemas/Success"
+        - type: object
+          properties:
+            data:
+              type: object
+              properties:
+                platform:
+                  type: string
+                title:
+                  type: string
+                keyword:
+                  type: string
+                total:
+                  type: integer
+                has_more:
+                  type: boolean
+                next_page:
+                  type: integer
+                items:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      title: {type: string}
+                      url: {type: string, format: uri}
+                      cover: {type: string}
+                      author: {type: string}
+                      hot: {type: integer}
+                      duration: {type: string}
+    CommentsResult:
+      allOf:
+        - $ref: "#/components/schemas/Success"
+        - type: object
+          properties:
+            data:
+              type: object
+              properties:
+                platform:
+                  type: string
+                total:
+                  type: integer
+                page:
+                  type: integer
+                has_more:
+                  type: boolean
+                next_page:
+                  type: integer
+                comments:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      user: {type: string}
+                      avatar: {type: string}
+                      content: {type: string}
+                      likes: {type: integer}
+                      time: {type: integer}
+    CollectionResult:
+      allOf:
+        - $ref: "#/components/schemas/Success"
+        - type: object
+          properties:
+            data:
+              type: object
+              properties:
+                collection:
+                  type: object
+                  properties:
+                    mix_id:
+                      type: string
+                    title:
+                      type: string
+                    author:
+                      type: string
+                    avatar:
+                      type: string
+                    desc:
+                      type: string
+                    total:
+                      type: integer
+                      description: 合集包含的作品总数
                 total:
                   type: integer
                   description: 当前页作品数量
