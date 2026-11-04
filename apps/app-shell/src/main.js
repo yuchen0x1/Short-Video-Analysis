@@ -723,6 +723,44 @@ function setUpdateStatus(payload) {
   else el.textContent = '正常更新中。';
 }
 
+// 更新日志 Markdown 最小渲染：先整体转义，再支持标题/列表/引用/加粗/行内代码，防注入。
+function renderChangelogMarkdown(text) {
+  const escapeHtml = (value) => String(value).replace(/[&<>"']/g, (ch) => (
+    { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]
+  ));
+  const inline = (value) => escapeHtml(value)
+    .replace(/`([^`]+)`/g, '<code>$1</code>')
+    .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+  const out = [];
+  let listOpen = false;
+  const closeList = () => { if (listOpen) { out.push('</ul>'); listOpen = false; } };
+  for (const raw of String(text || '').split(/\r?\n/)) {
+    const line = raw.trimEnd();
+    if (!line.trim()) { closeList(); continue; }
+    const heading = line.match(/^(#{1,6})\s+(.*)$/);
+    if (heading) {
+      closeList();
+      // 顶层 H1 与面板标题重复，跳过；## → h3，### → h4
+      if (heading[1].length === 1) continue;
+      const level = Math.min(heading[1].length + 1, 6);
+      out.push(`<h${level}>${inline(heading[2])}</h${level}>`);
+      continue;
+    }
+    const bullet = line.match(/^\s*[-*]\s+(.*)$/);
+    if (bullet) {
+      if (!listOpen) { out.push('<ul>'); listOpen = true; }
+      out.push(`<li>${inline(bullet[1])}</li>`);
+      continue;
+    }
+    const quote = line.match(/^>\s?(.*)$/);
+    if (quote) { closeList(); out.push(`<blockquote>${inline(quote[1])}</blockquote>`); continue; }
+    closeList();
+    out.push(`<p>${inline(line)}</p>`);
+  }
+  closeList();
+  return out.join('') || '<p>暂无更新日志。</p>';
+}
+
 async function renderAbout() {
   const panel = $('#about-panel');
   if (!panel) return;
@@ -757,7 +795,7 @@ async function renderAbout() {
         <span class="panel-kicker">更新日志</span>
         <h2>最近更新</h2>
       </div>
-      <pre id="about-changelog" class="changelog"></pre>
+      <div id="about-changelog" class="changelog"></div>
     </div>
   `;
   const version = await (shell.getVersion ? shell.getVersion() : '—');
@@ -765,7 +803,7 @@ async function renderAbout() {
   if (versionEl) versionEl.textContent = `当前版本 v${version}`;
   const changelog = await (shell.getChangelog ? shell.getChangelog() : '暂无更新日志。');
   const logEl = $('#about-changelog');
-  if (logEl) logEl.textContent = changelog;
+  if (logEl) logEl.innerHTML = renderChangelogMarkdown(changelog);
   const bufferedUpdate = await (shell.getUpdateStatus ? shell.getUpdateStatus() : null);
   if (bufferedUpdate?.status && bufferedUpdate.status !== 'idle') setUpdateStatus(bufferedUpdate);
   $('#check-update')?.addEventListener('click', () => { setUpdateStatus({ status: 'checking' }); shell.checkForUpdates?.(); });

@@ -831,14 +831,21 @@ textarea:focus-visible {
   border-radius: 7px;
   background: var(--surface-2);
   color: var(--dim);
-  font-family: "Cascadia Code", "Consolas", monospace;
-  font-size: 12px;
+  font-size: 13px;
   line-height: 1.7;
-  white-space: pre-wrap;
-  word-break: break-word;
   max-height: 360px;
   overflow: auto;
 }
+.changelog h3 { margin: 14px 0 6px; color: var(--text); font-size: 15px; }
+.changelog h3:first-child { margin-top: 0; }
+.changelog h4 { margin: 10px 0 4px; color: var(--accent); font-size: 13px; }
+.changelog h5, .changelog h6 { margin: 8px 0 4px; color: var(--dim); font-size: 12px; }
+.changelog ul { margin: 6px 0; padding-left: 18px; }
+.changelog li { margin: 3px 0; }
+.changelog p { margin: 6px 0; word-break: break-word; }
+.changelog blockquote { margin: 8px 0; padding: 6px 10px; border-left: 3px solid var(--border); color: var(--dim); }
+.changelog strong { color: var(--text); }
+.changelog code { background: var(--surface-3); padding: 1px 5px; border-radius: 4px; font-family: "Cascadia Code", "Consolas", monospace; font-size: 12px; }
 
 ::-webkit-scrollbar {
   width: 10px;

@@ -1,12 +1,14 @@
 const DEFAULT_OWNER = 'yuchen0x1';
-const DEFAULT_REPO = 'short-video-watermark-remover';
+const DEFAULT_REPO = 'Short-Video-Analysis';
+
+const GITHUB_HOSTS = ['github.com', 'api.github.com', 'objects.githubusercontent.com'];
 
 export const UPDATE_REPOSITORY = Object.freeze({
   owner: DEFAULT_OWNER,
   repo: DEFAULT_REPO,
-  provider: 'gitee',
-  apiUrl: `https://gitee.com/${DEFAULT_OWNER}/${DEFAULT_REPO}/releases`,
-  releasesUrl: `https://gitee.com/${DEFAULT_OWNER}/${DEFAULT_REPO}/releases`,
+  provider: 'github',
+  apiUrl: `https://api.github.com/repos/${DEFAULT_OWNER}/${DEFAULT_REPO}/releases/latest`,
+  releasesUrl: `https://github.com/${DEFAULT_OWNER}/${DEFAULT_REPO}/releases`,
 });
 
 function parseVersion(value) {
@@ -73,7 +75,13 @@ function parseResponseData(data) {
   }
 }
 
-function assertDomesticUpdateUrl(value) {
+function isAllowedUpdateHost(host) {
+  const normalized = String(host || '').toLowerCase().replace(/\.$/, '');
+  return GITHUB_HOSTS.some((domain) => normalized === domain || normalized.endsWith('.' + domain));
+}
+
+// provider 为 github 时锁定 GitHub 域名；自定义站点 API（VITE_UPDATE_API_URL）只要求 HTTPS 与无凭据。
+function assertUpdateUrl(value, { githubOnly = true } = {}) {
   let parsed;
   try {
     parsed = new URL(String(value || ''));
@@ -82,38 +90,11 @@ function assertDomesticUpdateUrl(value) {
   }
   if (!['http:', 'https:'].includes(parsed.protocol)) throw new Error('更新源仅支持 HTTP/HTTPS');
   if (parsed.username || parsed.password) throw new Error('更新源地址不允许携带用户凭据');
-  const host = parsed.hostname.toLowerCase();
-  if (host !== 'gitee.com' && !host.endsWith('.gitee.com')) throw new Error('更新源必须使用 Gitee 域名');
+  if (githubOnly && !isAllowedUpdateHost(parsed.hostname)) throw new Error('更新源仅允许 GitHub 域名');
   return parsed.href;
 }
 
-function parseGiteeReleaseHtml(html, repository) {
-  const text = String(html || '');
-  const tagMatch = text.match(/class=["'][^"']*releases-sidebar-item[^"']*["'][^>]*data-tag=["']([^"']+)["']/i);
-  const tag = tagMatch ? tagMatch[1].trim() : '';
-  if (!tag) throw new Error('Gitee Release 页面缺少版本号');
-
-  const assets = [];
-  const assetPattern = new RegExp(
-    `href=["'](/${repository.owner}/${repository.repo}/releases/download/${tag.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}/[^"']+)["']`,
-    'gi'
-  );
-  for (const match of text.matchAll(assetPattern)) {
-    const href = match[1].replace(/&amp;/g, '&');
-    const name = decodeURIComponent(href.split('/').pop() || '');
-    if (!/^[A-Za-z0-9._+-]+$/.test(name)) continue;
-    assets.push({ name, browser_download_url: `https://gitee.com${href}`, size: 0, digest: '' });
-  }
-  return {
-    tag_name: tag,
-    html_url: `https://gitee.com/${repository.owner}/${repository.repo}/releases/tag/${encodeURIComponent(tag)}`,
-    published_at: '',
-    body: '',
-    assets,
-  };
-}
-
-function normalizeAssets(rawAssets) {
+function normalizeAssets(rawAssets, { githubOnly = true } = {}) {
   return Array.isArray(rawAssets) ? rawAssets.map((asset) => ({
     name: String(asset.name || ''),
     url: String(asset.browser_download_url || asset.url || ''),
@@ -121,7 +102,7 @@ function normalizeAssets(rawAssets) {
     digest: String(asset.digest || ''),
   })).filter((asset) => {
     if (!asset.name || !asset.url) return false;
-    try { assertDomesticUpdateUrl(asset.url); return true; } catch { return false; }
+    try { assertUpdateUrl(asset.url, { githubOnly }); return true; } catch { return false; }
   }) : [];
 }
 
@@ -143,50 +124,49 @@ function preferredWindowsAsset(assets) {
 export async function checkForUpdate({ currentVersion, request = browserRequest, repository = UPDATE_REPOSITORY } = {}) {
   const current = normalizeVersion(currentVersion);
   if (!current) throw new Error('当前版本号无效');
-  const apiUrl = assertDomesticUpdateUrl(repository.apiUrl);
-  const releasesUrl = assertDomesticUpdateUrl(repository.releasesUrl);
+  const githubOnly = repository.provider === 'github';
+  const apiUrl = assertUpdateUrl(repository.apiUrl, { githubOnly });
+  const releasesUrl = assertUpdateUrl(repository.releasesUrl, { githubOnly });
   repository = { ...repository, apiUrl, releasesUrl };
   const response = await request({
     url: apiUrl,
     timeoutMs: 12000,
-    headers: repository.provider === 'gitee'
-      ? { Accept: 'text/html', 'User-Agent': 'qushuiyin-update-checker/2.3.2' }
-      : { Accept: 'application/json', 'User-Agent': 'qushuiyin-update-checker/2.3.2' },
+    headers: {
+      Accept: githubOnly ? 'application/vnd.github+json' : 'application/json',
+      'User-Agent': 'qushuiyin-update-checker/2.3.2',
+    },
   });
   if (!response || response.status < 200 || response.status >= 300) {
     throw new Error(`无法获取最新版本（HTTP ${response?.status || 0}）`);
   }
-  const payload = (repository.provider === 'gitee' || /gitee\.com\/.*\/releases(?:$|[/?])/i.test(repository.apiUrl))
-    && typeof response.data === 'string' && /releases-sidebar-item/i.test(response.data)
-    ? parseGiteeReleaseHtml(response.data, repository)
-    : parseResponseData(response.data);
+  const payload = parseResponseData(response.data);
   // 网站 API 返回已整理的数据；允许移动端通过 VITE_UPDATE_API_URL 复用同一接口。
   if (payload.success && payload.data && payload.data.latest_version) {
     const data = payload.data;
     const latest = normalizeVersion(data.latest_version);
     if (!latest) throw new Error('最新版本号无效');
-    const assets = normalizeAssets(data.assets);
+    const assets = normalizeAssets(data.assets, { githubOnly });
     return {
       currentVersion: current,
       latestVersion: latest,
       updateAvailable: compareVersions(latest, current) > 0,
-      releaseUrl: assertDomesticUpdateUrl(data.release_url || repository.releasesUrl),
+      releaseUrl: assertUpdateUrl(data.release_url || repository.releasesUrl, { githubOnly }),
       publishedAt: data.published_at || '',
       notes: String(data.notes || ''),
       assets,
-      androidAsset: data.android_asset ? normalizeAssets([data.android_asset])[0] || preferredAndroidAsset(assets) : preferredAndroidAsset(assets),
-      windowsAsset: data.windows_asset ? normalizeAssets([data.windows_asset])[0] || preferredWindowsAsset(assets) : preferredWindowsAsset(assets),
+      androidAsset: data.android_asset ? normalizeAssets([data.android_asset], { githubOnly })[0] || preferredAndroidAsset(assets) : preferredAndroidAsset(assets),
+      windowsAsset: data.windows_asset ? normalizeAssets([data.windows_asset], { githubOnly })[0] || preferredWindowsAsset(assets) : preferredWindowsAsset(assets),
     };
   }
-  if (repository.provider !== 'gitee' || !payload.tag_name) throw new Error('更新服务返回了不支持的数据');
+  if (!payload.tag_name) throw new Error('更新服务返回了不支持的数据');
   const latest = normalizeVersion(payload.tag_name);
   if (!latest) throw new Error('最新 Release 缺少有效版本号');
-  const assets = normalizeAssets(payload.assets);
+  const assets = normalizeAssets(payload.assets, { githubOnly });
   return {
     currentVersion: current,
     latestVersion: latest,
     updateAvailable: compareVersions(latest, current) > 0,
-    releaseUrl: assertDomesticUpdateUrl(payload.html_url || `${repository.releasesUrl}/tag/v${latest}`),
+    releaseUrl: assertUpdateUrl(payload.html_url || `${repository.releasesUrl}/tag/${payload.tag_name}`, { githubOnly }),
     publishedAt: payload.published_at || '',
     notes: String(payload.body || ''),
     assets,

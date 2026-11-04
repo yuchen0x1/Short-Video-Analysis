@@ -6,7 +6,7 @@ const http = require('node:http');
 const nodeNet = require('node:net');
 const path = require('node:path');
 const { autoUpdater } = require('electron-updater');
-const { fetchGiteeLatestTag, giteeFeedUrl } = require('./updateChannel.cjs');
+const { fetchGithubLatestTag, githubFeedUrl } = require('./updateChannel.cjs');
 
 const isDevelopment = Boolean(process.env.APP_DEV_SERVER_URL);
 const WEIBO_PARTITION = 'persist:weibo-login-v1';
@@ -231,7 +231,7 @@ function setupAutoUpdater() {
     try {
       await checkForUpdatesWithChannel();
     } catch (error) {
-      sendUpdate({ status: 'error', message: String((error && error.message) || error) });
+      sendUpdate({ status: 'error', message: friendlyUpdateError(error) });
     }
   });
   ipcMain.on('app.update.install', () => {
@@ -243,10 +243,22 @@ function setupAutoUpdater() {
 }
 
 async function checkForUpdatesWithChannel() {
-  const tag = await fetchGiteeLatestTag();
-  console.log(`[update] channel=gitee tag=${tag}`);
-  autoUpdater.setFeedURL({ provider: 'generic', url: giteeFeedUrl(tag) });
+  const tag = await fetchGithubLatestTag();
+  console.log(`[update] channel=github tag=${tag}`);
+  autoUpdater.setFeedURL({ provider: 'generic', url: githubFeedUrl(tag) });
   return autoUpdater.checkForUpdates();
+}
+
+// 把底层网络错误翻译成用户能读懂的提示，原始信息保留在日志里。
+function friendlyUpdateError(error) {
+  const raw = String((error && error.message) || error);
+  console.log('[update] 检查失败:', raw);
+  if (/ENOTFOUND|EAI_AGAIN|解析到非公网地址/i.test(raw)) return '无法连接 GitHub 更新服务：域名解析失败，请检查网络或 DNS 设置';
+  if (/ETIMEDOUT|ECONNREFUSED|ECONNRESET|AbortError|abort/i.test(raw)) return '连接 GitHub 更新服务超时，请稍后重试';
+  if (/HTTP 403|rate limit/i.test(raw)) return 'GitHub 更新服务请求受限，请稍后重试';
+  if (/HTTP 404/i.test(raw)) return '更新源暂未发布新版本';
+  if (/_proxy|tunnel|certificate|SSL|TLS/i.test(raw)) return 'GitHub 更新服务连接异常，请检查代理或网络环境';
+  return raw;
 }
 
 // 本地解析的 HTTP 传输桥：renderer 经 IPC 发起请求，由主进程用 Electron net.fetch
