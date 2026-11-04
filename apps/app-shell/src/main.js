@@ -213,6 +213,15 @@ function mediaUrl(url) {
   return shell.mediaProxyUrl ? shell.mediaProxyUrl(url) : url;
 }
 
+function safeHttpUrl(value) {
+  try {
+    const url = new URL(String(value || ''));
+    return (url.protocol === 'http:' || url.protocol === 'https:') && Boolean(url.hostname);
+  } catch {
+    return false;
+  }
+}
+
 function downloadUrl(url, filename) {
   return shell.mediaProxyUrl ? shell.mediaProxyUrl(url, filename) : url;
 }
@@ -541,6 +550,20 @@ const discoverInput = $('#discover-input');
 const discoverSummary = $('#discover-summary');
 const discoverNote = $('#discover-note');
 
+discoverPanel.addEventListener('error', (event) => {
+  if (!(event.target instanceof HTMLImageElement) || !event.target.matches('.discover-item img')) return;
+  const fallback = event.target.dataset.fallback;
+  if (fallback && !event.target.dataset.fallbackTried && safeHttpUrl(fallback)) {
+    event.target.dataset.fallbackTried = 'true';
+    event.target.src = fallback;
+    return;
+  }
+  const placeholder = document.createElement('span');
+  placeholder.className = 'discover-thumb-placeholder';
+  placeholder.setAttribute('aria-hidden', 'true');
+  event.target.replaceWith(placeholder);
+}, true);
+
 function renderDiscover() {
   const d = state.discover;
   discoverSummary.textContent = d.tab === 'hot'
@@ -555,7 +578,8 @@ function renderDiscover() {
   }
   discoverPanel.innerHTML = `<div class="discover-list">${d.items.map((item) => {
     const parseable = /bilibili\.com|b23\.tv/i.test(item.url);
-    return `<article class="discover-item"><img src="${escapeHtml(item.cover)}" alt="" loading="lazy"><div class="profile-copy"><h3>${escapeHtml(item.title)}</h3><p>${escapeHtml(item.author || '')}${item.hot ? ` · 热度 ${escapeHtml(formatCount(item.hot))}` : ''}</p></div><div class="discover-actions">${parseable ? `<button class="primary-button compact" type="button" data-discover-parse="${escapeHtml(item.url)}">解析</button>` : ''}<a class="secondary-button compact" href="${escapeHtml(item.url)}" target="_blank" rel="noopener">打开</a></div></article>`;
+    const cover = safeHttpUrl(item.cover) ? mediaUrl(item.cover) : '';
+    return `<article class="discover-item">${cover ? `<img src="${escapeHtml(cover)}" data-fallback="${escapeHtml(item.cover)}" alt="" loading="lazy">` : '<span class="discover-thumb-placeholder" aria-hidden="true"></span>'}<div class="profile-copy"><h3>${escapeHtml(item.title)}</h3><p>${escapeHtml(item.author || '')}${item.hot ? ` · 热度 ${escapeHtml(formatCount(item.hot))}` : ''}</p></div><div class="discover-actions">${parseable ? `<button class="primary-button compact" type="button" data-discover-parse="${escapeHtml(item.url)}">解析</button>` : ''}<a class="secondary-button compact" href="${escapeHtml(item.url)}" target="_blank" rel="noopener">打开</a></div></article>`;
   }).join('')}</div>${d.hasMore ? '<div class="discover-more"><button id="discover-more" class="secondary-button" type="button">加载更多</button></div>' : ''}`;
   $('#discover-more')?.addEventListener('click', () => {
     const d2 = state.discover;

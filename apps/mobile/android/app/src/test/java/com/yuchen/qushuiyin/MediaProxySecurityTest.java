@@ -17,6 +17,7 @@ public class MediaProxySecurityTest {
         assertTrue(MediaProxySecurity.isAllowedMediaUrl("https://douyinvod.com/video.mp4"));
         assertTrue(MediaProxySecurity.isAllowedMediaUrl("https://cdn.douyinvod.com/video.mp4"));
         assertTrue(MediaProxySecurity.isAllowedMediaUrl("https://a.b.mcdn.bilivideo.cn/video.mp4"));
+        assertTrue(MediaProxySecurity.isAllowedMediaUrl("https://i2.hdslb.com/bfs/archive/cover.jpg"));
     }
 
     @Test

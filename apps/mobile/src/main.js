@@ -115,6 +115,20 @@ async function downloadItems(items) { if (!items.length) return notify('请先�
 const discoverRoot = $('#mobile-discover');
 const discoverInputEl = $('#mobile-discover-input');
 
+discoverRoot.addEventListener('error', (event) => {
+  if (!(event.target instanceof HTMLImageElement) || !event.target.matches('.mobile-discover-item img')) return;
+  const fallback = event.target.dataset.fallback;
+  if (fallback && !event.target.dataset.fallbackTried && /^https?:\/\//i.test(fallback)) {
+    event.target.dataset.fallbackTried = 'true';
+    event.target.src = fallback;
+    return;
+  }
+  const placeholder = document.createElement('span');
+  placeholder.className = 'mobile-discover-thumb-placeholder';
+  placeholder.setAttribute('aria-hidden', 'true');
+  event.target.replaceWith(placeholder);
+}, true);
+
 function renderDiscover() {
   const d = state.discover;
   if (!d.items.length) {
@@ -125,7 +139,8 @@ function renderDiscover() {
   discoverRoot.hidden = false;
   discoverRoot.innerHTML = `${d.items.map((item) => {
     const parseable = /bilibili\.com|b23\.tv/i.test(item.url);
-    return `<article class="mobile-discover-item"><img src="${esc(item.cover)}" alt="" loading="lazy"><div><h3>${esc(item.title)}</h3><p>${esc(item.author || '')}${item.hot ? ` · 热度 ${esc(formatCountShort(item.hot))}` : ''}</p></div><div>${parseable ? `<button type="button" data-discover-parse="${esc(item.url)}">解析</button>` : ''}<button type="button" data-mobile-copy="${esc(item.url)}">复制</button></div></article>`;
+    const cover = /^https?:\/\//i.test(String(item.cover || '')) ? mediaUrl(item.cover) : '';
+    return `<article class="mobile-discover-item">${cover ? `<img src="${esc(cover)}" data-fallback="${esc(item.cover)}" alt="" loading="lazy">` : '<span class="mobile-discover-thumb-placeholder" aria-hidden="true"></span>'}<div><h3>${esc(item.title)}</h3><p>${esc(item.author || '')}${item.hot ? ` · 热度 ${esc(formatCountShort(item.hot))}` : ''}</p></div><div>${parseable ? `<button type="button" data-discover-parse="${esc(item.url)}">解析</button>` : ''}<button type="button" data-mobile-copy="${esc(item.url)}">复制</button></div></article>`;
   }).join('')}${d.hasMore ? '<div style="display:grid;place-items:center;padding:12px"><button id="mobile-discover-more" class="mobile-primary-small" type="button">加载更多</button></div>' : ''}`;
   $('#mobile-discover-more')?.addEventListener('click', () => { state.discover.page += 1; loadDiscover(false); });
   $$('[data-discover-parse]').forEach((button) => button.addEventListener('click', () => { setMode('single'); input.value = button.dataset.discoverParse; parseSingle(); }));

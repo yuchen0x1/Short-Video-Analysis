@@ -97,6 +97,9 @@ final class DiscoveryBehaviorTest extends TestCase
         $proxy = (string) file_get_contents($this->root . '/app/Services/MediaProxy.php');
         $frontend = (string) file_get_contents($this->root . '/public/app.php');
         $readme = (string) file_get_contents($this->root . '/README.md');
+        $config = (string) file_get_contents($this->root . '/config/app.php');
+        $electron = (string) file_get_contents($this->root . '/apps/app-shell/electron/main.cjs');
+        $mobile = (string) file_get_contents($this->root . '/apps/mobile/src/main.js');
 
         $this->assertStringContainsString('/api/v1/hot', $api);
         $this->assertStringContainsString('/api/v1/search', $api);
@@ -106,6 +109,15 @@ final class DiscoveryBehaviorTest extends TestCase
         $this->assertStringContainsString('discover-results', $frontend);
         $this->assertStringContainsString('comments-results', $frontend);
         $this->assertStringContainsString('exportCsv', $frontend);
+        $this->assertStringContainsString('validMediaUrl(item.cover)?mediaUrl(item.cover)', $frontend);
+        $this->assertStringContainsString('batch-thumb-placeholder', $frontend);
+        $this->assertStringContainsString('discover-thumb-placeholder', (string) file_get_contents($this->root . '/apps/app-shell/src/main.js'));
+        $this->assertStringContainsString('mediaUrl(item.cover)', (string) file_get_contents($this->root . '/apps/app-shell/src/main.js'));
+        $this->assertStringContainsString('mediaUrl(item.cover)', $mobile);
+        $this->assertStringContainsString('mobile-discover-thumb-placeholder', $mobile);
+        $this->assertStringContainsString('douyinpic.com', $config);
+        $this->assertStringContainsString('hdslb.com', $config);
+        $this->assertStringContainsString("'hdslb.com'", $electron);
         $this->assertStringContainsString('发现', $readme);
     }
 }

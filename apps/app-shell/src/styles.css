@@ -939,12 +939,14 @@ textarea:focus-visible {
   border-bottom: 0;
 }
 
-.discover-item img {
+.discover-item img,
+.discover-thumb-placeholder {
+  display: block;
   width: 96px;
   height: 60px;
   object-fit: cover;
   border-radius: 5px;
-  background: var(--surface-2);
+  background: linear-gradient(135deg, var(--surface-2), var(--surface));
 }
 
 .discover-actions {
@@ -987,6 +989,12 @@ textarea:focus-visible {
 @media (max-width: 720px) {
   .discover-item {
     grid-template-columns: 76px minmax(0, 1fr);
+  }
+
+  .discover-item img,
+  .discover-thumb-placeholder {
+    width: 76px;
+    height: 48px;
   }
 
   .discover-actions {

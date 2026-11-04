@@ -16,7 +16,7 @@ const MAX_WEIBO_RESPONSE_BYTES = 2 * 1024 * 1024;
 const MAX_HTTP_REDIRECTS = 5;
 const MEDIA_ALLOWED_DOMAINS = [
   'douyinvod.com', 'douyinvod.com.cn', 'bytecdn.cn', 'ibytedtos.com',
-  'bilivideo.com', 'mcdn.bilivideo.cn', 'ixigua.com', 'ixiguavideo.com',
+  'bilivideo.com', 'hdslb.com', 'mcdn.bilivideo.cn', 'ixigua.com', 'ixiguavideo.com',
   'video.weishi.qq.com', 'ippzone.com', 'pipix.com',
 ];
 let mainWindow = null;

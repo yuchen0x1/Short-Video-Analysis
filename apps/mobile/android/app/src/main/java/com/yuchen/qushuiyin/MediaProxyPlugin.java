@@ -443,6 +443,7 @@ final class MediaProxySecurity {
                     "bytecdn.cn",
                     "ibytedtos.com",
                     "bilivideo.com",
+                    "hdslb.com",
                     "mcdn.bilivideo.cn",
                     "ixigua.com",
                     "ixiguavideo.com",

@@ -55,7 +55,7 @@ return [
         'max_file_size' => (int)Config::env('MEDIA_PROXY_MAX_SIZE', '524288000'), // 500MB
         'allowed_domains' => array_filter(array_map('trim', explode(',', Config::env(
             'MEDIA_PROXY_ALLOWED_DOMAINS',
-            'douyinvod.com,douyinvod.com.cn,douyinstatic.com,bytecdn.cn,ibytedtos.com,bilivideo.com,mcdn.bilivideo.cn,ixigua.com,ixiguavideo.com,video.weishi.qq.com,ippzone.com,pipix.com,huya.com,msstatic.com,douyucdn2.cn,douyucdn.cn'
+            'douyinvod.com,douyinvod.com.cn,douyinstatic.com,douyinpic.com,bytecdn.cn,ibytedtos.com,bilivideo.com,hdslb.com,mcdn.bilivideo.cn,ixigua.com,ixiguavideo.com,video.weishi.qq.com,ippzone.com,pipix.com,huya.com,msstatic.com,douyucdn2.cn,douyucdn.cn'
         )))),
         'strict_mode' => Config::env('MEDIA_PROXY_STRICT_MODE', 'true') === 'true',
     ],
