@@ -1,16 +1,26 @@
+<div align="center">
+
 <img src="assets/brand/app-icon.png" width="96" alt="应用图标" />
 
 # 短视频去水印解析工具
 
-> **粘贴一条分享链接，还你一份干净的无水印视频。**
-> 覆盖 12 个主流短视频平台，一次解析视频、图集、封面与作者信息，并提供网页版、电脑版、Android 端与版本化 HTTP API。
+**粘贴一条分享链接，还你一份干净的无水印视频。**
 
-当前版本 **v1.1.5** ｜ 开源协议 **AGPL-3.0-only** ｜ 支持平台 **12 个** ｜ 产品形态 **网页版 · 电脑版 · Android 端 · API**
+覆盖 12 个主流短视频平台，一次解析视频、图集、封面与作者信息，提供网页版、电脑版、Android 端与版本化 HTTP API。
+
+[![Version](https://img.shields.io/badge/版本-v1.1.5-22d3ee)](https://github.com/yuchen0x1/Short-Video-Analysis/releases/latest) [![Platforms](https://img.shields.io/badge/平台-12个-8b5cf6)](#覆盖平台) [![PHP](https://img.shields.io/badge/PHP-8.1%2B-777bb4)](#技术选型与环境要求) [![License](https://img.shields.io/badge/License-AGPL--3.0--only-9cf)](LICENSE)
+
+![网页版工作台](assets/screenshots/web-home.png)
+
+**[⬇ 下载最新版本](https://github.com/yuchen0x1/Short-Video-Analysis/releases/latest)** ｜ [更新日志](CHANGELOG.md) ｜ [API 手册](#api-手册) ｜ [答疑与排障](#答疑与排障)
+
+</div>
 
 ---
 
 ## 目录
 
+- 界面预览
 - 项目定位
 - 功能全景
 - 覆盖平台
@@ -26,6 +36,18 @@
 - 安全设计
 - 参与贡献
 - 协议与声明
+
+## 界面预览
+
+网页版、电脑版与 Android 端共享同一套解析能力与工作台式界面：粘贴分享文案后自动提取链接，解析结果、下载与最近记录在同一个工作区内完成。
+
+| 解析结果：播放 / 下载 / 复制 | 12 个平台自动识别 |
+| --- | --- |
+| ![解析结果](assets/screenshots/web-result.png) | ![支持平台](assets/screenshots/platforms.png) |
+
+所有版本统一通过 GitHub Releases 发布，客户端内置在线更新：
+
+![GitHub Releases 发布页](assets/screenshots/github-release.png)
 
 ## 项目定位
 
@@ -234,6 +256,7 @@ OpenAPI 定义位于 [`public/openapi.yaml`](public/openapi.yaml)，base path �
 | `/api/v1/hot` | GET | 平台公开热榜（B站热门、抖音热点榜）。 |
 | `/api/v1/search` | GET | 关键词搜索公开视频（仅 B站）。 |
 | `/api/v1/comments` | GET | 单视频公开评论（仅 B站，按需分页）。 |
+| `/api/v1/update` | GET | 在线更新检查（读取 GitHub 最新 Release）。 |
 
 开启 API Key 后，除 `/api/v1/health` 外的请求需携带以下任一请求头：
 
@@ -434,6 +457,13 @@ cd packages/parsers
 npm test
 ```
 
+更新检查器契约测试：
+
+```bash
+cd packages/update-checker
+npm test
+```
+
 live 审计脚本需要真实网络和平台接口状态：
 
 ```bash
@@ -441,11 +471,11 @@ cd packages/parsers
 npm run test:live
 ```
 
-CI 使用 Gitee Go 流水线（`.workflow/quality-pipeline.yml`），push 到 main 或推送 `v*` 标签时自动运行，覆盖 PHP 8.1 的 lint、PHPUnit、smoke，以及共享解析包与更新检查器的契约测试。首次使用需在 Gitee 仓库「流水线」页面开启 Gitee Go，配置文件入仓后流水线自动加载。Windows 安装包与移动端前端构建依赖 Node 20+ / Windows 环境，按「打包发布」章节在本地执行。
+仓库中的 `.workflow/quality-pipeline.yml` 是早期 Gitee Go 流水线的历史配置，当前仓库托管在 GitHub，以上检查请在本地或容器环境运行；发布流程以「打包发布」章节为准。
 
 ### 打包发布
 
-**Windows（Electron）**：本地构建执行 `cd apps/app-shell && npm install && npm run dist:win`，安装包与 `latest.yml` 生成于 `apps/app-shell/release/`，随后在 Gitee 仓库 Release 中上传；客户端通过 Gitee 在线更新通道自动检测新版本。
+**Windows（Electron）**：本地构建执行 `cd apps/app-shell && npm install && npm run dist:win`，安装包、便携版与 `latest.yml` 生成于 `apps/app-shell/release/`，随后上传到 GitHub Release；客户端通过 GitHub Releases 在线更新通道自动检测新版本。
 
 **Android**：签名说明见 [`apps/mobile/SIGNING.md`](apps/mobile/SIGNING.md)。构建前先同步 Web 资源：
 
@@ -459,13 +489,13 @@ npm run mobile:sync
 
 ### 自动更新机制
 
-各端统一只使用国内 Gitee Releases 作为版本源，国外在线更新源已禁用：
+各端统一使用 GitHub Releases 作为版本源：
 
-- **网站**：访问 `/api/v1/update`，服务端读取 Gitee 最新 Release；页面启动时自动检查，也可手动检查并打开发布页下载。
-- **Android**：启动时自动检查 Gitee Release，关于页可手动检查；发现 APK 后通过系统下载器下载。正式签名 APK 可用于升级，未签名 APK 仅适合测试。
-- **Windows 安装版**：由 `electron-updater` 读取 Gitee 同一 Release 的 `latest.yml`，启动后自动检查、下载并提示重启安装；关于页可手动检查。
+- **网站**：访问 `/api/v1/update`，服务端读取 GitHub 最新 Release（REST API 主路径，API 限流时自动回退 `releases.atom` 与 expanded assets 页面）；页面启动时自动检查，也可手动检查并打开发布页下载。
+- **Android**：启动时自动检查 GitHub Release，关于页可手动检查；发现 APK 后通过系统下载器下载。正式签名 APK 可用于升级，测试签名 APK 仅适合测试。
+- **Windows 安装版**：由 `electron-updater` 读取 GitHub Release 的 `latest.yml`，启动后自动检查、下载并提示重启安装；关于页可手动检查。
 
-发布新版本时，先同步根目录、`apps/app-shell`、`apps/mobile` 和 `packages/*` 的版本号，再在 Gitee 创建 `vX.Y.Z` Release 并上传 Windows 安装包、`latest.yml`/blockmap 和 Android APK。网站和客户端默认不依赖 GitHub 登录；手机版可通过 `VITE_UPDATE_API_URL` 指向已部署的 `/api/v1/update`。
+发布新版本时，先同步根目录、`apps/app-shell`、`apps/mobile` 和 `packages/*` 的版本号，再在 GitHub 创建 `vX.Y.Z` Release 并上传 Windows 安装包/便携版、`latest.yml`/blockmap 和 Android APK。手机版可通过 `VITE_UPDATE_API_URL` 指向已部署的 `/api/v1/update` 自定义更新源。
 
 版本变更记录见 [`CHANGELOG.md`](CHANGELOG.md)。
 
@@ -480,6 +510,7 @@ npm run mobile:sync
 │   └── Utils/            # 配置、响应、HTTP、鉴权、日志、Cookie
 ├── public/               # 网页版入口、API v1、OpenAPI、路由脚本
 ├── config/               # 应用、缓存、Cookie 配置
+├── assets/               # 应用图标与 README 截图资源
 ├── scripts/              # 抖音 a_bogus 签名服务和图标生成脚本
 ├── bin/                  # lint 和 smoke 检查脚本
 ├── tests/                # PHPUnit 单元和回归测试
@@ -545,7 +576,7 @@ A：本项目依赖各平台公开页面和接口行为，平台接口变更后�
 
 1. 新增或修复解析器时，同时更新 PHP 解析器和共享 JS 解析器，或明确说明只影响某一端。
 2. 修改平台字段结构时，同步检查 `public/openapi.yaml`、前端展示和 parser 契约测试。
-3. 提交前运行 `composer lint`、`composer test`、`composer smoke` 和 `cd packages/parsers && npm test`。
+3. 提交前运行 `composer lint`、`composer test`、`composer smoke`、`cd packages/parsers && npm test` 和 `cd packages/update-checker && npm test`。
 4. 不要提交 `.env`、Cookie、真实 API Key、签名密钥或本地打包产物。
 
 ## 协议与声明
