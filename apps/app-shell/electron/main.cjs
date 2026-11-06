@@ -15,9 +15,10 @@ const WEIBO_ALLOWED_HOSTS = new Set(['weibo.com', 'www.weibo.com', 'passport.wei
 const MAX_WEIBO_RESPONSE_BYTES = 2 * 1024 * 1024;
 const MAX_HTTP_REDIRECTS = 5;
 const MEDIA_ALLOWED_DOMAINS = [
-  'douyinvod.com', 'douyinvod.com.cn', 'bytecdn.cn', 'ibytedtos.com',
+  'douyinvod.com', 'douyinvod.com.cn', 'douyinstatic.com', 'douyinpic.com', 'bytecdn.cn', 'ibytedtos.com',
   'bilivideo.com', 'hdslb.com', 'mcdn.bilivideo.cn', 'ixigua.com', 'ixiguavideo.com',
-  'video.weishi.qq.com', 'ippzone.com', 'pipix.com',
+  'video.weishi.qq.com', 'ippzone.com', 'pipix.com', 'tiktokcdn.com', 'tiktokcdn-us.com',
+  'huya.com', 'msstatic.com', 'douyucdn.cn', 'douyucdn2.cn',
 ];
 let mainWindow = null;
 let weiboLoginWindow = null;
@@ -270,7 +271,7 @@ const PARSER_ALLOWED_DOMAINS = [
   'douyin.com', 'iesdouyin.com', 'kuaishou.com', 'kuaishou.cn', 'bilibili.com', 'b23.tv',
   'pipix.com', 'weibo.com', 'ixigua.com', 'channels.weixin.qq.com',
   'izuiyou.com', 'xiaochuankeji.cn', 'ippzone.com', 'pipigx.com', 'weishi.qq.com',
-  'xiaohongshu.com', 'xhslink.com',
+  'xiaohongshu.com', 'xhslink.com', 'tiktok.com', 'huya.com', 'douyu.com',
   // 抖音 ttwid 注册端点
   'bytedance.com',
 ];

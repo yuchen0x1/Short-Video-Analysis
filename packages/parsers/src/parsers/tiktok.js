@@ -115,7 +115,7 @@ function webItemToResult(item) {
       firstOf([item.author?.avatarLarger]) ||
       firstOf([item.author?.avatarMedium]) ||
       firstOf([item.author?.avatarThumb]),
-    like: item.stats?.diggCount ?? 0,
+    like: item.statsV2?.diggCount ?? item.stats?.diggCount ?? 0,
     time: Number(item.createTime ?? 0) || 0,
     title: item.desc ?? '',
     cover: isImage

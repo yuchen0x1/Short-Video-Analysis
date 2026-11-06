@@ -1,5 +1,770 @@
-:root{font-family:"Microsoft YaHei",system-ui,sans-serif;color:#253136;background:#f4f1e9;font-synthesis:none}*{box-sizing:border-box}body{margin:0;background:#f4f1e9;color:#253136}button,input,textarea{font:inherit}button{cursor:pointer}button:disabled{cursor:not-allowed;opacity:.4}.mobile-app{min-height:100vh;padding-bottom:76px}.mobile-header{display:flex;align-items:flex-start;justify-content:space-between;padding:24px 18px 18px;background:#f4f1e9}.mobile-eyebrow,.mobile-section-title>span{color:#b45f42;font:10px "Cascadia Code","Consolas",monospace;letter-spacing:.15em}.mobile-header h1{margin:7px 0 0;font-size:24px;letter-spacing:-.02em}.mobile-status{margin-top:5px;color:#58746c;font-size:11px}.mobile-main{padding:0 14px}.mobile-view{animation:rise .25s ease}@keyframes rise{from{opacity:.3;transform:translateY(5px)}to{opacity:1;transform:none}}.welcome-line{display:flex;align-items:end;justify-content:space-between;margin:6px 4px 12px;color:#75837f;font-size:13px}.welcome-line strong{color:#253136;font-size:13px}.mobile-input-panel,.mobile-result,.mobile-profile,.mobile-history,.mobile-settings{border:1px solid #d9d6cd;border-radius:8px;background:#fffdf8;box-shadow:0 9px 24px rgba(50,57,50,.07)}.mobile-input-panel{padding:16px}.mobile-switch{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;padding:4px;background:#eeece4;border-radius:6px}.mobile-switch-button{min-height:35px;border:0;border-radius:4px;background:transparent;color:#7a8580;font-size:13px;font-weight:800}.mobile-switch-button.active{background:#2f6960;color:#fffdf8}.mobile-input-panel label,.mobile-settings label{display:block;margin:19px 0 7px;color:#73807b;font-size:12px;font-weight:800}.mobile-input-wrap{position:relative}.mobile-input-wrap textarea{width:100%;min-height:108px;padding:13px 12px 34px;border:1px solid #cfd4cd;border-radius:6px;background:#fbfaf5;color:#253136;resize:none;outline:none;line-height:1.55}.mobile-input-wrap textarea:focus,.mobile-settings input:focus{border-color:#c36c4f;box-shadow:0 0 0 3px rgba(195,108,79,.12)}.mobile-input-wrap button{position:absolute;right:9px;bottom:8px;border:0;background:transparent;color:#b45f42;font-size:12px}.mobile-primary{width:100%;min-height:46px;margin-top:12px;border:0;border-radius:6px;background:#c36c4f;color:#fff;font-weight:900}.mobile-primary-small{min-height:34px;padding:0 10px;border:0;border-radius:5px;background:#2f6960;color:#fff;font-size:12px;font-weight:800}.mobile-input-panel p,.mobile-section-title p,.mobile-settings p{margin:10px 0 0;color:#8b9690;font-size:11px;line-height:1.55}.mobile-result{margin-top:14px;padding:14px}.mobile-result-top{display:flex;align-items:center;justify-content:space-between;color:#2f6960;font-size:12px;font-weight:800}.mobile-result-top button{border:0;background:transparent;color:#b45f42;font-size:12px}.mobile-result h2{margin:11px 0 3px;font-size:18px;line-height:1.35}.mobile-result-meta{margin:0;color:#7b8983;font-size:12px}.mobile-media{margin:14px -1px 0;overflow:hidden;border-radius:5px;background:#111c1d}.mobile-media video{display:block;width:100%;max-height:420px;aspect-ratio:9/12;object-fit:contain}.mobile-media figure{position:relative;margin:0;border-bottom:1px solid rgba(255,255,255,.12)}.mobile-media figure:last-child{border:0}.mobile-media img{display:block;width:100%;max-height:430px;object-fit:contain}.mobile-media figure a{position:absolute;right:9px;bottom:9px;padding:6px 8px;border-radius:4px;background:rgba(0,0,0,.7);color:#fff;text-decoration:none;font-size:11px}.mobile-download{display:flex;align-items:center;justify-content:center;text-decoration:none}.mobile-section-title{padding:8px 4px 14px}.mobile-section-title h2{margin:7px 0 4px;font-size:24px}.mobile-section-title p{margin:0;color:#76827d;font-size:12px}.mobile-profile,.mobile-history,.mobile-settings{overflow:hidden}.mobile-profile-head{display:flex;align-items:center;justify-content:space-between;padding:14px;border-bottom:1px solid #e1ded5}.mobile-profile-head span,.mobile-profile-head strong{display:block}.mobile-profile-head span{color:#76827d;font-size:12px}.mobile-profile-head strong{margin-top:4px;font-size:15px}.mobile-profile-head>div:last-child{display:flex;gap:6px}.mobile-profile-head button{min-height:34px;padding:0 9px;border:1px solid #d5d2c9;border-radius:5px;background:#fffdf8;color:#536660;font-size:11px}.mobile-profile-list{display:grid}.mobile-profile-item{display:grid;grid-template-columns:18px 62px minmax(0,1fr) auto;gap:9px;align-items:center;padding:11px 12px;border-bottom:1px solid #e8e5dc}.mobile-profile-item:last-child{border:0}.mobile-profile-item.selected{background:#edf5f0}.mobile-profile-item input{width:16px;height:16px;accent-color:#2f6960}.mobile-profile-item img{width:62px;height:60px;object-fit:cover;border-radius:4px;background:#eef0ea}.mobile-profile-item h3{margin:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px}.mobile-profile-item p{margin:4px 0 0;color:#85918b;font-size:10px}.mobile-profile-item>button{padding:5px 7px;border:1px solid #d5d2c9;border-radius:4px;background:#fffdf8;color:#b45f42;font-size:10px}.mobile-pagination{display:flex;align-items:center;justify-content:space-between;padding:13px;border-top:1px solid #e1ded5;color:#76827d;font-size:12px}.mobile-pagination button{min-height:34px;padding:0 11px;border:1px solid #d5d2c9;border-radius:5px;background:#fffdf8;color:#536660;font-size:11px}.mobile-empty{padding:50px 20px;text-align:center;color:#8b9690;font-size:12px}.mobile-history-item{width:100%;display:grid;grid-template-columns:45px minmax(0,1fr) auto;gap:10px;align-items:center;padding:13px 14px;border:0;border-bottom:1px solid #e8e5dc;background:#fffdf8;text-align:left}.mobile-history-item:last-child{border:0}.mobile-history-item>span{color:#b45f42;font-size:11px;font-weight:800}.mobile-history-item strong,.mobile-history-item small{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.mobile-history-item strong{color:#253136;font-size:12px}.mobile-history-item small{margin-top:4px;color:#8b9690;font-size:10px}.mobile-history-item b{color:#2f6960;font-size:10px}.mobile-settings{padding:15px}.mobile-settings input{width:100%;height:44px;padding:0 11px;border:1px solid #cfd4cd;border-radius:5px;background:#fbfaf5;outline:none}.mobile-settings p{margin:12px 0 0}.mobile-tabbar{position:fixed;z-index:5;right:0;bottom:0;left:0;display:grid;grid-template-columns:repeat(5,1fr);padding:8px 8px calc(8px + env(safe-area-inset-bottom));border-top:1px solid #d9d6cd;background:rgba(255,253,248,.96);backdrop-filter:blur(14px)}.mobile-tab{min-height:43px;border:0;border-radius:6px;background:transparent;color:#87928c;font-size:11px;font-weight:800}.mobile-tab.active{background:#e7f1eb;color:#2f6960}.mobile-toast{position:fixed;z-index:10;right:16px;bottom:84px;left:16px;padding:11px 13px;border-radius:6px;background:#253b38;color:#fff;font-size:12px;text-align:center;box-shadow:0 8px 20px rgba(0,0,0,.16)}
-.mobile-update{margin:16px 0 18px;padding:12px;border:1px solid #d9d6cd;border-radius:6px;background:#f5f5ee}.mobile-update strong{display:block;color:#2f6960;font-size:13px}.mobile-update p{margin:5px 0 10px!important}.mobile-update button{margin:0 6px 0 0;min-height:34px;padding:0 10px;border:1px solid #d5d2c9;border-radius:5px;background:#fffdf8;color:#536660;font-size:11px}.mobile-update .mobile-primary-small{border:0;background:#2f6960;color:#fff}
-.mobile-version{display:block;margin-top:4px;color:#8b9690;font:10px "Cascadia Code","Consolas",monospace;letter-spacing:.12em}.mobile-quick-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin:0 0 12px}.mobile-quick-stats div{padding:9px 8px;border:1px solid #d9d6cd;border-radius:6px;background:rgba(255,253,248,.76)}.mobile-quick-stats strong,.mobile-quick-stats span{display:block}.mobile-quick-stats strong{color:#2f6960;font-size:15px}.mobile-quick-stats span{margin-top:2px;color:#8b9690;font-size:10px}.mobile-input-context{display:flex;flex-wrap:wrap;gap:8px 12px;margin-top:12px;color:#8b9690;font-size:10px}.mobile-input-context span{display:inline-flex;align-items:center;gap:5px}.mobile-input-context i{width:5px;height:5px;border-radius:50%;background:#2f6960;box-shadow:0 0 0 3px rgba(47,105,96,.12)}.mobile-input-panel{box-shadow:0 12px 28px rgba(50,57,50,.1)}.mobile-primary{box-shadow:0 8px 16px rgba(195,108,79,.18);transition:transform .2s ease,box-shadow .2s ease}.mobile-primary:active{transform:translateY(1px);box-shadow:none}@media(prefers-reduced-motion:reduce){.mobile-view,.mobile-primary{animation:none;transition:none}}
-.mobile-live-streams{margin:14px -1px 0;display:grid}.mobile-live-stream{display:grid;grid-template-columns:44px minmax(0,1fr) auto;gap:9px;align-items:center;padding:11px 4px;border-bottom:1px solid #e8e5dc}.mobile-live-stream:last-child{border:0}.mobile-live-stream>span{display:inline-grid;place-items:center;height:28px;border:1px solid #d5d2c9;border-radius:4px;color:#2f6960;font:800 10px "Cascadia Code","Consolas",monospace}.mobile-live-stream strong,.mobile-live-stream small{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.mobile-live-stream strong{font-size:12px}.mobile-live-stream small{margin-top:2px;color:#8b9690;font:10px "Cascadia Code","Consolas",monospace}.mobile-live-stream>button{padding:5px 7px;border:1px solid #d5d2c9;border-radius:4px;background:#fffdf8;color:#b45f42;font-size:10px}
-.mobile-discover-item{display:grid;grid-template-columns:72px minmax(0,1fr) auto;gap:9px;align-items:center;padding:11px 2px;border-bottom:1px solid #e8e5dc}.mobile-discover-item:last-child{border:0}.mobile-discover-item img,.mobile-discover-thumb-placeholder{display:block;width:72px;height:46px;object-fit:cover;border-radius:4px;background:linear-gradient(135deg,#e3eae4,#eef0ea)}.mobile-discover-item h3{margin:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px}.mobile-discover-item p{margin:3px 0 0;color:#85918b;font-size:10px}.mobile-discover-item>div:last-child{display:grid;gap:4px}.mobile-discover-item>div:last-child button{padding:4px 7px;border:1px solid #d5d2c9;border-radius:4px;background:#fffdf8;color:#2f6960;font-size:10px}.mobile-discover-tab.active{background:#2f6960;color:#fffdf8}
+:root {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+  color-scheme: dark;
+  color: #eaf6f4;
+  background: #03080c;
+  font-synthesis: none;
+  --m-bg: #03080c;
+  --m-surface: rgba(8, 19, 27, 0.88);
+  --m-surface-2: rgba(12, 27, 38, 0.92);
+  --m-surface-card: rgba(10, 22, 32, 0.85);
+  --m-border: rgba(0, 245, 212, 0.16);
+  --m-border-strong: rgba(0, 245, 212, 0.35);
+  --m-text: #eaf6f4;
+  --m-dim: #8ea8a2;
+  --m-faint: #56726c;
+  --m-cyan: #00f5d4;
+  --m-cyan-soft: rgba(0, 245, 212, 0.14);
+  --m-cyan-glow: 0 0 20px rgba(0, 245, 212, 0.35);
+  --m-blue: #00bbf9;
+  --m-purple: #9d4edd;
+  --m-coral: #ff4d6d;
+  --m-coral-dark: #e02447;
+  --m-coral-soft: rgba(255, 77, 109, 0.14);
+  --m-coral-glow: 0 0 24px rgba(255, 77, 109, 0.4);
+  --m-amber: #ffb703;
+  --m-amber-soft: rgba(255, 183, 3, 0.15);
+  --m-danger: #ff5c5c;
+  --font-mono: "Cascadia Code", "Fira Code", "Consolas", monospace;
+  --motion: .22s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--m-bg);
+  background-image:
+    radial-gradient(circle at 15% 10%, rgba(0, 245, 212, 0.08) 0%, transparent 40%),
+    radial-gradient(circle at 85% 15%, rgba(157, 78, 221, 0.08) 0%, transparent 40%),
+    linear-gradient(180deg, #03070b 0%, #061017 50%, #04090e 100%);
+  color: var(--m-text);
+  font-size: 14px;
+  line-height: 1.6;
+  position: relative;
+  min-height: 100vh;
+}
+
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background-image:
+    linear-gradient(rgba(0, 245, 212, 0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 245, 212, 0.035) 1px, transparent 1px);
+  background-size: 30px 30px;
+}
+
+button, input, textarea {
+  font: inherit;
+  color: inherit;
+}
+button { cursor: pointer; }
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.4;
+}
+
+.mobile-app {
+  min-height: 100vh;
+  padding-bottom: 84px;
+  position: relative;
+  z-index: 1;
+}
+
+/* Header HUD 科技顶栏 */
+.mobile-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: calc(16px + env(safe-area-inset-top)) 18px 16px;
+  background: rgba(4, 12, 17, 0.85);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border-bottom: 1px solid var(--m-border);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.45);
+}
+.mobile-eyebrow, .mobile-section-title > span {
+  color: var(--m-cyan);
+  font: 10px var(--font-mono);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+.mobile-eyebrow::before, .mobile-section-title > span::before {
+  content: "// ";
+  color: var(--m-coral);
+}
+.mobile-header h1 {
+  margin: 6px 0 0;
+  font-size: 22px;
+  font-weight: 900;
+  letter-spacing: -0.01em;
+  background: linear-gradient(90deg, #ffffff 0%, var(--m-cyan) 140%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+.mobile-version {
+  display: block;
+  margin-top: 2px;
+  color: var(--m-faint);
+  font: 10px var(--font-mono);
+  letter-spacing: 0.14em;
+}
+.mobile-status {
+  margin-top: 6px;
+  color: var(--m-cyan);
+  font-size: 11px;
+  font-family: var(--font-mono);
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: var(--m-cyan-soft);
+  border: 1px solid rgba(0, 245, 212, 0.3);
+  box-shadow: 0 0 10px rgba(0, 245, 212, 0.15);
+}
+
+.mobile-main {
+  padding: 0 14px;
+}
+.mobile-view {
+  animation: cyber-rise .3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+@keyframes cyber-rise {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: none; }
+}
+
+.welcome-line {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin: 14px 4px 10px;
+  color: var(--m-dim);
+  font-size: 13px;
+}
+.welcome-line strong {
+  color: var(--m-cyan);
+  font-size: 13px;
+  font-family: var(--font-mono);
+}
+
+/* 顶部指标 */
+.mobile-quick-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin: 0 0 14px;
+}
+.mobile-quick-stats div {
+  padding: 10px 8px;
+  border: 1px solid var(--m-border);
+  border-radius: 8px;
+  background: rgba(0, 245, 212, 0.03);
+  backdrop-filter: blur(10px);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+.mobile-quick-stats strong, .mobile-quick-stats span {
+  display: block;
+}
+.mobile-quick-stats strong {
+  color: var(--m-cyan);
+  font-size: 16px;
+  font-family: var(--font-mono);
+  font-weight: 800;
+}
+.mobile-quick-stats span {
+  margin-top: 2px;
+  color: var(--m-dim);
+  font-size: 10px;
+}
+
+/* HUD 晶体卡片通用 */
+.mobile-input-panel, .mobile-result, .mobile-profile, .mobile-history, .mobile-settings {
+  border: 1px solid var(--m-border);
+  border-radius: 10px;
+  background: var(--m-surface-card);
+  backdrop-filter: blur(20px) saturate(160%);
+  -webkit-backdrop-filter: blur(20px) saturate(160%);
+  box-shadow: 0 14px 35px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  position: relative;
+}
+.mobile-input-panel::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 20px;
+  height: 2px;
+  background: linear-gradient(90deg, var(--m-cyan), transparent);
+}
+.mobile-input-panel {
+  padding: 18px;
+  border-color: rgba(0, 245, 212, 0.28);
+}
+
+/* 模式切换 Switch */
+.mobile-switch {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 4px;
+  padding: 4px;
+  background: rgba(0, 0, 0, 0.45);
+  border: 1px solid var(--m-border);
+  border-radius: 8px;
+}
+.mobile-switch-button {
+  min-height: 34px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--m-dim);
+  font-size: 12px;
+  font-weight: 800;
+  font-family: var(--font-mono);
+  transition: all var(--motion);
+}
+.mobile-switch-button.active {
+  background: linear-gradient(135deg, var(--m-cyan) 0%, var(--m-blue) 100%);
+  color: #031518;
+  box-shadow: 0 0 14px rgba(0, 245, 212, 0.45);
+}
+
+.mobile-input-panel label, .mobile-settings label {
+  display: block;
+  margin: 16px 0 6px;
+  color: var(--m-cyan);
+  font-size: 11px;
+  font-weight: 800;
+  font-family: var(--font-mono);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.mobile-input-wrap {
+  position: relative;
+}
+.mobile-input-wrap textarea {
+  width: 100%;
+  min-height: 110px;
+  padding: 12px 14px 38px;
+  border: 1px solid var(--m-border-strong);
+  border-radius: 8px;
+  background: rgba(3, 11, 16, 0.7);
+  color: var(--m-text);
+  resize: none;
+  outline: none;
+  line-height: 1.6;
+  font-size: 14px;
+  box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.5);
+  transition: all var(--motion);
+}
+.mobile-input-wrap textarea:focus, .mobile-settings input:focus {
+  border-color: var(--m-cyan);
+  box-shadow: 0 0 0 3px var(--m-cyan-soft), 0 0 20px rgba(0, 245, 212, 0.2);
+  background: rgba(5, 16, 23, 0.9);
+}
+
+/* 按钮系列 */
+.mobile-primary {
+  width: 100%;
+  min-height: 48px;
+  margin-top: 14px;
+  border: 0;
+  border-radius: 8px;
+  background: linear-gradient(135deg, var(--m-coral) 0%, #ff758f 100%);
+  color: #ffffff;
+  font-weight: 900;
+  font-size: 14px;
+  letter-spacing: 0.04em;
+  box-shadow: var(--m-coral-glow);
+  position: relative;
+  overflow: hidden;
+  transition: all var(--motion);
+}
+.mobile-primary::after {
+  content: "";
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: linear-gradient(45deg, transparent 40%, rgba(255,255,255,0.25) 50%, transparent 60%);
+  transform: rotate(25deg);
+  animation: cyber-sweep 4.5s infinite;
+}
+.mobile-primary:active {
+  transform: scale(0.98);
+  box-shadow: 0 0 10px rgba(255, 77, 109, 0.4);
+}
+
+.mobile-primary-small {
+  min-height: 34px;
+  padding: 0 12px;
+  border: 1px solid rgba(0, 245, 212, 0.35);
+  border-radius: 6px;
+  background: linear-gradient(135deg, var(--m-cyan) 0%, var(--m-blue) 100%);
+  color: #031518;
+  font-size: 12px;
+  font-weight: 800;
+  box-shadow: var(--m-cyan-glow);
+}
+
+.mobile-input-panel p, .mobile-section-title p, .mobile-settings p {
+  margin: 10px 0 0;
+  color: var(--m-dim);
+  font-size: 11px;
+  line-height: 1.55;
+}
+
+.mobile-input-context {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+  margin-top: 12px;
+  color: var(--m-dim);
+  font-size: 11px;
+  font-family: var(--font-mono);
+}
+.mobile-input-context span {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+.mobile-input-context i {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--m-cyan);
+  box-shadow: 0 0 8px var(--m-cyan);
+}
+
+/* 解析结果区 Result */
+.mobile-result {
+  margin-top: 16px;
+  padding: 16px;
+}
+.mobile-result-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: var(--m-cyan);
+  font-size: 12px;
+  font-weight: 800;
+  font-family: var(--font-mono);
+}
+.mobile-result-top button {
+  border: 1px solid var(--m-border);
+  border-radius: 4px;
+  background: rgba(0, 245, 212, 0.05);
+  color: var(--m-cyan);
+  font-size: 11px;
+  padding: 3px 8px;
+}
+.mobile-result h2 {
+  margin: 12px 0 4px;
+  font-size: 18px;
+  line-height: 1.35;
+  font-weight: 800;
+  color: var(--m-text);
+}
+.mobile-result-meta {
+  margin: 0;
+  color: var(--m-dim);
+  font-size: 12px;
+  font-family: var(--font-mono);
+}
+
+.mobile-media {
+  margin: 14px -1px 0;
+  overflow: hidden;
+  border-radius: 8px;
+  background: #02070a;
+  border: 1px solid var(--m-border);
+}
+.mobile-media video {
+  display: block;
+  width: 100%;
+  max-height: 420px;
+  aspect-ratio: 9/12;
+  object-fit: contain;
+  background: #000000;
+}
+.mobile-media figure {
+  position: relative;
+  margin: 0;
+  border-bottom: 1px solid var(--m-border);
+}
+.mobile-media figure:last-child { border: 0; }
+.mobile-media img {
+  display: block;
+  width: 100%;
+  max-height: 430px;
+  object-fit: contain;
+}
+.mobile-media figure a {
+  position: absolute;
+  right: 9px;
+  bottom: 9px;
+  padding: 6px 10px;
+  border-radius: 5px;
+  background: rgba(0, 0, 0, 0.75);
+  border: 1px solid var(--m-cyan);
+  color: var(--m-cyan);
+  text-decoration: none;
+  font-size: 11px;
+  font-family: var(--font-mono);
+  backdrop-filter: blur(8px);
+}
+
+.mobile-download {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+}
+
+/* 列表与分页 */
+.mobile-section-title {
+  padding: 10px 4px 14px;
+}
+.mobile-section-title h2 {
+  margin: 6px 0 4px;
+  font-size: 22px;
+  font-weight: 900;
+}
+.mobile-profile-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px;
+  border-bottom: 1px solid var(--m-border);
+}
+.mobile-profile-head span {
+  color: var(--m-dim);
+  font-size: 12px;
+}
+.mobile-profile-head strong {
+  margin-top: 3px;
+  font-size: 15px;
+  color: var(--m-text);
+}
+.mobile-profile-head > div:last-child {
+  display: flex;
+  gap: 6px;
+}
+.mobile-profile-head button {
+  min-height: 32px;
+  padding: 0 10px;
+  border: 1px solid var(--m-border);
+  border-radius: 6px;
+  background: rgba(0, 245, 212, 0.05);
+  color: var(--m-text);
+  font-size: 11px;
+}
+
+.mobile-profile-list { display: grid; }
+.mobile-profile-item {
+  display: grid;
+  grid-template-columns: 18px 62px minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--m-border);
+  transition: background var(--motion);
+}
+.mobile-profile-item:last-child { border: 0; }
+.mobile-profile-item.selected {
+  background: rgba(0, 245, 212, 0.08);
+}
+.mobile-profile-item input {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--m-cyan);
+}
+.mobile-profile-item img {
+  width: 62px;
+  height: 60px;
+  object-fit: cover;
+  border-radius: 6px;
+  border: 1px solid var(--m-border);
+  background: #02070a;
+}
+.mobile-profile-item h3 {
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--m-text);
+}
+.mobile-profile-item p {
+  margin: 3px 0 0;
+  color: var(--m-dim);
+  font-size: 11px;
+  font-family: var(--font-mono);
+}
+.mobile-profile-item > button {
+  padding: 5px 9px;
+  border: 1px solid var(--m-border);
+  border-radius: 6px;
+  background: rgba(0, 245, 212, 0.06);
+  color: var(--m-cyan);
+  font-size: 11px;
+}
+
+.mobile-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 13px 14px;
+  border-top: 1px solid var(--m-border);
+  color: var(--m-dim);
+  font-size: 12px;
+  font-family: var(--font-mono);
+}
+.mobile-pagination button {
+  min-height: 32px;
+  padding: 0 12px;
+  border: 1px solid var(--m-border);
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--m-text);
+  font-size: 12px;
+}
+
+.mobile-empty {
+  padding: 50px 20px;
+  text-align: center;
+  color: var(--m-faint);
+  font-size: 13px;
+  font-family: var(--font-mono);
+}
+
+/* 历史记录 */
+.mobile-history-item {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 46px minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+  padding: 13px 14px;
+  border: 0;
+  border-bottom: 1px solid var(--m-border);
+  background: transparent;
+  text-align: left;
+  transition: background var(--motion);
+}
+.mobile-history-item:hover, .mobile-history-item:active {
+  background: rgba(0, 245, 212, 0.04);
+}
+.mobile-history-item:last-child { border: 0; }
+.mobile-history-item > span {
+  color: var(--m-coral);
+  font-size: 11px;
+  font-family: var(--font-mono);
+  font-weight: 800;
+}
+.mobile-history-item strong {
+  color: var(--m-text);
+  font-size: 13px;
+  font-weight: 800;
+}
+.mobile-history-item small {
+  margin-top: 3px;
+  color: var(--m-dim);
+  font-size: 11px;
+  font-family: var(--font-mono);
+}
+.mobile-history-item b {
+  color: var(--m-cyan);
+  font-size: 11px;
+}
+
+/* 设置区 */
+.mobile-settings {
+  padding: 16px;
+}
+.mobile-settings input {
+  width: 100%;
+  height: 42px;
+  padding: 0 12px;
+  border: 1px solid var(--m-border);
+  border-radius: 6px;
+  background: rgba(3, 11, 16, 0.7);
+  color: var(--m-text);
+  outline: none;
+  font-family: var(--font-mono);
+}
+.mobile-settings button {
+  min-height: 38px;
+  padding: 0 14px;
+  border: 1px solid var(--m-border);
+  border-radius: 6px;
+  background: rgba(0, 245, 212, 0.06);
+  color: var(--m-text);
+  font-size: 12px;
+  margin-right: 8px;
+}
+
+.mobile-update {
+  margin: 16px 0 18px;
+  padding: 14px;
+  border: 1px solid var(--m-border);
+  border-radius: 8px;
+  background: rgba(0, 245, 212, 0.03);
+}
+.mobile-update strong {
+  display: block;
+  color: var(--m-cyan);
+  font-size: 13px;
+  font-family: var(--font-mono);
+}
+.mobile-update button {
+  margin-top: 10px;
+}
+
+/* 直播间拉流 HUD */
+.mobile-live-streams {
+  margin: 14px -1px 0;
+  display: grid;
+}
+.mobile-live-stream {
+  display: grid;
+  grid-template-columns: 46px minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+  padding: 11px 4px;
+  border-bottom: 1px solid var(--m-border);
+}
+.mobile-live-stream:last-child { border: 0; }
+.mobile-live-stream > span {
+  display: inline-grid;
+  place-items: center;
+  height: 28px;
+  border: 1px solid var(--m-border);
+  border-radius: 5px;
+  color: var(--m-cyan);
+  background: var(--m-cyan-soft);
+  font: 800 10px var(--font-mono);
+}
+.mobile-live-stream strong {
+  font-size: 12px;
+  color: var(--m-text);
+}
+.mobile-live-stream small {
+  margin-top: 2px;
+  color: var(--m-dim);
+  font: 10px var(--font-mono);
+}
+.mobile-live-stream > button {
+  padding: 5px 8px;
+  border: 1px solid var(--m-border);
+  border-radius: 5px;
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--m-cyan);
+  font-size: 11px;
+}
+
+/* 发现与热榜 */
+.mobile-discover-item {
+  display: grid;
+  grid-template-columns: 74px minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+  padding: 11px 2px;
+  border-bottom: 1px solid var(--m-border);
+}
+.mobile-discover-item:last-child { border: 0; }
+.mobile-discover-item img, .mobile-discover-thumb-placeholder {
+  display: block;
+  width: 74px;
+  height: 48px;
+  object-fit: cover;
+  border-radius: 6px;
+  border: 1px solid var(--m-border);
+  background: #02070a;
+}
+.mobile-discover-item h3 {
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 12px;
+  color: var(--m-text);
+}
+.mobile-discover-item p {
+  margin: 3px 0 0;
+  color: var(--m-dim);
+  font-size: 10px;
+  font-family: var(--font-mono);
+}
+.mobile-discover-item > div:last-child {
+  display: grid;
+  gap: 4px;
+}
+.mobile-discover-item > div:last-child button {
+  padding: 4px 8px;
+  border: 1px solid var(--m-border);
+  border-radius: 5px;
+  background: rgba(0, 245, 212, 0.06);
+  color: var(--m-cyan);
+  font-size: 11px;
+}
+.mobile-discover-tab.active {
+  background: linear-gradient(135deg, var(--m-cyan) 0%, var(--m-blue) 100%);
+  color: #031518;
+}
+
+/* 底部毛玻璃科技导航栏 Tabbar */
+.mobile-tabbar {
+  position: fixed;
+  z-index: 50;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  padding: 6px 6px calc(6px + env(safe-area-inset-bottom));
+  border-top: 1px solid var(--m-border);
+  background: rgba(4, 12, 17, 0.88);
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.5);
+}
+.mobile-tab {
+  min-height: 44px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--m-dim);
+  font-size: 12px;
+  font-weight: 800;
+  font-family: var(--font-mono);
+  transition: all var(--motion);
+}
+.mobile-tab.active {
+  background: var(--m-cyan-soft);
+  color: var(--m-cyan);
+  box-shadow: inset 0 0 12px rgba(0, 245, 212, 0.15);
+}
+
+/* 科技微光浮动提示 Toast */
+.mobile-toast {
+  position: fixed;
+  z-index: 100;
+  right: 18px;
+  bottom: calc(76px + env(safe-area-inset-bottom));
+  left: 18px;
+  padding: 12px 16px;
+  border-radius: 8px;
+  background: rgba(9, 24, 33, 0.94);
+  border: 1px solid var(--m-cyan);
+  color: var(--m-cyan);
+  font-size: 13px;
+  font-family: var(--font-mono);
+  text-align: center;
+  box-shadow: var(--m-cyan-glow), 0 8px 30px rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(16px);
+}

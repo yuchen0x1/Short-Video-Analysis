@@ -96,6 +96,7 @@ const tiktokItemStruct = {
   createTime: '1700000000',
   author: { uniqueId: 'tiktokuser', nickname: 'TikTok 作者', avatarLarger: 'https://cdn.example/tt-avatar.jpg' },
   stats: { diggCount: 99 },
+  statsV2: { diggCount: 1234 },
   video: {
     playAddr: 'https://v16m.example.com/tt-play.mp4',
     cover: 'https://cdn.example/tt-cover.jpg',
@@ -240,6 +241,11 @@ const transport = {
     if (/https?:\/\/v[mt]\.tiktok\.com\//i.test(url)) {
       return response('', 'https://www.tiktok.com/@user/video/7100000000000000001', 301);
     }
+    if (url === 'https://www.kuaishou.com/f/fixture-share-token') {
+      return count === 1
+        ? response('', url, 200)
+        : response('', 'https://www.kuaishou.com/short-video/fixture-ks', 302);
+    }
     if (url.includes('api.bilibili.com/x/frontend/finger/spi')) {
       return response({ data: { b_3: 'fixture-buvid3', b_4: 'fixture-buvid4' } }, url);
     }
@@ -356,6 +362,7 @@ const transport = {
     if (url.startsWith('https://www.xiaohongshu.com/explore/')) {
       const noteId = (url.match(/explore\/([a-f0-9]+)/i) || [])[1] || 'abcdef123456';
       const isImageNote = noteId === 'abcdef999999';
+      const isEfVideoNote = noteId === 'abcdef777777';
       const note = isImageNote ? {
         title: 'fixture xiaohongshu images',
         time: 1700000000,
@@ -366,12 +373,22 @@ const transport = {
           { urlDefault: 'https://cdn.example/xhs-img-2.jpg' },
         ],
       } : {
-        title: 'fixture xiaohongshu',
+        title: isEfVideoNote ? 'fixture xiaohongshu EF streams' : 'fixture xiaohongshu',
         time: 1700000000,
         likedCount: 4,
         user: { userId: 'xhs-user', nickname: '小红书作者', avatar: 'https://cdn.example/xhs-avatar.jpg' },
         imageList: [{ urlDefault: 'https://cdn.example/xhs-cover.jpg' }],
-        video: { media: { stream: { master_url: 'https://cdn.example/xhs.mp4' } } },
+        video: {
+          media: {
+            stream: isEfVideoNote
+              ? {
+                  EF4: [{ masterUrl: 'https://cdn.example/xhs-ef4.mp4', height: 720, avgBitrate: 1200 }],
+                  EF6: [{ master_url: 'https://cdn.example/xhs-ef6.mp4', height: 1080, avg_bitrate: 1800 }],
+                  EF7: [{ masterUrl: 'https://cdn.example/xhs-ef7.mp4', height: 1080, avgBitrate: 2200 }],
+                }
+              : { master_url: 'https://cdn.example/xhs.mp4' },
+          },
+        },
       };
       const state = { note: { noteDetailMap: { [noteId]: { note } } } };
       return response(`<script>window.__INITIAL_STATE__ = ${json(state)};</script><`, url);
@@ -565,6 +582,16 @@ await check('抖音优先无水印播放接口并排除水印地址', async () =
   assert.ok(!result.url.includes('watermark=1'));
 });
 
+await check('抖音请求携带 Argus 网关头且详情指纹参数同源', async () => {
+  await parsers.parse('https://www.douyin.com/video/7123456789012345678');
+  const detailCall = calls.findLast((item) => item.url.includes('/aweme/v1/web/aweme/detail/'));
+  assert.ok(detailCall, '应发起抖音详情请求');
+  assert.equal(detailCall.headers['x-tt-argus'], '1');
+  const query = new URL(detailCall.url).searchParams;
+  assert.equal(query.get('verifyFp'), query.get('fp'));
+  assert.ok(detailCall.headers.Cookie.includes(`s_v_web_id=${query.get('verifyFp')}`));
+});
+
 await check('抖音解析结果包含背景音乐播放地址', async () => {
   const result = await parsers.parse('https://www.douyin.com/video/7123456789012345678');
   assert.equal(result.music.url, 'https://cdn.example/music.mp3');
@@ -579,6 +606,13 @@ await check('小红书图文笔记返回图集', async () => {
   assert.deepEqual(result.images, ['https://cdn.example/xhs-img-1.jpg', 'https://cdn.example/xhs-img-2.jpg']);
   assert.equal(result.url, result.images[0]);
   assert.equal(result.cover, 'https://cdn.example/xhs-img-1.jpg');
+});
+
+await check('小红书 EF 分档按分辨率和码率选择最高质量视频', async () => {
+  const result = await parsers.parse('https://www.xiaohongshu.com/explore/abcdef777777?source=fixture');
+  assert.equal(result.platform, 'xiaohongshu');
+  assert.equal(result.media_type, 'video');
+  assert.equal(result.url, 'https://cdn.example/xhs-ef7.mp4');
 });
 
 await check('皮皮虾图集无视频地址仍可解析', async () => {
@@ -731,14 +765,26 @@ await check('TikTok 视频解析契约（embed 水合数据 + 最高码率 playA
   assertMedia(result, 'tiktok');
   assert.equal(result.url, 'https://v16m.example.com/tt-hq.mp4');
   assert.equal(result.author, 'TikTok 作者');
+  assert.equal(result.like, 1234);
   assert.equal(result.music.url, 'https://cdn.example/tt-music.mp3');
   assert.equal(result.time, 1700000000);
+});
+
+await check('TikTok statsV2 优先于旧 stats', async () => {
+  const result = await parsers.parse('https://www.tiktok.com/@user/video/7100000000000000001');
+  assert.equal(result.like, 1234);
 });
 
 await check('TikTok 短链解析', async () => {
   const result = await parsers.parse('https://vm.tiktok.com/abc/');
   assert.equal(result.platform, 'tiktok');
   assert.equal(result.url, 'https://v16m.example.com/tt-hq.mp4');
+});
+
+await check('快手 /f/ 短链经二次重定向解析', async () => {
+  const result = await parsers.parse('https://www.kuaishou.com/f/fixture-share-token');
+  assert.equal(result.platform, 'kuaishou');
+  assert.equal(result.url, 'https://cdn.example/kuaishou.mp4');
 });
 
 await check('TikTok 图集解析契约', async () => {

@@ -440,6 +440,8 @@ final class MediaProxySecurity {
             new HashSet<>(Arrays.asList(
                     "douyinvod.com",
                     "douyinvod.com.cn",
+                    "douyinstatic.com",
+                    "douyinpic.com",
                     "bytecdn.cn",
                     "ibytedtos.com",
                     "bilivideo.com",
@@ -449,7 +451,13 @@ final class MediaProxySecurity {
                     "ixiguavideo.com",
                     "video.weishi.qq.com",
                     "ippzone.com",
-                    "pipix.com"
+                    "pipix.com",
+                    "tiktokcdn.com",
+                    "tiktokcdn-us.com",
+                    "huya.com",
+                    "msstatic.com",
+                    "douyucdn.cn",
+                    "douyucdn2.cn"
             )));
 
     static boolean isAllowedMediaUrl(String value) {

@@ -83,6 +83,13 @@ class BilibiliParser extends BaseParser
             throw new \RuntimeException("未找到视频 URL");
         }
 
+        $audioUrl = "";
+        if (isset($dash["audio"][0]["baseUrl"])) {
+            $audioUrl = $dash["audio"][0]["baseUrl"];
+        } elseif (isset($dash["audio"][0]["backupUrl"][0])) {
+            $audioUrl = $dash["audio"][0]["backupUrl"][0];
+        }
+
         return [
             "author" => $item["owner"]["name"] ?? "",
             "uid" => $item["owner"]["mid"] ?? "",
@@ -92,6 +99,12 @@ class BilibiliParser extends BaseParser
             "title" => $item["title"] ?? "",
             "cover" => $item["pic"] ?? "",
             "url" => $videoUrl,
+            "music" => [
+                "author" => $item["owner"]["name"] ?? "",
+                "title" => $item["title"] ?? "",
+                "avatar" => $item["owner"]["face"] ?? "",
+                "url" => $audioUrl,
+            ],
         ];
     }
 }

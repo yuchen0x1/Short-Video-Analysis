@@ -405,6 +405,7 @@ class DouyinParser extends BaseParser
                 'Cookie' => 'ttwid=' . $ttwid
                     . '; s_v_web_id=' . self::$profileVerifyFp
                     . '; msToken=' . self::$profileMsToken,
+                'x-tt-argus' => '1',
                 'Sec-Fetch-Dest' => 'empty',
                 'Sec-Fetch-Mode' => 'cors',
                 'Sec-Fetch-Site' => 'same-origin',
@@ -480,6 +481,7 @@ class DouyinParser extends BaseParser
                 'Accept' => 'application/json, text/plain, */*',
                 'Referer' => 'https://www.douyin.com/collection/' . $mixId,
                 'Cookie' => 'ttwid=' . $ttwid,
+                'x-tt-argus' => '1',
             ]);
 
             if (!$result['success']) {
@@ -502,12 +504,15 @@ class DouyinParser extends BaseParser
         }
 
         $msToken = self::randomToken(107);
+        $verifyFp = self::randomVerifyFp();
         $query = http_build_query([
             'device_platform' => 'webapp',
             'aid' => '6383',
             'channel' => 'channel_pc_web',
             'aweme_id' => $videoId,
             'msToken' => $msToken,
+            'verifyFp' => $verifyFp,
+            'fp' => $verifyFp,
         ]);
 
         $aBogus = self::generateABogus($query, $ua);
@@ -521,7 +526,10 @@ class DouyinParser extends BaseParser
             'Accept' => 'application/json, text/plain, */*',
             'Accept-Language' => 'zh-CN,zh;q=0.9,en;q=0.8',
             'Referer' => 'https://www.douyin.com/video/' . $videoId,
-            'Cookie' => 'ttwid=' . $ttwid,
+            'Cookie' => 'ttwid=' . $ttwid
+                . '; s_v_web_id=' . $verifyFp
+                . '; msToken=' . $msToken,
+            'x-tt-argus' => '1',
             'Sec-Fetch-Dest' => 'empty',
             'Sec-Fetch-Mode' => 'cors',
             'Sec-Fetch-Site' => 'same-origin',

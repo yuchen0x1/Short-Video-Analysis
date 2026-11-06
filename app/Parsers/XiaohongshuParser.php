@@ -107,14 +107,32 @@ class XiaohongshuParser extends BaseParser
             if ($stream) {
                 $videoUrl = $stream["master_url"] ?? "";
                 if (!$videoUrl) {
-                    foreach (["h264", "h265", "h266", "av1"] as $codec) {
-                        foreach ($stream[$codec] ?? [] as $variant) {
-                            $videoUrl = $variant["masterUrl"] ?? $variant["master_url"] ?? "";
-                            if ($videoUrl) {
-                                break 2;
+                    // 2026-09 起分档名由 h264/h265/av1 改为 EF4/EF5/EF6/EF7；
+                    // 遍历所有列表分档并按分辨率、码率排序，避免平台改名后静默取空。
+                    $variants = [];
+                    foreach ($stream as $bucket) {
+                        if (!is_array($bucket)) {
+                            continue;
+                        }
+                        foreach ($bucket as $variant) {
+                            if (!is_array($variant)) {
+                                continue;
                             }
+                            $url = (string) ($variant["masterUrl"] ?? $variant["master_url"] ?? "");
+                            if ($url === "") {
+                                continue;
+                            }
+                            $variants[] = [
+                                "url" => $url,
+                                "height" => (int) ($variant["height"] ?? 0),
+                                "bitrate" => (int) ($variant["avgBitrate"] ?? $variant["avg_bitrate"] ?? 0),
+                            ];
                         }
                     }
+                    usort($variants, static fn (array $left, array $right): int =>
+                        ($right["height"] <=> $left["height"]) ?: ($right["bitrate"] <=> $left["bitrate"])
+                    );
+                    $videoUrl = (string) ($variants[0]["url"] ?? "");
                 }
             }
             // 备用路径

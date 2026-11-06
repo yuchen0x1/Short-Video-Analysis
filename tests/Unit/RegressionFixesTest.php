@@ -158,6 +158,50 @@ final class RegressionFixesTest extends TestCase
         $this->assertNull($method->invoke(null, $headers, 'missing-header'));
     }
 
+    public function testDouyinRequestsIncludeArgusGatewayHeader(): void
+    {
+        $phpParser = (string) file_get_contents($this->root . '/app/Parsers/DouyinParser.php');
+        $jsParser = (string) file_get_contents($this->root . '/packages/parsers/src/parsers/douyin.js');
+
+        $this->assertStringContainsString("'x-tt-argus' => '1'", $phpParser);
+        $this->assertStringContainsString("'x-tt-argus': '1'", $jsParser);
+        $this->assertStringContainsString("'verifyFp' => \$verifyFp", $phpParser);
+        $this->assertStringContainsString("'fp' => \$verifyFp", $phpParser);
+        $this->assertStringContainsString("'; s_v_web_id=' . \$verifyFp", $phpParser);
+        $this->assertStringContainsString("verifyFp,", $jsParser);
+        $this->assertStringContainsString("fp: verifyFp,", $jsParser);
+    }
+
+    public function testKuaishouParserSupportsShareTokensAndModernIds(): void
+    {
+        $source = (string) file_get_contents($this->root . '/app/Parsers/KuaishouParser.php');
+
+        $this->assertStringContainsString('kuaishou\\.com/f/', $source);
+        $this->assertStringContainsString('$secondLocation = HttpClient::getLocation($target);', $source);
+        $this->assertStringContainsString('[A-Za-z0-9_-]+', $source);
+    }
+
+    public function testTiktokStatsV2TakesPrecedenceOverLegacyStats(): void
+    {
+        $method = new \ReflectionMethod(\App\Parsers\TiktokParser::class, 'webItemToResult');
+        $method->setAccessible(true);
+
+        $result = $method->invoke(null, [
+            'author' => [
+                'nickname' => 'TikTok 作者',
+                'uniqueId' => 'tiktok-user',
+            ],
+            'stats' => ['diggCount' => 99],
+            'statsV2' => ['diggCount' => 1234],
+            'video' => [
+                'playAddr' => 'https://cdn.example.com/tiktok.mp4',
+                'cover' => 'https://cdn.example.com/tiktok-cover.jpg',
+            ],
+        ]);
+
+        $this->assertSame(1234, $result['like']);
+    }
+
     public function testStartScriptsAndDockerfileLoadRouter(): void
     {
         $this->assertFileExists($this->root . '/public/router.php');
@@ -207,7 +251,7 @@ final class RegressionFixesTest extends TestCase
         $this->assertStringContainsString('$ready ? 200 : 503', $source);
     }
 
-    public function testOnlineUpdatesUseDomesticSourcesOnly(): void
+    public function testOnlineUpdatesUseGitHubReleases(): void
     {
         $files = [
             '.env.example',
@@ -223,12 +267,21 @@ final class RegressionFixesTest extends TestCase
             $source .= (string) file_get_contents($this->root . '/' . $file);
         }
 
-        $this->assertStringNotContainsString('api.github.com', $source);
-        $this->assertStringNotContainsString('"provider": "github"', $source);
-        $this->assertStringNotContainsString('UPDATE_GITHUB', $source);
-        $this->assertStringNotContainsString('UPDATE_ALLOW_GITHUB', $source);
-        $this->assertStringNotContainsString('GITHUB_FEED', $source);
-        $this->assertStringContainsString('https://gitee.com/yuchen0x1/short-video-watermark-remover/releases', $source);
+        $this->assertStringNotContainsString('https://gitee.com/yuchen0x1/short-video-watermark-remover/releases', $source);
+        $this->assertStringNotContainsString('UPDATE_GITEE', $source);
+        $this->assertStringContainsString('Short-Video-Analysis', $source);
+    }
+
+    public function testOnlineUpdateFallsBackWhenGithubApiIsRateLimited(): void
+    {
+        $api = (string) file_get_contents($this->root . '/public/api/v1.php');
+        $checker = (string) file_get_contents($this->root . '/packages/update-checker/src/index.js');
+
+        $this->assertStringContainsString('parseGithubReleaseAtom', $api);
+        $this->assertStringContainsString('parseGithubExpandedAssets', $api);
+        $this->assertStringContainsString('releases.atom', $api);
+        $this->assertStringContainsString('fetchGithubReleaseFallback', $checker);
+        $this->assertStringContainsString('releases/expanded_assets/', $checker);
     }
 
     public function testMediaProxyPropagatesUpstreamFailureStatus(): void
@@ -236,6 +289,7 @@ final class RegressionFixesTest extends TestCase
         $source = (string) file_get_contents($this->root . '/app/Services/MediaProxy.php');
         $this->assertStringContainsString("'媒体源返回 HTTP ' . \$httpCode", $source);
         $this->assertStringContainsString('$safeStatus = $httpCode >= 400 && $httpCode <= 599 ? $httpCode : 502;', $source);
+        $this->assertStringContainsString('$state[\'forward\'] = $status >= 200 && $status < 300 && $status !== 204;', $source);
     }
 
     public function testMediaProxyEntryBuildsValidatedRequestBeforeStreaming(): void

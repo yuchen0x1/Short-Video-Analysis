@@ -47,6 +47,11 @@ export async function parse(url) {
     throw new Error('未找到 B 站视频地址');
   }
 
+  const audioUrl =
+    data?.dash?.audio?.[0]?.baseUrl ||
+    data?.dash?.audio?.[0]?.backupUrl?.[0] ||
+    '';
+
   return {
     author: item.owner?.name || '',
     uid: item.owner?.mid ?? '',
@@ -56,5 +61,11 @@ export async function parse(url) {
     title: item.title || '',
     cover: item.pic || '',
     url: fixUrl(videoUrl),
+    music: {
+      author: item.owner?.name || '',
+      title: item.title || '',
+      avatar: item.owner?.face || '',
+      url: audioUrl ? fixUrl(audioUrl) : '',
+    },
   };
 }

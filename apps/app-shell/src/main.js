@@ -85,6 +85,7 @@ app.innerHTML = `
             </div>
             <div class="input-row">
               <input id="link-input" type="text" autocomplete="off" spellcheck="false" placeholder="粘贴视频链接或整段分享文案" />
+              <button id="paste-input" class="secondary-button" type="button" title="从剪贴板粘贴">粘贴</button>
               <button id="clear-input" class="secondary-button" type="button">清除</button>
               <button id="parse-button" class="primary-button" type="button">开始解析</button>
             </div>
@@ -184,6 +185,7 @@ const $ = (selector, root = document) => root.querySelector(selector);
 const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
 const linkInput = $('#link-input');
 const parseButton = $('#parse-button');
+const pasteInputButton = $('#paste-input');
 const clearInputButton = $('#clear-input');
 const inputHint = $('#input-hint');
 const singleResult = $('#single-result');
@@ -286,7 +288,7 @@ function renderSingleResult(data, rawUrl) {
     <div class="result-heading"><div><span class="panel-kicker">解析结果</span><h2>${escapeHtml(data.title || '未命名内容')}</h2><p>${escapeHtml(data.author || '未知作者')} · ${type === 'image' ? '图集' : '视频'} · ${formatDate(data.time)}</p></div><span class="result-type">${type === 'image' ? '图集' : '视频'}</span></div>
     <div class="result-media ${type === 'image' ? 'is-gallery' : ''}">${type === 'image' ? urls.map((url, index) => `<figure class="image-tile"><img src="${escapeHtml(mediaUrl(url))}" alt="${escapeHtml(data.title || '图片')} ${index + 1}" loading="lazy"><a class="tile-download" href="${escapeHtml(downloadUrl(url, (data.title || 'image-' + (index + 1)) + '.jpg'))}" download>下载</a></figure>`).join('') : `<video controls playsinline preload="metadata" poster="${escapeHtml(data.cover ? mediaUrl(data.cover) : '')}" src="${escapeHtml(mediaUrl(first))}"></video>`}</div>
     <div class="result-details"><div><span>点赞</span><strong>${escapeHtml(formatCount(data.like))}</strong></div><div><span>平台</span><strong>${escapeHtml(platformName(rawUrl))}</strong></div><div><span>作者</span><strong>${escapeHtml(data.author || '未知作者')}</strong></div></div>
-    <div class="result-actions"><a class="primary-button" href="${escapeHtml(downloadUrl(first, (data.title || 'media') + (type === 'image' ? '.jpg' : '.mp4')))}" download>下载${type === 'image' ? '首图' : '视频'}</a>${musicHref ? `<a class="secondary-button" href="${escapeHtml(musicHref)}" download>下载音乐</a>` : ''}${commentsButton}<button class="secondary-button" type="button" data-copy-url="${escapeHtml(downloadUrl(first, (data.title || 'media') + (type === 'image' ? '.jpg' : '.mp4')))}">复制无水印链接</button><button class="secondary-button" type="button" data-open-url="${escapeHtml(rawUrl)}">打开原链接</button></div>
+    <div class="result-actions"><a class="primary-button" href="${escapeHtml(downloadUrl(first, (data.title || 'media') + (type === 'image' ? '.jpg' : '.mp4')))}" download>下载${type === 'image' ? '首图' : '视频'}</a>${type === 'image' && urls.length > 1 ? `<button id="desktop-zip-btn" class="primary-button" type="button">打包下载图集 (${urls.length}张 ZIP)</button>` : ''}${musicHref ? `<a class="secondary-button" href="${escapeHtml(musicHref)}" download>下载音乐</a>` : ''}${commentsButton}<button class="secondary-button" type="button" data-copy-url="${escapeHtml(downloadUrl(first, (data.title || 'media') + (type === 'image' ? '.jpg' : '.mp4')))}">复制无水印链接</button><button class="secondary-button" type="button" data-open-url="${escapeHtml(rawUrl)}">打开原链接</button></div>
   `;
   addHistory({ rawUrl, data });
 }
@@ -688,6 +690,43 @@ document.addEventListener('click', (event) => {
     commentsUrl = commentsButton.dataset.commentsUrl;
     loadComments(commentsUrl, []);
   }
+
+  const zipBtn = event.target.closest('#desktop-zip-btn');
+  if (zipBtn && state.currentSourceUrl) {
+    const urls = singleResult?.querySelectorAll('.image-tile img') ? Array.from(singleResult.querySelectorAll('.image-tile img')).map((img) => img.src) : [];
+    if (!urls.length) return;
+    const baseTitle = ($('#single-result h2')?.textContent || 'image-gallery').replace(/[\\/:*?"<>|]/g, '_').slice(0, 80);
+    const origText = zipBtn.textContent;
+    zipBtn.disabled = true;
+    (async () => {
+      try {
+        const entries = [];
+        for (let i = 0; i < urls.length; i += 1) {
+          zipBtn.textContent = `打包中 (${i + 1}/${urls.length})…`;
+          const res = await fetch(urls[i]);
+          if (!res.ok) throw new Error(`第 ${i + 1} 张图片下载失败`);
+          const buf = await res.arrayBuffer();
+          entries.push({ name: `${baseTitle}-${String(i + 1).padStart(2, '0')}.jpg`, data: new Uint8Array(buf) });
+        }
+        zipBtn.textContent = '生成 ZIP…';
+        const blob = parsers.createZipBlob(entries);
+        const blobUrl = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = blobUrl;
+        a.download = `${baseTitle}.zip`;
+        document.body.append(a);
+        a.click();
+        a.remove();
+        setTimeout(() => URL.revokeObjectURL(blobUrl), 30000);
+        notify('图集打包下载成功');
+      } catch (err) {
+        notify('图集打包失败: ' + (err.message || err));
+      } finally {
+        zipBtn.textContent = origText;
+        zipBtn.disabled = false;
+      }
+    })();
+  }
 });
 
 function renderHistory() {
@@ -878,6 +917,17 @@ function setMode(mode) {
 $$('[data-view]').forEach((button) => button.addEventListener('click', () => setView(button.dataset.view)));
 $$('[data-mode]').forEach((button) => button.addEventListener('click', () => setMode(button.dataset.mode)));
 parseButton.addEventListener('click', () => state.mode === 'profile' ? parseProfile() : state.mode === 'collection' ? parseCollection() : state.mode === 'live' ? parseLive() : parseSingle());
+pasteInputButton?.addEventListener('click', async () => {
+  try {
+    const text = await navigator.clipboard?.readText();
+    if (!text) return notify('剪贴板为空');
+    linkInput.value = cleanUrl(text);
+    linkInput.focus();
+    notify('已从剪贴板粘贴');
+  } catch {
+    notify('无法访问剪贴板，请手动粘贴');
+  }
+});
 clearInputButton.addEventListener('click', () => { linkInput.value = ''; linkInput.focus(); });
 linkInput.addEventListener('paste', (event) => { const value = event.clipboardData?.getData('text') || ''; if (value) { event.preventDefault(); linkInput.value = cleanUrl(value); } });
 linkInput.addEventListener('input', () => { const value = cleanUrl(linkInput.value); if (/^https?:\/\//i.test(value) && value !== linkInput.value) linkInput.value = value; });

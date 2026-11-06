@@ -47,36 +47,129 @@ function requestJsonBody(): array {
     return $parsed = is_array($json) ? $json : [];
 }
 
-function parseGiteeReleaseHtml(string $html, string $owner, string $repo): ?array {
-    $tag = '';
-    if (preg_match('/class=["\'][^"\']*releases-sidebar-item[^"\']*["\'][^>]*data-tag=["\']([^"\']+)["\']/i', $html, $tagMatch)) {
-        $tag = trim(html_entity_decode($tagMatch[1], ENT_QUOTES | ENT_HTML5, 'UTF-8'));
+function parseGithubReleaseJson(string $jsonText, string $owner, string $repo): ?array {
+    $data = json_decode($jsonText, true);
+    if (!is_array($data)) {
+        return null;
     }
+    $tag = trim((string) ($data['tag_name'] ?? ''));
     if ($tag === '' || preg_match('/^v?\d+(?:\.\d+){0,2}(?:-[0-9A-Za-z.-]+)?$/i', $tag) !== 1) {
         return null;
     }
 
     $assets = [];
-    $assetPattern = '#href=["\'](/' . preg_quote($owner, '#') . '/' . preg_quote($repo, '#') . '/releases/download/' . preg_quote($tag, '#') . '/[^"\']+)["\']#i';
-    if (preg_match_all($assetPattern, $html, $assetMatches)) {
-        foreach ($assetMatches[1] as $href) {
-            $href = html_entity_decode($href, ENT_QUOTES | ENT_HTML5, 'UTF-8');
-            $name = rawurldecode((string) basename(parse_url($href, PHP_URL_PATH) ?: ''));
-            if ($name === '' || preg_match('/^[A-Za-z0-9._+-]+$/', $name) !== 1) continue;
+    if (is_array($data['assets'] ?? null)) {
+        foreach ($data['assets'] as $asset) {
+            if (!is_array($asset)) continue;
+            $name = trim((string) ($asset['name'] ?? ''));
+            $downloadUrl = trim((string) ($asset['browser_download_url'] ?? ''));
+            if ($name === '' || !preg_match('#^https://#i', $downloadUrl)) continue;
             $assets[] = [
                 'name' => $name,
-                'browser_download_url' => 'https://gitee.com' . $href,
-                'size' => 0,
-                'digest' => '',
+                'browser_download_url' => $downloadUrl,
+                'size' => (int) ($asset['size'] ?? 0),
+                'digest' => (string) ($asset['digest'] ?? ''),
             ];
         }
     }
 
     return [
         'tag_name' => $tag,
-        'html_url' => sprintf('https://gitee.com/%s/%s/releases/tag/%s', $owner, $repo, rawurlencode($tag)),
-        'published_at' => '',
-        'body' => '',
+        'html_url' => (string) ($data['html_url'] ?? sprintf('https://github.com/%s/%s/releases/tag/%s', $owner, $repo, rawurlencode($tag))),
+        'published_at' => (string) ($data['published_at'] ?? ''),
+        'body' => (string) ($data['body'] ?? ''),
+        'assets' => $assets,
+    ];
+}
+
+function parseGithubExpandedAssets(string $htmlText, string $owner, string $repo, string $tag): array {
+    if (strlen($htmlText) > 2 * 1024 * 1024) {
+        return [];
+    }
+    $previous = libxml_use_internal_errors(true);
+    $dom = new \DOMDocument();
+    $loaded = $dom->loadHTML($htmlText, LIBXML_NONET | LIBXML_NOERROR | LIBXML_NOWARNING);
+    libxml_clear_errors();
+    libxml_use_internal_errors($previous);
+    if (!$loaded) {
+        return [];
+    }
+
+    $assets = [];
+    $downloadPrefix = sprintf('/%s/%s/releases/download/%s/', rawurlencode($owner), rawurlencode($repo), rawurlencode($tag));
+    foreach ($dom->getElementsByTagName('a') as $link) {
+        $href = trim($link->getAttribute('href'));
+        $name = trim($link->textContent);
+        if ($name === '' || !str_starts_with($href, $downloadPrefix)) {
+            continue;
+        }
+        $assetName = rawurldecode(substr($href, strlen($downloadPrefix)));
+        if ($assetName === '' || str_contains($assetName, '/')) {
+            continue;
+        }
+        $assets[] = [
+            'name' => $name,
+            'browser_download_url' => 'https://github.com' . $href,
+            'size' => 0,
+            'digest' => '',
+        ];
+    }
+    return $assets;
+}
+
+function parseGithubReleaseAtom(string $xmlText, string $owner, string $repo): ?array {
+    if (!function_exists('simplexml_load_string') || strlen($xmlText) > 2 * 1024 * 1024) {
+        return null;
+    }
+    $previous = libxml_use_internal_errors(true);
+    $feed = simplexml_load_string($xmlText, \SimpleXMLElement::class, LIBXML_NONET | LIBXML_NOCDATA);
+    libxml_clear_errors();
+    libxml_use_internal_errors($previous);
+    if (!$feed || !isset($feed->entry[0])) {
+        return null;
+    }
+
+    $entry = $feed->entry[0];
+    $title = trim((string) $entry->title);
+    $tag = '';
+    if (preg_match('/^v?\d+(?:\.\d+){0,2}(?:-[0-9A-Za-z.-]+)?/i', $title, $matches) === 1) {
+        $tag = $matches[0];
+    }
+    if ($tag === '' && preg_match('#/releases/tag/(v?\d+(?:\.\d+){0,2}(?:-[0-9A-Za-z.-]+)?)$#i', (string) ($entry->id ?? ''), $matches) === 1) {
+        $tag = $matches[1];
+    }
+    if ($tag === '') {
+        return null;
+    }
+
+    $releaseUrl = sprintf('https://github.com/%s/%s/releases/tag/%s', rawurlencode($owner), rawurlencode($repo), rawurlencode($tag));
+    $body = html_entity_decode((string) $entry->content, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+    $assets = [];
+    $dom = new \DOMDocument();
+    $previous = libxml_use_internal_errors(true);
+    if ($dom->loadHTML('<?xml encoding="UTF-8">' . $body, LIBXML_NONET | LIBXML_NOERROR | LIBXML_NOWARNING)) {
+        foreach ($dom->getElementsByTagName('a') as $link) {
+            $href = trim($link->getAttribute('href'));
+            $name = trim($link->textContent);
+            if ($name === '' || !preg_match('~^https://github\.com/' . preg_quote($owner, '~') . '/' . preg_quote($repo, '~') . '/releases/download/' . preg_quote($tag, '~') . '/([^/?#]+)$~i', $href, $matches)) {
+                continue;
+            }
+            $assets[] = [
+                'name' => $name,
+                'browser_download_url' => $href,
+                'size' => 0,
+                'digest' => '',
+            ];
+        }
+    }
+    libxml_clear_errors();
+    libxml_use_internal_errors($previous);
+
+    return [
+        'tag_name' => $tag,
+        'html_url' => $releaseUrl,
+        'published_at' => (string) ($entry->updated ?? ''),
+        'body' => strip_tags($body),
         'assets' => $assets,
     ];
 }
@@ -138,25 +231,58 @@ if ($path === "/api/v1/health") {
 }
 
 // GET /api/v1/update
-// 从国内 Gitee Release 获取公开最新版本，供网站和移动端统一使用。
+// 从 GitHub Release API 获取公开最新版本，供网站和移动端统一使用。
 if ($path === "/api/v1/update" || $path === "/api/v1/update/") {
-    $owner = trim((string) Config::get('updates.gitee_owner', 'yuchen0x1'));
-    $repo = trim((string) Config::get('updates.gitee_repo', 'short-video-watermark-remover'));
-    $apiUrl = trim((string) Config::get('updates.gitee_url', ''));
-    if (preg_match('#^https://gitee\.com/[^/]+/[^/]+/releases/?$#i', $apiUrl) !== 1) {
+    $owner = trim((string) Config::get('updates.github_owner', 'yuchen0x1'));
+    $repo = trim((string) Config::get('updates.github_repo', 'Short-Video-Analysis'));
+    $apiUrl = trim((string) Config::get('updates.github_api_url', sprintf('https://api.github.com/repos/%s/%s/releases/latest', $owner, $repo)));
+    $atomUrl = sprintf('https://github.com/%s/%s/releases.atom', rawurlencode($owner), rawurlencode($repo));
+    if (!preg_match('#^https://api\.github\.com/repos/[^/]+/[^/]+/releases/latest$#i', $apiUrl)) {
         Response::error('更新源地址配置无效', 500);
     }
 
     $currentVersion = class_exists(\Composer\InstalledVersions::class)
         ? (string) (\Composer\InstalledVersions::getPrettyVersion("yuchen0x1/short-video-watermark-remover") ?? "dev")
         : "dev";
-    $response = HttpClient::request($apiUrl, null, ['Accept' => 'text/html'], 0);
+    $headers = [
+        'Accept' => 'application/vnd.github+json',
+        'User-Agent' => 'qushuiyin-web-updater/1.1.5 (+https://github.com/yuchen0x1/Short-Video-Analysis)',
+    ];
+    $response = HttpClient::request($apiUrl, null, $headers, 1, $respHeaders, 8);
     $release = $response['success']
-        ? parseGiteeReleaseHtml((string) $response['data'], $owner, $repo)
+        ? parseGithubReleaseJson((string) $response['data'], $owner, $repo)
         : null;
 
     if (!is_array($release)) {
-        Logger::error('在线更新检查失败', ['url' => $apiUrl, 'error' => $response['error'] ?? '无有效 Release 数据']);
+        // GitHub 匿名 REST API 按出口 IP 限流；回退到官方 Release Atom 与附件页。
+        $atomResponse = HttpClient::request($atomUrl, null, [
+            'Accept' => 'application/atom+xml',
+            'User-Agent' => 'qushuiyin-web-updater/1.1.5 (+https://github.com/yuchen0x1/Short-Video-Analysis)',
+        ], 1, $respHeaders, 8);
+        $release = $atomResponse['success']
+            ? parseGithubReleaseAtom((string) $atomResponse['data'], $owner, $repo)
+            : null;
+        if (is_array($release)) {
+            $assetsUrl = sprintf('https://github.com/%s/%s/releases/expanded_assets/%s', rawurlencode($owner), rawurlencode($repo), rawurlencode((string) $release['tag_name']));
+            $assetsResponse = HttpClient::request($assetsUrl, null, [
+                'Accept' => 'text/html',
+                'User-Agent' => 'qushuiyin-web-updater/1.1.5 (+https://github.com/yuchen0x1/Short-Video-Analysis)',
+            ], 1, $respHeaders, 8);
+            if ($assetsResponse['success']) {
+                $release['assets'] = parseGithubExpandedAssets((string) $assetsResponse['data'], $owner, $repo, (string) $release['tag_name']);
+            }
+            Logger::warning('GitHub Release API 不可用，已使用 Release 页面回退', [
+                'api_error' => $response['error'] ?? '无有效 Release 数据',
+            ]);
+        }
+    }
+
+    if (!is_array($release)) {
+        Logger::error('在线更新检查失败', [
+            'url' => $apiUrl,
+            'error' => $response['error'] ?? '无有效 Release 数据',
+            'atom_error' => $atomResponse['error'] ?? '无有效 Atom 数据',
+        ]);
         Response::error('暂时无法获取最新版本，请稍后重试', 502);
     }
     $latestVersion = preg_replace('/^v/i', '', trim((string) ($release['tag_name'] ?? '')));
@@ -192,7 +318,7 @@ if ($path === "/api/v1/update" || $path === "/api/v1/update/") {
         'current_version' => $currentVersion,
         'latest_version' => $latestVersion,
         'update_available' => $updateAvailable,
-        'release_url' => (string) ($release['html_url'] ?? sprintf('https://gitee.com/%s/%s/releases/tag/v%s', $owner, $repo, $latestVersion)),
+        'release_url' => (string) ($release['html_url'] ?? sprintf('https://github.com/%s/%s/releases/tag/v%s', $owner, $repo, $latestVersion)),
         'published_at' => (string) ($release['published_at'] ?? ''),
         'notes' => (string) ($release['body'] ?? ''),
         'assets' => $assets,

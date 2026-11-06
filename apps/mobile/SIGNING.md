@@ -45,7 +45,7 @@ keytool -genkeypair -v -keystore keystore/release.keystore -alias qushuiyin -key
 
 ## 在线更新配置
 
-默认检查 `gitee.com` 的项目 Release。只有在需要自定义更新 API 时，才在 `apps/mobile/.env` 设置 `VITE_UPDATE_API_URL`；地址必须使用 HTTP(S) 协议，并且主机必须是 `gitee.com` 或其合法子域名（例如 `api.gitee.com`），不能携带用户凭据。
+默认检查 GitHub 的项目 Release。只有在需要自定义更新 API 时，才在 `apps/mobile/.env` 设置 `VITE_UPDATE_API_URL`；地址必须使用 HTTP(S) 协议，不能携带用户凭据。
 
 ## 重要提醒
 

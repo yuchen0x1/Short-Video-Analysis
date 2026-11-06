@@ -268,7 +268,8 @@ class MediaProxy
             $status = (int) $match[1];
             // 重定向由 stream() 手动完成，不向浏览器转发 3xx。
             $state['status'] = $status;
-            $state['forward'] = $status >= 200 && $status !== 204;
+            // 只有最终 2xx 响应才允许向浏览器转发；3xx 必须由 stream() 内部跟随。
+            $state['forward'] = $status >= 200 && $status < 300 && $status !== 204;
             $state['acceptRangesSeen'] = false;
             if ($state['forward']) {
                 http_response_code($status);
@@ -450,8 +451,16 @@ class MediaProxy
 
         $scheme = strtolower((string) parse_url($url, PHP_URL_SCHEME));
         $port = (int) (parse_url($url, PHP_URL_PORT) ?? ($scheme === 'https' ? 443 : 80));
+        // 双栈 CDN 可能返回不可达 IPv6 节点；cURL 在 CURLOPT_RESOLVE 同时收到 A/AAAA
+        // 记录时可能优先选择失败的 IPv6，导致本来可用的 IPv4 媒体源返回 502。
+        // 优先固定已校验的 IPv4；纯 IPv6 站点则保留 IPv6 作为兜底。
+        $ipv4 = array_values(array_filter(
+            $resolvedIps,
+            static fn (string $ip): bool => filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4) !== false
+        ));
+        $candidates = $ipv4 !== [] ? $ipv4 : $resolvedIps;
         $entries = [];
-        foreach ($resolvedIps as $ip) {
+        foreach ($candidates as $ip) {
             $entries[] = $host . ':' . $port . ':' . $ip;
         }
 

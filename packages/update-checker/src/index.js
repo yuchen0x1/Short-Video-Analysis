@@ -75,6 +75,56 @@ function parseResponseData(data) {
   }
 }
 
+function decodeXmlEntities(value) {
+  const entities = { amp: '&', lt: '<', gt: '>', quot: '"', apos: "'" };
+  return String(value || '').replace(/&(amp|lt|gt|quot|apos);/g, (_, name) => entities[name]);
+}
+
+function parseGithubAtomRelease(data, owner, repo) {
+  const xml = String(data || '');
+  const entryMatch = xml.match(/<entry\b[^>]*>([\s\S]*?)<\/entry>/i);
+  if (!entryMatch) return null;
+  const entry = entryMatch[1];
+  const title = decodeXmlEntities(entry.match(/<title\b[^>]*>([\s\S]*?)<\/title>/i)?.[1] || '').trim();
+  const tag = title.match(/^v?\d+(?:\.\d+){0,2}(?:-[0-9A-Za-z.-]+)?/i)?.[0] || '';
+  if (!tag) return null;
+  const updated = entry.match(/<updated\b[^>]*>([\s\S]*?)<\/updated>/i)?.[1]?.trim() || '';
+  const content = decodeXmlEntities(entry.match(/<content\b[^>]*>([\s\S]*?)<\/content>/i)?.[1] || '')
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+  return {
+    tag_name: tag,
+    html_url: `https://github.com/${owner}/${repo}/releases/tag/${encodeURIComponent(tag)}`,
+    published_at: updated,
+    body: content,
+  };
+}
+
+function parseGithubExpandedAssets(data, owner, repo, tag) {
+  const html = String(data || '');
+  const assets = [];
+  const seen = new Set();
+  const linkPattern = /<a\b[^>]*href="([^"]*\/releases\/download\/[^"?#]+)"[^>]*>([\s\S]*?)<\/a>/gi;
+  for (const match of html.matchAll(linkPattern)) {
+    let url = match[1].replace(/&/g, String.fromCharCode(38));
+    if (url.startsWith('/')) url = `https://github.com${url}`;
+    const name = decodeXmlEntities(match[2].replace(/<[^>]+>/g, '')).trim();
+    if (!name || seen.has(url)) continue;
+    try {
+      const parsed = new URL(assertUpdateUrl(url, { githubOnly: true }));
+      if (parsed.hostname !== 'github.com') continue;
+      const expectedPrefix = `/${owner}/${repo}/releases/download/${encodeURIComponent(tag)}/`;
+      if (!parsed.pathname.startsWith(expectedPrefix)) continue;
+    } catch {
+      continue;
+    }
+    seen.add(url);
+    assets.push({ name, browser_download_url: url, size: 0, digest: '' });
+  }
+  return assets;
+}
+
 function isAllowedUpdateHost(host) {
   const normalized = String(host || '').toLowerCase().replace(/\.$/, '');
   return GITHUB_HOSTS.some((domain) => normalized === domain || normalized.endsWith('.' + domain));
@@ -121,6 +171,37 @@ function preferredWindowsAsset(assets) {
     || null;
 }
 
+async function fetchGithubReleaseFallback({ request, owner, repo }) {
+  const atomUrl = assertUpdateUrl(`https://github.com/${owner}/${repo}/releases.atom`, { githubOnly: true });
+  const atomResponse = await request({
+    url: atomUrl,
+    timeoutMs: 12000,
+    headers: {
+      Accept: 'application/atom+xml',
+      'User-Agent': 'qushuiyin-update-checker/2.3.2',
+    },
+  });
+  if (!atomResponse || atomResponse.status < 200 || atomResponse.status >= 300) {
+    throw new Error(`无法获取最新版本（HTTP ${atomResponse?.status || 0}）`);
+  }
+  const release = parseGithubAtomRelease(atomResponse.data, owner, repo);
+  if (!release) throw new Error('最新 Release 缺少有效版本号');
+
+  const assetsUrl = assertUpdateUrl(`https://github.com/${owner}/${repo}/releases/expanded_assets/${encodeURIComponent(release.tag_name)}`, { githubOnly: true });
+  const assetsResponse = await request({
+    url: assetsUrl,
+    timeoutMs: 12000,
+    headers: {
+      Accept: 'text/html',
+      'User-Agent': 'qushuiyin-update-checker/2.3.2',
+    },
+  });
+  release.assets = assetsResponse && assetsResponse.status >= 200 && assetsResponse.status < 300
+    ? parseGithubExpandedAssets(assetsResponse.data, owner, repo, release.tag_name)
+    : [];
+  return release;
+}
+
 export async function checkForUpdate({ currentVersion, request = browserRequest, repository = UPDATE_REPOSITORY } = {}) {
   const current = normalizeVersion(currentVersion);
   if (!current) throw new Error('当前版本号无效');
@@ -128,18 +209,24 @@ export async function checkForUpdate({ currentVersion, request = browserRequest,
   const apiUrl = assertUpdateUrl(repository.apiUrl, { githubOnly });
   const releasesUrl = assertUpdateUrl(repository.releasesUrl, { githubOnly });
   repository = { ...repository, apiUrl, releasesUrl };
-  const response = await request({
-    url: apiUrl,
-    timeoutMs: 12000,
-    headers: {
-      Accept: githubOnly ? 'application/vnd.github+json' : 'application/json',
-      'User-Agent': 'qushuiyin-update-checker/2.3.2',
-    },
-  });
-  if (!response || response.status < 200 || response.status >= 300) {
-    throw new Error(`无法获取最新版本（HTTP ${response?.status || 0}）`);
+  let payload;
+  try {
+    const response = await request({
+      url: apiUrl,
+      timeoutMs: 12000,
+      headers: {
+        Accept: githubOnly ? 'application/vnd.github+json' : 'application/json',
+        'User-Agent': 'qushuiyin-update-checker/2.3.2',
+      },
+    });
+    if (!response || response.status < 200 || response.status >= 300) {
+      throw new Error(`无法获取最新版本（HTTP ${response?.status || 0}）`);
+    }
+    payload = parseResponseData(response.data);
+  } catch (error) {
+    if (!githubOnly) throw error;
+    payload = await fetchGithubReleaseFallback({ request, owner: repository.owner, repo: repository.repo });
   }
-  const payload = parseResponseData(response.data);
   // 网站 API 返回已整理的数据；允许移动端通过 VITE_UPDATE_API_URL 复用同一接口。
   if (payload.success && payload.data && payload.data.latest_version) {
     const data = payload.data;

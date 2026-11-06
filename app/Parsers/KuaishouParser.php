@@ -27,11 +27,19 @@ class KuaishouParser extends BaseParser
         $location = HttpClient::getLocation($url);
         $target = $location ?: $url;
 
-        // 快手分享短链接可能是 /photo/xxx 或 /v/xxx 格式，重定向后才有完整 photoId
+        // /f/<share_token> 本身不是 photoId；部分匿名链会先停留在 /f/，需要再解析一次最终地址。
+        if (preg_match('~kuaishou\.com/f/~i', $target) && !preg_match('~/(?:photo|short-video|v|video)/~i', $target)) {
+            $secondLocation = HttpClient::getLocation($target);
+            if ($secondLocation !== false) {
+                $target = $secondLocation;
+            }
+        }
+
+        // 快手分享短链接可能是 /photo/xxx、/short-video/xxx 或 /v/xxx 格式；ID 允许连字符和下划线。
         $photoId = '';
-        if (preg_match('/(?:photo|short-video)\/(\w+)/i', $target, $match)) {
+        if (preg_match('~(?:photo|short-video)/([A-Za-z0-9_-]+)~i', $target, $match)) {
             $photoId = $match[1];
-        } elseif (preg_match('#/(?:v|video)/(\w+)#i', $target, $m2)) {
+        } elseif (preg_match('~/(?:v|video)/([A-Za-z0-9_-]+)~i', $target, $m2)) {
             $photoId = $m2[1];
         }
 

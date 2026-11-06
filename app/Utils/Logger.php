@@ -99,6 +99,14 @@ class Logger
     }
 
     /**
+     * 记录警告
+     */
+    public static function warning(string $message, array $context = []): void
+    {
+        self::write('WARNING', $message, $context);
+    }
+
+    /**
      * 记录异常
      *
      * @param \Throwable $exception 异常对象

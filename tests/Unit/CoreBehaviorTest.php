@@ -122,6 +122,34 @@ final class CoreBehaviorTest extends TestCase
         $this->assertTrue(self::isAllowed('https://cdn.douyinvod.com/v.mp4', ['93.184.216.34']), '白名单域名的子域名应放行');
     }
 
+    public function testMediaProxyPrefersIpv4WhenBuildingDnsResolveEntries(): void
+    {
+        $method = new \ReflectionMethod(MediaProxy::class, 'buildResolveEntries');
+        $method->setAccessible(true);
+
+        $entries = $method->invoke(null, 'https://media.example.com/video.mp4', [
+            '2001:db8::10',
+            '203.0.113.10',
+            '203.0.113.11',
+        ]);
+
+        $this->assertSame([
+            'media.example.com:443:203.0.113.10',
+            'media.example.com:443:203.0.113.11',
+        ], $entries);
+    }
+
+    public function testMediaProxyKeepsIpv6WhenItIsTheOnlyPublicFamily(): void
+    {
+        $method = new \ReflectionMethod(MediaProxy::class, 'buildResolveEntries');
+        $method->setAccessible(true);
+
+        $this->assertSame(
+            ['media.example.com:443:2001:db8::10'],
+            $method->invoke(null, 'https://media.example.com/video.mp4', ['2001:db8::10'])
+        );
+    }
+
     public function testMediaProxyFailsClosedWhenResolutionIsEmpty(): void
     {
         $this->assertFalse(self::isAllowed('https://www.douyinvod.com/v.mp4', []));

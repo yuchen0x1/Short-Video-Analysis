@@ -139,6 +139,6 @@ export async function parseLive(url) {
 export { hotList, search, comments } from './discovery.js';
 
 export { setTransport } from './transport.js';
-export { setWeiboCookie, fixUrl } from './utils.js';
+export { setWeiboCookie, fixUrl, crc32, createZipBlob } from './utils.js';
 export { generateABogus } from './a-bogus.js';
 export { detectPlatform };

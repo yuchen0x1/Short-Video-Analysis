@@ -40,7 +40,7 @@ const check = (name, condition, detail = '') => {
 
 // 1. 平台列表
 const platforms = parsers.getSupportedPlatforms();
-check('平台数量 = 11', platforms.length === 11, platforms.join(','));
+check('平台数量 = 12', platforms.length === 12, platforms.join(','));
 
 // 2. 域名识别
 const domainCases = [

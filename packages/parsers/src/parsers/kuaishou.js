@@ -12,11 +12,15 @@ function headers() {
 }
 
 export async function parse(url) {
-  const target = (await resolveShortLink(url, headers())) || url;
+  let target = (await resolveShortLink(url, headers())) || url;
 
+  // /f/<share_token> 不是 photoId，必须跟随 302 才能得到 /short-video/<id>。
+  if (!/(?:photo|short-video|v|video)\//i.test(target) && /kuaishou\.com\/f\//i.test(target)) {
+    target = (await resolveShortLink(target, headers())) || target;
+  }
   const photoId =
-    target.match(/(?:photo|short-video)\/(\w+)/i)?.[1] ||
-    target.match(/\/(?:v|video)\/(\w+)/i)?.[1];
+    target.match(/(?:photo|short-video)\/([A-Za-z0-9_-]+)/i)?.[1] ||
+    target.match(/\/(?:v|video)\/([A-Za-z0-9_-]+)/i)?.[1];
   if (!photoId) {
     throw new Error('无法解析快手视频 ID');
   }

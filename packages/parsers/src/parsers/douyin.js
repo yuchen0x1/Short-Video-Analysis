@@ -17,19 +17,21 @@ function pageHeaders(referer, ttwid) {
     'Accept-Language': 'zh-CN,zh;q=0.9,en;q=0.8',
     Referer: referer,
     Cookie: `ttwid=${ttwid}; s_v_web_id=${session.verifyFp}; msToken=${session.msToken}`,
+    'x-tt-argus': '1',
     'Sec-Fetch-Dest': 'empty',
     'Sec-Fetch-Mode': 'cors',
     'Sec-Fetch-Site': 'same-origin',
   };
 }
 
-function detailHeaders(videoId, ttwid) {
+function detailHeaders(videoId, ttwid, verifyFp, msToken) {
   return {
     'User-Agent': DESKTOP_UA,
     Accept: 'application/json, text/plain, */*',
     'Accept-Language': 'zh-CN,zh;q=0.9,en;q=0.8',
     Referer: 'https://www.douyin.com/video/' + videoId,
-    Cookie: `ttwid=${ttwid}`,
+    Cookie: `ttwid=${ttwid}; s_v_web_id=${verifyFp}; msToken=${msToken}`,
+    'x-tt-argus': '1',
     'Sec-Fetch-Dest': 'empty',
     'Sec-Fetch-Mode': 'cors',
     'Sec-Fetch-Site': 'same-origin',
@@ -221,15 +223,19 @@ async function fetchAwemeDetail(videoId) {
   const ttwid = await getTtwid();
   if (!ttwid) return null;
 
+  const msToken = randomToken(107);
+  const verifyFp = randomVerifyFp();
   const url = signedUrl('https://www.douyin.com/aweme/v1/web/aweme/detail/', {
     device_platform: 'webapp',
     aid: '6383',
     channel: 'channel_pc_web',
     aweme_id: videoId,
-    msToken: randomToken(107),
+    msToken,
+    verifyFp,
+    fp: verifyFp,
   });
 
-  const response = await fetchOk(url, null, detailHeaders(videoId, ttwid), { maxRetries: 1 });
+  const response = await fetchOk(url, null, detailHeaders(videoId, ttwid, verifyFp, msToken), { maxRetries: 1 });
   const json = response ? parseJson(response.data) : null;
   return json?.aweme_detail ?? null;
 }
@@ -447,6 +453,7 @@ async function fetchMixInfo(mixId) {
       Accept: 'application/json, text/plain, */*',
       Referer: 'https://www.douyin.com/collection/' + mixId,
       Cookie: `ttwid=${ttwid}`,
+      'x-tt-argus': '1',
     }, { maxRetries: 1 });
     const json = response ? parseJson(response.data) : null;
     return json?.mix_info ?? null;

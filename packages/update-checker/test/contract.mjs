@@ -37,6 +37,24 @@ assert.equal(githubResult.androidAsset.name, 'qushuiyin-mobile-client-1.1.3-test
 assert.equal(githubResult.windowsAsset.name, 'qushuiyin-desktop-client-setup-1.1.3.exe');
 assert.equal(githubResult.assets.length, 3);
 
+// GitHub API 被限流时，回退到官方 Atom 与附件页
+const fallbackAtom = `<?xml version="1.0" encoding="UTF-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom"><entry><title>v1.1.4 — 全新应用图标</title><updated>2026-11-04T16:28:49Z</updated><content type="html"><p>更新说明</p></content></entry></feed>`;
+const fallbackAssets = `<div><a href="/yuchen0x1/Short-Video-Analysis/releases/download/v1.1.4/qushuiyin-mobile-client-1.1.4-testsigned.apk"><span>qushuiyin-mobile-client-1.1.4-testsigned.apk</span></a><a href="/yuchen0x1/Short-Video-Analysis/releases/download/v1.1.4/qushuiyin-desktop-client-setup-1.1.4.exe"><span>qushuiyin-desktop-client-setup-1.1.4.exe</span></a></div>`;
+const fallbackResult = await checkForUpdate({
+  currentVersion: '1.1.3',
+  request: async ({ url }) => {
+    if (url.endsWith('/releases.atom')) return { status: 200, data: fallbackAtom };
+    if (url.includes('/releases/expanded_assets/')) return { status: 200, data: fallbackAssets };
+    return { status: 403, data: 'API rate limit exceeded' };
+  },
+});
+assert.equal(fallbackResult.latestVersion, '1.1.4');
+assert.equal(fallbackResult.updateAvailable, true);
+assert.equal(fallbackResult.androidAsset.name, 'qushuiyin-mobile-client-1.1.4-testsigned.apk');
+assert.equal(fallbackResult.windowsAsset.name, 'qushuiyin-desktop-client-setup-1.1.4.exe');
+assert.equal(fallbackResult.assets.length, 2);
+
 // 默认仓库（GitHub）拒绝非 GitHub 域名
 await assert.rejects(
   () => checkForUpdate({

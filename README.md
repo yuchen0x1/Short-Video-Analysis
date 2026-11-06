@@ -5,7 +5,7 @@
 > **粘贴一条分享链接，还你一份干净的无水印视频。**
 > 覆盖 12 个主流短视频平台，一次解析视频、图集、封面与作者信息，并提供网页版、电脑版、Android 端与版本化 HTTP API。
 
-当前版本 **v1.1.4** ｜ 开源协议 **AGPL-3.0-only** ｜ 支持平台 **12 个** ｜ 产品形态 **网页版 · 电脑版 · Android 端 · API**
+当前版本 **v1.1.5** ｜ 开源协议 **AGPL-3.0-only** ｜ 支持平台 **12 个** ｜ 产品形态 **网页版 · 电脑版 · Android 端 · API**
 
 ---
 
@@ -55,7 +55,7 @@
 - **媒体代理** —— PHP、Electron、Android 三端均提供本地或服务端媒体代理，注入 Referer/UA 并支持 Range 播放。
 - **API 鉴权** —— `API_KEY_ENABLED=true` 后，除 `/api/v1/health` 外的接口均需 API Key。
 - **限流与缓存** —— 基于 Symfony Cache / RateLimiter，默认文件缓存，可切换 Redis。
-- **自动更新** —— 网站、Android 与 Windows 客户端默认检查国内 Gitee 最新 Release；Windows Electron 客户端自动下载并支持重启安装。
+- **自动更新** —— 网站、Android 与 Windows 客户端默认检查 GitHub 最新 Release；Windows Electron 客户端自动下载并支持重启安装。
 
 ## 覆盖平台
 
@@ -102,7 +102,7 @@
 ## 获取代码
 
 ```bash
-git clone https://gitee.com/yuchen0x1/short-video-watermark-remover.git
+git clone https://github.com/yuchen0x1/Short-Video-Analysis.git
 ```
 
 ## 运行方式

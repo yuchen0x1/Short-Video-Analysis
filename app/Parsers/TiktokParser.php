@@ -246,7 +246,7 @@ class TiktokParser extends BaseParser
             'avatar' => self::firstOf([$item['author']['avatarLarger'] ?? null])
                 ?: self::firstOf([$item['author']['avatarMedium'] ?? null])
                 ?: self::firstOf([$item['author']['avatarThumb'] ?? null]),
-            'like' => (int) ($item['stats']['diggCount'] ?? 0),
+            'like' => (int) ($item['statsV2']['diggCount'] ?? $item['stats']['diggCount'] ?? 0),
             'time' => (int) ($item['createTime'] ?? 0),
             'title' => (string) ($item['desc'] ?? ''),
             'cover' => $cover,

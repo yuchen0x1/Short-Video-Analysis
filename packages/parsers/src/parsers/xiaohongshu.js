@@ -60,13 +60,20 @@ function pickVideoUrl(noteData) {
   const stream = video.media?.stream;
   if (stream) {
     if (stream.master_url) return stream.master_url;
-    for (const codec of [stream.h264, stream.h265, stream.h266, stream.av1]) {
-      if (!Array.isArray(codec)) continue;
-      for (const item of codec) {
-        const url = item?.masterUrl || item?.master_url;
-        if (url) return url;
-      }
-    }
+    // 2026-09 起分档名由 h264/h265/av1 改为 EF4/EF5/EF6/EF7；
+    // 遍历所有列表分档并按分辨率、码率排序，避免平台再次改名后静默取空。
+    const candidates = Object.values(stream)
+      .filter(Array.isArray)
+      .flat()
+      .filter((item) => item && typeof item === 'object')
+      .map((item) => ({
+        url: item.masterUrl || item.master_url || '',
+        height: Number(item.height || 0) || 0,
+        bitrate: Number(item.avgBitrate || item.avg_bitrate || 0) || 0,
+      }))
+      .filter((item) => item.url !== '')
+      .sort((left, right) => right.height - left.height || right.bitrate - left.bitrate);
+    if (candidates[0]) return candidates[0].url;
   }
   const originKey = video.consumer?.origin_url_key || video.consumer?.originVideoKey;
   if (originKey && video[originKey]) return video[originKey];
