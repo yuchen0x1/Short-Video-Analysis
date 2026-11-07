@@ -50,7 +50,7 @@ class Discovery
 
         return match ($platform) {
             'bilibili' => $this->bilibiliSearch($keyword, $page),
-            'douyin' => throw new \InvalidArgumentException('抖音搜索需要完整登录态，暂不开放'),
+            'douyin' => $this->douyinSearch($keyword, $page),
             default => throw new \InvalidArgumentException('不支持的搜索平台'),
         };
     }
@@ -307,6 +307,102 @@ class Discovery
             'items' => $items,
             'has_more' => false,
             'next_page' => 1,
+        ];
+    }
+
+    /**
+     * 抖音关键词搜索（general/search 通用搜索接口）。
+     * 受风控影响，失败时抛受控异常，不影响其他平台。
+     */
+    private function douyinSearch(string $keyword, int $page): array
+    {
+        $page = max(1, $page);
+        $ua = self::DESKTOP_UA;
+        $ttwid = DouyinParser::getTtwid($ua);
+        if ($ttwid === null) {
+            throw new \RuntimeException('获取抖音会话失败，请稍后再试');
+        }
+
+        $query = http_build_query([
+            'device_platform' => 'webapp',
+            'aid' => '6383',
+            'channel' => 'channel_pc_web',
+            'search_channel' => 'aweme_general',
+            'sort_type' => '0',
+            'publish_time' => '0',
+            'keyword' => $keyword,
+            'search_source' => 'normal_search',
+            'query_correct_type' => '1',
+            'offset' => ($page - 1) * 10,
+            'count' => '10',
+            'version_code' => '170400',
+            'version_name' => '17.4.0',
+            'browser_language' => 'zh-CN',
+            'browser_platform' => 'Win32',
+            'browser_name' => 'Chrome',
+            'browser_version' => '123.0.0.0',
+        ]);
+        $aBogus = DouyinParser::generateABogus($query, $ua);
+        $url = 'https://www.douyin.com/aweme/v1/web/general/search/single/?'
+            . $query . '&a_bogus=' . rawurlencode($aBogus);
+
+        $result = HttpClient::request($url, null, [
+            'User-Agent' => $ua,
+            'Accept' => 'application/json, text/plain, */*',
+            'Accept-Language' => 'zh-CN,zh;q=0.9,en;q=0.8',
+            'Referer' => 'https://www.douyin.com/search/' . rawurlencode($keyword),
+            'Cookie' => 'ttwid=' . $ttwid,
+        ], 0);
+
+        $json = $result['success'] ? json_decode((string) $result['data'], true) : null;
+        $payload = is_array($json['data'] ?? null) ? $json['data'] : [];
+        // 响应结构异常（风控拦截）才视为受限；结构正常但列表为空说明已翻到末页
+        if (!is_array($json) || $payload === []) {
+            Logger::error('抖音搜索接口返回空数据', [
+                'keyword' => $keyword,
+                'http_code' => $result['http_code'] ?? 0,
+                'body' => mb_substr((string) ($result['data'] ?? ''), 0, 200),
+            ]);
+            throw new \RuntimeException('抖音搜索暂时受限，请稍后再试');
+        }
+        $list = is_array($payload['data'] ?? null) ? $payload['data'] : [];
+
+        $items = [];
+        foreach ($list as $item) {
+            if (!is_array($item)) {
+                continue;
+            }
+            $awemeId = (string) ($item['aweme_info']['aweme_id'] ?? $item['aweme_id'] ?? '');
+            if ($awemeId === '') {
+                continue;
+            }
+            $video = is_array($item['aweme_info'] ?? null) ? $item['aweme_info'] : $item;
+            $stats = is_array($video['statistics'] ?? null) ? $video['statistics'] : [];
+            $cover = '';
+            foreach (['cover', 'origin_cover', 'dynamic_cover'] as $key) {
+                $coverList = $video['video'][$key]['url_list'] ?? null;
+                if (is_array($coverList) && isset($coverList[0]) && is_string($coverList[0])) {
+                    $cover = $coverList[0];
+                    break;
+                }
+            }
+            $items[] = [
+                'title' => (string) ($video['desc'] ?? ''),
+                'url' => 'https://www.douyin.com/video/' . $awemeId,
+                'cover' => $this->fixUrl($cover),
+                'author' => (string) ($video['author']['nickname'] ?? ''),
+                'hot' => (int) ($stats['digg_count'] ?? 0),
+                'duration' => (string) ($video['duration'] ?? ''),
+            ];
+        }
+
+        return [
+            'platform' => 'douyin',
+            'keyword' => $keyword,
+            'items' => $items,
+            'total' => (int) ($payload['total_count'] ?? count($items)),
+            'has_more' => (int) ($payload['has_more'] ?? 0) === 1,
+            'next_page' => $page + 1,
         ];
     }
 

@@ -21,6 +21,14 @@ if (str_contains($uri, "\0") || str_contains($uri, '\\') || preg_match('/(^|\/)\
 $file = realpath(__DIR__ . $uri);
 $publicDir = realpath(__DIR__);
 
+// PHP 内置服务器不识别 .webmanifest 扩展名，浏览器要求 manifest 为 JSON MIME
+if ($uri !== '/' && str_ends_with($uri, '.webmanifest') && $file !== false && is_file($file)) {
+    header('Content-Type: application/manifest+json; charset=utf-8');
+    header('Cache-Control: public, max-age=3600');
+    readfile($file);
+    return true;
+}
+
 if ($uri !== '/' && $file !== false && $publicDir !== false
     && str_starts_with($file, $publicDir . DIRECTORY_SEPARATOR)
     && is_file($file)) {

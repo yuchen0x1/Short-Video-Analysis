@@ -259,14 +259,14 @@ paths:
           description: 平台接口暂时受限
   /search:
     get:
-      summary: 关键词搜索公开视频（仅 B站）
+      summary: 关键词搜索公开视频（B站、抖音）
       operationId: searchVideos
       security:
         - ApiKeyAuth: []
       parameters:
         - name: platform
           in: query
-          schema: { type: string, enum: [bilibili], default: bilibili }
+          schema: { type: string, enum: [bilibili, douyin], default: bilibili }
         - name: keyword
           in: query
           required: true

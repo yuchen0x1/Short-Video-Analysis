@@ -246,7 +246,7 @@ if ($path === "/api/v1/update" || $path === "/api/v1/update/") {
         : "dev";
     $headers = [
         'Accept' => 'application/vnd.github+json',
-        'User-Agent' => 'qushuiyin-web-updater/1.1.5 (+https://github.com/yuchen0x1/Short-Video-Analysis)',
+        'User-Agent' => 'qushuiyin-web-updater/1.1.6 (+https://github.com/yuchen0x1/Short-Video-Analysis)',
     ];
     $response = HttpClient::request($apiUrl, null, $headers, 1, $respHeaders, 8);
     $release = $response['success']
@@ -257,7 +257,7 @@ if ($path === "/api/v1/update" || $path === "/api/v1/update/") {
         // GitHub 匿名 REST API 按出口 IP 限流；回退到官方 Release Atom 与附件页。
         $atomResponse = HttpClient::request($atomUrl, null, [
             'Accept' => 'application/atom+xml',
-            'User-Agent' => 'qushuiyin-web-updater/1.1.5 (+https://github.com/yuchen0x1/Short-Video-Analysis)',
+            'User-Agent' => 'qushuiyin-web-updater/1.1.6 (+https://github.com/yuchen0x1/Short-Video-Analysis)',
         ], 1, $respHeaders, 8);
         $release = $atomResponse['success']
             ? parseGithubReleaseAtom((string) $atomResponse['data'], $owner, $repo)
@@ -266,7 +266,7 @@ if ($path === "/api/v1/update" || $path === "/api/v1/update/") {
             $assetsUrl = sprintf('https://github.com/%s/%s/releases/expanded_assets/%s', rawurlencode($owner), rawurlencode($repo), rawurlencode((string) $release['tag_name']));
             $assetsResponse = HttpClient::request($assetsUrl, null, [
                 'Accept' => 'text/html',
-                'User-Agent' => 'qushuiyin-web-updater/1.1.5 (+https://github.com/yuchen0x1/Short-Video-Analysis)',
+                'User-Agent' => 'qushuiyin-web-updater/1.1.6 (+https://github.com/yuchen0x1/Short-Video-Analysis)',
             ], 1, $respHeaders, 8);
             if ($assetsResponse['success']) {
                 $release['assets'] = parseGithubExpandedAssets((string) $assetsResponse['data'], $owner, $repo, (string) $release['tag_name']);

@@ -65,19 +65,21 @@
 - **单条解析** —— 从分享文案中提取 URL，解析标题、作者、封面、无水印媒体地址等字段。
 - **图集解析** —— 解析器返回 `media_type=image` 时给出 `images` 图片数组，支持逐张下载。
 - **音乐下载** —— 抖音等平台解析出背景音乐播放地址时，网页版、电脑版与手机版都会提供「下载音乐」入口。
-- **批量解析** —— 网页版每行一个链接，单次最多 20 条。
+- **批量解析** —— 网页版每行一个链接，单次最多 20 条；成功项可一键全部打包 ZIP，失败项可一键断点重试。
 - **主页解析** —— `/api/v1/profile` 与客户端支持抖音公开主页分页解析；必须使用明确的抖音主页链接，不支持短链主页。
 - **合集解析** —— `/api/v1/collection` 与客户端支持抖音合集分页解析，返回合集标题、作者与逐页作品列表；网页版、电脑版与手机版均支持「加载全部 + 全部下载」。
 - **直播解析** —— `/api/v1/live` 支持抖音直播（live.douyin.com）、B站直播（live.bilibili.com）、虎牙直播（huya.com/房间号）与斗鱼直播（douyu.com/房间号）直播间解析，返回主播、标题、人气与拉流地址列表；虎牙下发 FLV 原画（按 CDN 线去重），斗鱼下发 FLV 多画质（原画2K60/蓝光8M/蓝光4M/超清/高清），支持用 VLC、PotPlayer、IINA 等播放器打开。
-- **发现（热榜/搜索）** —— `/api/v1/hot` 支持抖音热点榜与 B站综合热门；`/api/v1/search` 支持 B站关键词搜索。合规边界：仅响应用户主动查询、按需分页、不落库。
+- **发现（热榜/搜索）** —— `/api/v1/hot` 支持抖音热点榜与 B站综合热门；`/api/v1/search` 支持 B站与抖音关键词搜索。合规边界：仅响应用户主动查询、按需分页、不落库。
 - **公开评论** —— `/api/v1/comments` 支持 B站单视频公开评论查看（按需分页，仅查看不保存）。
-- **CSV 导出** —— 网页版支持导出最近记录、批量结果与主页/合集列表为 CSV（UTF-8 BOM，Excel 可直接打开）。
+- **CSV 导出** —— 网页版支持导出最近记录、我的收藏、批量结果与主页/合集列表为 CSV（UTF-8 BOM，Excel 可直接打开）。
+- **收藏夹** —— 网页版可在解析结果、批量结果与历史记录中星标收藏，保存在当前浏览器，支持一键重新解析与导出 CSV。
 - **HLS 支持** —— 媒体代理对 m3u8 播放列表自动改写，分片/子列表/密钥 URI 全部经由代理转发（注入 Referer/UA 并逐跳校验），带防盗链的 HLS 流（如 B站直播）可直接打开播放。
 - **历史记录** —— 网页版和移动端各保存最近 20 条，桌面端保存最近 100 条，均为本地浏览器/客户端存储。
 - **媒体代理** —— PHP、Electron、Android 三端均提供本地或服务端媒体代理，注入 Referer/UA 并支持 Range 播放。
 - **API 鉴权** —— `API_KEY_ENABLED=true` 后，除 `/api/v1/health` 外的接口均需 API Key。
 - **限流与缓存** —— 基于 Symfony Cache / RateLimiter，默认文件缓存，可切换 Redis。
 - **自动更新** —— 网站、Android 与 Windows 客户端默认检查 GitHub 最新 Release；Windows Electron 客户端自动下载并支持重启安装。
+- **PWA 安装** —— 网页版提供 Web App Manifest 与 Service Worker，支持安装到桌面/主屏并离线打开页面壳；全局快捷键 `Ctrl/Cmd+Enter` 触发解析、`Ctrl/Cmd+K` 聚焦输入框，主题可跟随系统明暗切换。
 
 ## 覆盖平台
 
@@ -236,7 +238,7 @@ npm run mobile:add:android
 
 1. 直接粘贴分享文案或链接；
 2. 「主页」模式仅支持抖音公开主页分页；「合集」模式支持抖音合集分页，两者均支持全量加载与批量下载；
-3. 「发现」页查看 B站热门 / 抖音热点榜，或关键词搜索 B站视频，条目可一键解析；
+3. 「发现」页查看 B站热门 / 抖音热点榜，或关键词搜索 B站、抖音视频，条目可一键解析；
 4. B站视频解析结果提供「查看评论」入口（电脑版）；
 5. 微博解析失败时，在「关于」页配置微博 Cookie；电脑版还可使用内置微博网页登录。
 
@@ -254,7 +256,7 @@ OpenAPI 定义位于 [`public/openapi.yaml`](public/openapi.yaml)，base path �
 | `/api/v1/collection` | GET/POST | 抖音合集单页作品解析。 |
 | `/api/v1/live` | GET/POST | 直播间解析（抖音直播、B站直播、虎牙直播、斗鱼直播）。 |
 | `/api/v1/hot` | GET | 平台公开热榜（B站热门、抖音热点榜）。 |
-| `/api/v1/search` | GET | 关键词搜索公开视频（仅 B站）。 |
+| `/api/v1/search` | GET | 关键词搜索公开视频（B站、抖音）。 |
 | `/api/v1/comments` | GET | 单视频公开评论（仅 B站，按需分页）。 |
 | `/api/v1/update` | GET | 在线更新检查（读取 GitHub 最新 Release）。 |
 
@@ -344,7 +346,7 @@ curl "http://127.0.0.1:18180/api/v1/search?platform=bilibili&keyword=%E5%93%94%E
 curl "http://127.0.0.1:18180/api/v1/comments?url=https%3A%2F%2Fwww.bilibili.com%2Fvideo%2FBV1GJ411x7h7&page=1"
 ```
 
-响应 `data` 包含 `platform`、`items`（`title`/`url`/`cover`/`author`/`hot`）、`has_more` 与 `next_page`；评论接口额外返回 `total`、`comments`（`user`/`content`/`likes`/`time`）。抖音热榜条目为热点词（指向抖音搜索页），不支持直接解析；抖音搜索与评论需要完整登录态，暂不开放。
+响应 `data` 包含 `platform`、`items`（`title`/`url`/`cover`/`author`/`hot`）、`has_more` 与 `next_page`；评论接口额外返回 `total`、`comments`（`user`/`content`/`likes`/`time`）。抖音热榜条目为热点词（指向抖音搜索页），不支持直接解析；抖音搜索走网页公开接口（受风控时返回受控错误），评论仅支持 B站。
 
 ### 媒体代理入口
 

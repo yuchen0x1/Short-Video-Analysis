@@ -1,5 +1,7 @@
 RewriteEngine On
 
+AddType application/manifest+json .webmanifest
+
 # Redirect /api/v1/* to api/v1.php
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_FILENAME} !-d
