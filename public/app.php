@@ -17,6 +17,10 @@ $webAppVersion = class_exists(\Composer\InstalledVersions::class)
 <link rel="apple-touch-icon" sizes="192x192" href="icon-192.png">
 <title>去水印解析 · 短视频工具</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%231b4a49'/%3E%3Cpath d='M9 9h6v6H9zM17 17h6v6h-6zM17 9h6v6h-6zM9 17h6v6H9z' fill='%23f5c85d'/%3E%3C/svg%3E">
+<script>
+// 首屏前确定主题，避免深色用户先看到浅色闪烁；只读取不写入，持久化交给显式切换。
+(function(){try{var saved=localStorage.getItem('watermark-parse-theme-v2');var dark=saved==='dark'||(saved!=='light'&&(!window.matchMedia||!window.matchMedia('(prefers-color-scheme: light)').matches));if(dark)document.documentElement.classList.add('dark')}catch(e){document.documentElement.classList.add('dark')}})();
+</script>
 <style>
 /* ==========================================================================
    CYBER TECH HUD DESIGN SYSTEM - 短视频无水印工作台 极客科技视觉引擎
@@ -1486,7 +1490,7 @@ function hideResult(){
   if(typeof commentsSection!=='undefined'&&commentsSection)commentsSection.hidden=true;
 }
 
-async function requestParse(url,signal){const payload={url};if(isWeiboUrl(url)){const weiboCookie=getWeiboCookie().trim();if(weiboCookie)payload.weiboCookie=weiboCookie}const options={method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)};if(signal)options.signal=signal;const r=await fetch('api/v1/parse',options),j=await r.json().catch(()=>null);if(!r.ok||!j||!j.success||!j.data||!j.data.url)throw new Error(j&&j.message||'解析失败，请稍后再试');return{url,data:j.data}}
+async function requestParse(url,signal,force){const payload={url};if(force)payload.force=true;if(isWeiboUrl(url)){const weiboCookie=getWeiboCookie().trim();if(weiboCookie)payload.weiboCookie=weiboCookie}const options={method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)};if(signal)options.signal=signal;const r=await fetch('api/v1/parse',options),j=await r.json().catch(()=>null);if(!r.ok||!j||!j.success||!j.data||!j.data.url)throw new Error(j&&j.message||'解析失败，请稍后再试');return{url,data:j.data}}
 async function parseUrlIntoResult(url){
   hideError();hideResult();
   singleAbortController=new AbortController();
@@ -2156,7 +2160,7 @@ video.addEventListener('error',async()=>{
     mediaRefreshKey=currentResult.url;
     ignoreMediaError=true;
     try{
-      const item=await requestParse(currentResult.url);
+      const item=await requestParse(currentResult.url,null,true);
       if(item&&item.data&&item.data.url){video.src=mediaUrl(item.data.url);video.load();ignoreMediaError=false;return}
     }catch(e){}
     ignoreMediaError=false;
@@ -2166,11 +2170,13 @@ video.addEventListener('error',async()=>{
   showError('视频播放失败，源站链接可能已失效或暂时禁止访问。');
 });
 
-function applyTheme(theme){document.documentElement.classList.toggle('dark',theme==='dark');themeToggle.innerHTML=theme==='dark'?'<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2"></path><path d="M12 20v2"></path><path d="m4.93 4.93 1.41 1.41"></path><path d="m17.66 17.66 1.41 1.41"></path><path d="M2 12h2"></path><path d="M20 12h2"></path></svg>':'<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.5 14.7A8.5 8.5 0 0 1 9.3 3.5 8.5 8.5 0 1 0 20.5 14.7z"></path></svg>';themeToggle.title=theme==='dark'?'切换浅色主题':'切换深色主题';themeToggle.setAttribute('aria-label',themeToggle.title);localStorage.setItem('watermark-parse-theme-v2',theme)}
+function applyTheme(theme,persist){document.documentElement.classList.toggle('dark',theme==='dark');themeToggle.innerHTML=theme==='dark'?'<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2"></path><path d="M12 20v2"></path><path d="m4.93 4.93 1.41 1.41"></path><path d="m17.66 17.66 1.41 1.41"></path><path d="M2 12h2"></path><path d="M20 12h2"></path></svg>':'<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.5 14.7A8.5 8.5 0 0 1 9.3 3.5 8.5 8.5 0 1 0 20.5 14.7z"></path></svg>';themeToggle.title=theme==='dark'?'切换浅色主题':'切换深色主题';themeToggle.setAttribute('aria-label',themeToggle.title);const meta=document.querySelector('meta[name="theme-color"]');if(meta)meta.setAttribute('content',theme==='dark'?'#03080c':'#f1f6f8');if(persist)localStorage.setItem('watermark-parse-theme-v2',theme)}
 function preferredTheme(){const saved=localStorage.getItem('watermark-parse-theme-v2');if(saved==='dark'||saved==='light')return saved;return window.matchMedia&&window.matchMedia('(prefers-color-scheme: light)').matches?'light':'dark'}
-themeToggle.addEventListener('click',()=>applyTheme(document.documentElement.classList.contains('dark')?'light':'dark'));applyTheme(preferredTheme());renderHistory();renderFavorites();updateWeiboCookieStatus();
+// 仅在用户显式切换时持久化，否则系统主题变化永远无法生效
+themeToggle.addEventListener('click',()=>applyTheme(document.documentElement.classList.contains('dark')?'light':'dark',true));applyTheme(preferredTheme(),false);renderHistory();renderFavorites();updateWeiboCookieStatus();
 // 未手动指定主题时，跟随系统明暗切换
-window.matchMedia&&window.matchMedia('(prefers-color-scheme: light)').addEventListener&&window.matchMedia('(prefers-color-scheme: light)').addEventListener('change',e=>{if(!localStorage.getItem('watermark-parse-theme-v2'))applyTheme(e.matches?'light':'dark')});
+const systemThemeQuery=window.matchMedia?window.matchMedia('(prefers-color-scheme: light)'):null;
+if(systemThemeQuery&&systemThemeQuery.addEventListener)systemThemeQuery.addEventListener('change',e=>{if(!localStorage.getItem('watermark-parse-theme-v2'))applyTheme(e.matches?'light':'dark',false)});
 if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('service-worker.js').catch(()=>{}))}
 favoritesList?.addEventListener('click',async e=>{const card=e.target.closest('.history-entry'),a=e.target.closest('[data-favaction]');if(!card||!a)return;const item=loadFavorites()[Number(card.dataset.index)];if(!item)return;const action=a.dataset.favaction;if(action==='reparse'){setMode('single');input.value=item.rawUrl;await parseUrlIntoResult(item.rawUrl)}if(action==='copy'){await copyText(item.rawUrl);a.innerHTML='✓';setTimeout(()=>a.innerHTML=COPY_ICON,1000)}if(action==='unfav'){toggleFavorite(item);renderFavorites()}});
 // 全局快捷键：Ctrl/Cmd+Enter 触发解析，Ctrl/Cmd+K 聚焦输入框

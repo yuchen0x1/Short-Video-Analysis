@@ -6,6 +6,7 @@
 /storage/cache/
 .DS_Store
 .phpunit.cache/
+.phpunit.result.cache
 /upgrade-report/ui-shots/
 /apps/app-shell/node_modules/
 /apps/app-shell/dist/

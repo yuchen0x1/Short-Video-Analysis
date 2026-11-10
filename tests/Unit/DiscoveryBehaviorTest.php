@@ -39,8 +39,9 @@ final class DiscoveryBehaviorTest extends TestCase
     {
         $discovery = new Discovery();
         $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage('抖音');
-        $discovery->search('douyin', '关键词');
+        $this->expectExceptionMessage('不支持的搜索平台');
+        // 快手没有搜索实现；抖音自 v1.1.6 起已支持搜索，不能再作为"不支持"的样例
+        $discovery->search('kuaishou', '关键词');
     }
 
     public function testCommentsRejectsNonBilibiliUrlWithoutNetwork(): void

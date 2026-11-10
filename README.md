@@ -8,7 +8,7 @@
 
 覆盖 12 个主流短视频平台，一次解析视频、图集、封面与作者信息，提供网页版、电脑版、Android 端与版本化 HTTP API。
 
-[![Version](https://img.shields.io/badge/版本-v1.1.5-22d3ee)](https://github.com/yuchen0x1/Short-Video-Analysis/releases/latest) [![Platforms](https://img.shields.io/badge/平台-12个-8b5cf6)](#覆盖平台) [![PHP](https://img.shields.io/badge/PHP-8.1%2B-777bb4)](#技术选型与环境要求) [![License](https://img.shields.io/badge/License-AGPL--3.0--only-9cf)](LICENSE)
+[![Version](https://img.shields.io/badge/版本-v1.1.7-22d3ee)](https://github.com/yuchen0x1/Short-Video-Analysis/releases/latest) [![Platforms](https://img.shields.io/badge/平台-12个-8b5cf6)](#覆盖平台) [![PHP](https://img.shields.io/badge/PHP-8.1%2B-777bb4)](#技术选型与环境要求) [![License](https://img.shields.io/badge/License-AGPL--3.0--only-9cf)](LICENSE)
 
 ![网页版工作台](assets/screenshots/web-home.png)
 
@@ -260,7 +260,7 @@ OpenAPI 定义位于 [`public/openapi.yaml`](public/openapi.yaml)，base path �
 | `/api/v1/comments` | GET | 单视频公开评论（仅 B站，按需分页）。 |
 | `/api/v1/update` | GET | 在线更新检查（读取 GitHub 最新 Release）。 |
 
-开启 API Key 后，除 `/api/v1/health` 外的请求需携带以下任一请求头：
+开启 API Key 后，除 `/api/v1/health` 和 `/api/v1/update` 外的请求需携带以下任一请求头：
 
 ```text
 X-API-Key: <key>
@@ -283,6 +283,7 @@ curl -X POST "http://127.0.0.1:18180/api/v1/parse" \
   "message": "解析成功",
   "request_id": "10ad6482aced9e5d902a5b5f",
   "data": {
+    "platform": "douyin",
     "title": "视频标题文案",
     "author": "作者昵称",
     "uid": "作者ID",
@@ -299,6 +300,12 @@ curl -X POST "http://127.0.0.1:18180/api/v1/parse" \
 ```
 
 图集作品返回 `media_type: "image"`，`images` 为图片地址数组，`url` 通常取第一张图。
+
+单条解析结果固定包含 `platform`、`media_type`、`images`、`music` 四个字段（与桌面/移动端 JS 解析器一致）。媒体直链带时效，失效后可加 `force=1` 跳过缓存重新获取：
+
+```bash
+curl "http://127.0.0.1:18180/api/v1/parse?url=https%3A%2F%2Fv.douyin.com%2Fxxxx&force=1"
+```
 
 ### 抖音主页解析示例
 
@@ -336,7 +343,7 @@ curl -X POST "http://127.0.0.1:18180/api/v1/live" \
 curl "http://127.0.0.1:18180/api/v1/health"
 ```
 
-响应包含 `status`、`version`、`php_version`、`ready`、`dependencies` 和 `timestamp`。
+响应包含 `status`、`version`、`php_version`、`ready`、`dependencies`、`sidecar`、`warnings` 和 `timestamp`。`dependencies` 覆盖 `curl`/`json`/`openssl`/`mbstring`/`dom`；`sidecar.reachable` 表示本地 a_bogus 签名服务是否可达，未启动时 `status` 为 `degraded` 并在 `warnings` 说明受影响的抖音功能，但不影响其他平台解析。
 
 ### 热榜与搜索示例
 
@@ -428,8 +435,10 @@ cp .env.example .env
 | --- | --- | --- |
 | `MEDIA_PROXY_ENABLED` | `true` | 是否启用网页版媒体代理。 |
 | `MEDIA_PROXY_MAX_SIZE` | `524288000` | 媒体代理单次转发字节上限，默认 500MB。 |
-| `MEDIA_PROXY_ALLOWED_DOMAINS` | 内置媒体域名列表 | 逗号分隔的媒体代理域名白名单。 |
+| `MEDIA_PROXY_ALLOWED_DOMAINS` | 内置媒体域名列表 | 逗号分隔的媒体代理域名白名单。留空使用 `config/media_domains.php` 的内置列表（覆盖全部 12+4 平台 CDN），填写后整体覆盖内置列表。 |
 | `MEDIA_PROXY_STRICT_MODE` | `true` | 白名单为空时是否失败关闭。 |
+| `MAX_JSON_BODY_BYTES` | `1048576` | JSON 请求体上限，超出返回 413。 |
+| `UPDATE_CACHE_TTL` | `900` | `/api/v1/update` 的服务端缓存秒数，避免反复消耗 GitHub 匿名配额；请求传 `force=1` 可绕过。 |
 
 **日志**
 
@@ -473,7 +482,7 @@ cd packages/parsers
 npm run test:live
 ```
 
-仓库中的 `.workflow/quality-pipeline.yml` 是早期 Gitee Go 流水线的历史配置，当前仓库托管在 GitHub，以上检查请在本地或容器环境运行；发布流程以「打包发布」章节为准。
+GitHub Actions 流水线 `.github/workflows/quality.yml` 在 push 到 `main`、推送 `v*` 标签和 Pull Request 时自动执行：PHP lint + PHPUnit + smoke、`packages/parsers` 与 `packages/update-checker` 契约测试、`scripts/a_bogus_server.test.mjs`、桌面端与移动端构建，以及仓库卫生检查（禁止跟踪 `.phpunit.result.cache`、`git diff --check`）。`.workflow/quality-pipeline.yml` 是早期 Gitee Go 流水线的历史配置，已不再使用。发布流程以「打包发布」章节为准。
 
 ### 打包发布
 

@@ -60,19 +60,22 @@ class VideoParser
 
     /**
      * 解析视频 URL（带缓存）
+     *
+     * @param bool $force 为 true 时跳过缓存读取并刷新缓存（用于媒体地址失效后的重解析）
      */
-    public function parse(string $url): array
+    public function parse(string $url, bool $force = false): array
     {
         // 直播间链接走直播解析入口
         if ((new LiveParser())->isLiveUrl($url)) {
             throw new \InvalidArgumentException('直播间链接请使用直播解析入口');
         }
 
-        // Check cache first
         $cacheKey = ParseCache::makeKey($url);
-        $cached = ParseCache::get($cacheKey);
-        if ($cached !== null) {
-            return $cached;
+        if (!$force) {
+            $cached = ParseCache::get($cacheKey);
+            if ($cached !== null) {
+                return $cached;
+            }
         }
 
         $platform = $this->getPlatform($url);
@@ -80,12 +83,68 @@ class VideoParser
             throw new \InvalidArgumentException("不支持的视频平台");
         }
 
-        $result = self::PLATFORMS[$platform]["class"]::parse($url);
+        $result = self::normalizeResult(
+            $platform,
+            self::PLATFORMS[$platform]["class"]::parse($url)
+        );
 
         // Cache the result
         ParseCache::set($cacheKey, $result);
 
         return $result;
+    }
+
+    /**
+     * 归一化解析结果，与 packages/parsers/src/index.js 的 normalizeResult 保持一致。
+     *
+     * 补齐 platform/media_type/images/music 等字段，保证 API 契约、
+     * OpenAPI 文档与桌面/移动端（JS 解析器）返回结构一致。
+     */
+    public static function normalizeResult(string $platform, array $result): array
+    {
+        $fixUrl = static function ($url): string {
+            $value = is_string($url) ? trim($url) : '';
+            if ($value === '') {
+                return '';
+            }
+            return str_starts_with($value, 'http') ? $value : 'https:' . $value;
+        };
+
+        $mediaType = ($result['media_type'] ?? '') === 'image' ? 'image' : 'video';
+        $images = [];
+        if (is_array($result['images'] ?? null)) {
+            foreach ($result['images'] as $image) {
+                $fixed = $fixUrl($image);
+                if ($fixed !== '') {
+                    $images[] = $fixed;
+                }
+            }
+        }
+
+        $url = $fixUrl($result['url'] ?? '');
+        if ($url === '' && $mediaType === 'image' && $images !== []) {
+            $url = $images[0];
+        }
+
+        $music = $result['music'] ?? null;
+        if (!is_array($music)) {
+            $music = ['author' => '', 'avatar' => ''];
+        }
+
+        return array_merge($result, [
+            'title' => (string) ($result['title'] ?? ''),
+            'author' => (string) ($result['author'] ?? ''),
+            'avatar' => $fixUrl($result['avatar'] ?? ''),
+            'uid' => $result['uid'] ?? '',
+            'like' => $result['like'] ?? 0,
+            'time' => $result['time'] ?? 0,
+            'cover' => $fixUrl($result['cover'] ?? ''),
+            'url' => $url,
+            'music' => $music,
+            'media_type' => $mediaType,
+            'images' => $images,
+            'platform' => $platform,
+        ]);
     }
 
     /**
@@ -107,8 +166,9 @@ class VideoParser
             throw new \InvalidArgumentException('目前仅支持明确的抖音个人主页链接');
         }
 
-        $validatedUrl = $url;
-        return self::PLATFORMS['douyin']['class']::parseProfile($validatedUrl, $cursor);
+        return $this->normalizeItems(
+            self::PLATFORMS['douyin']['class']::parseProfile($url, $cursor)
+        );
     }
 
     /**
@@ -129,7 +189,23 @@ class VideoParser
             throw new \InvalidArgumentException('目前仅支持明确的抖音合集链接');
         }
 
-        return self::PLATFORMS['douyin']['class']::parseCollection($url, $cursor);
+        return $this->normalizeItems(
+            self::PLATFORMS['douyin']['class']::parseCollection($url, $cursor)
+        );
+    }
+
+    /**
+     * 对主页/合集分页中的每个作品归一化，与 JS parseProfile/parseCollection 行为一致。
+     */
+    private function normalizeItems(array $page): array
+    {
+        if (is_array($page['items'] ?? null)) {
+            $page['items'] = array_map(
+                static fn ($item) => is_array($item) ? self::normalizeResult('douyin', $item) : $item,
+                $page['items']
+            );
+        }
+        return $page;
     }
 
     private function isExplicitDouyinProfileUrl(string $url): bool

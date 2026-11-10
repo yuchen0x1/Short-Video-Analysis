@@ -39,9 +39,22 @@ function requestJsonBody(): array {
     if ($parsed !== null) {
         return $parsed;
     }
-    $body = file_get_contents("php://input");
+    $maxBytes = (int) Config::get('api.max_json_body_bytes', 1048576);
+    $contentLength = (int) ($_SERVER['CONTENT_LENGTH'] ?? 0);
+    if ($contentLength > $maxBytes) {
+        Response::error('请求体过大', 413);
+    }
+    $stream = fopen('php://input', 'rb');
+    if ($stream === false) {
+        return $parsed = [];
+    }
+    $body = stream_get_contents($stream, $maxBytes + 1);
+    fclose($stream);
     if ($body === false || $body === "") {
         return $parsed = [];
+    }
+    if (strlen($body) > $maxBytes) {
+        Response::error('请求体过大', 413);
     }
     $json = json_decode($body, true);
     return $parsed = is_array($json) ? $json : [];
@@ -180,6 +193,10 @@ header("Access-Control-Allow-Methods: GET, POST, OPTIONS");
 header("Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With, X-API-Key");
 header("Vary: Origin");
 header("Content-Type: application/json; charset=utf-8");
+header("X-Content-Type-Options: nosniff");
+header("X-Frame-Options: DENY");
+header("Referrer-Policy: no-referrer");
+header("Permissions-Policy: camera=(), microphone=(), geolocation=()");
 
 $method = strtoupper($_SERVER["REQUEST_METHOD"] ?? "GET");
 
@@ -214,18 +231,41 @@ if ($path === "/api/v1/health") {
         "curl" => extension_loaded("curl"),
         "json" => extension_loaded("json"),
         "openssl" => extension_loaded("openssl"),
+        // mb_substr/mb_strlen 在抖音与发现模块中使用，缺失会直接 fatal
+        "mbstring" => extension_loaded("mbstring"),
+        // parseGithubExpandedAssets 用 DOMDocument 解析 Release 附件页
+        "dom" => class_exists(\DOMDocument::class),
     ];
     $ready = !in_array(false, $dependencies, true);
+
+    // 抖音签名 sidecar 只影响抖音主页/合集/热榜/搜索，不阻塞整体就绪判定：
+    // 以 warning 暴露，便于运维定位，同时不影响只跑网页解析的部署。
+    $aBogusPort = (int) Config::env("A_BOGUS_PORT", "9876");
+    $sidecarSocket = @fsockopen("127.0.0.1", $aBogusPort, $sidecarErrno, $sidecarErrstr, 0.5);
+    $sidecarReachable = is_resource($sidecarSocket);
+    if ($sidecarReachable) {
+        fclose($sidecarSocket);
+    }
+    $warnings = [];
+    if (!$sidecarReachable) {
+        $warnings[] = "a_bogus 签名服务未启动，抖音主页、合集、热榜与搜索不可用";
+    }
+
     // 版本从 composer 安装清单读取，避免与 composer.json 漂移
     $version = class_exists(\Composer\InstalledVersions::class)
         ? (\Composer\InstalledVersions::getPrettyVersion("yuchen0x1/short-video-watermark-remover") ?? "dev")
         : "dev";
     Response::success([
-        "status" => $ready ? "ok" : "degraded",
+        "status" => $ready ? ($warnings === [] ? "ok" : "degraded") : "unavailable",
         "version" => $version,
         "php_version" => PHP_VERSION,
         "ready" => $ready,
         "dependencies" => $dependencies,
+        "sidecar" => [
+            "port" => $aBogusPort,
+            "reachable" => $sidecarReachable,
+        ],
+        "warnings" => $warnings,
         "timestamp" => time(),
     ], $ready ? "服务正常" : "服务不完整", $ready ? 200 : 503);
 }
@@ -233,6 +273,12 @@ if ($path === "/api/v1/health") {
 // GET /api/v1/update
 // 从 GitHub Release API 获取公开最新版本，供网站和移动端统一使用。
 if ($path === "/api/v1/update" || $path === "/api/v1/update/") {
+    if (Config::get("rate_limit.enabled", true)) {
+        $rateLimitResult = RateLimiter::check($ip);
+        if (!$rateLimitResult["allowed"]) {
+            Response::error("请求过于频繁，请稍后再试", 429);
+        }
+    }
     $owner = trim((string) Config::get('updates.github_owner', 'yuchen0x1'));
     $repo = trim((string) Config::get('updates.github_repo', 'Short-Video-Analysis'));
     $apiUrl = trim((string) Config::get('updates.github_api_url', sprintf('https://api.github.com/repos/%s/%s/releases/latest', $owner, $repo)));
@@ -244,9 +290,17 @@ if ($path === "/api/v1/update" || $path === "/api/v1/update/") {
     $currentVersion = class_exists(\Composer\InstalledVersions::class)
         ? (string) (\Composer\InstalledVersions::getPrettyVersion("yuchen0x1/short-video-watermark-remover") ?? "dev")
         : "dev";
+    // 短 TTL 缓存：避免每次页面加载都消耗 GitHub 匿名配额（按出口 IP 计算）
+    $cacheKey = $currentVersion . '|' . $apiUrl;
+    if (($_GET['force'] ?? '') === '') {
+        $cachedUpdate = \App\Services\UpdateCache::get($cacheKey);
+        if (is_array($cachedUpdate)) {
+            Response::success($cachedUpdate, '版本检查完成（缓存）');
+        }
+    }
     $headers = [
         'Accept' => 'application/vnd.github+json',
-        'User-Agent' => 'qushuiyin-web-updater/1.1.6 (+https://github.com/yuchen0x1/Short-Video-Analysis)',
+        'User-Agent' => 'qushuiyin-web-updater/1.1.7 (+https://github.com/yuchen0x1/Short-Video-Analysis)',
     ];
     $response = HttpClient::request($apiUrl, null, $headers, 1, $respHeaders, 8);
     $release = $response['success']
@@ -257,7 +311,7 @@ if ($path === "/api/v1/update" || $path === "/api/v1/update/") {
         // GitHub 匿名 REST API 按出口 IP 限流；回退到官方 Release Atom 与附件页。
         $atomResponse = HttpClient::request($atomUrl, null, [
             'Accept' => 'application/atom+xml',
-            'User-Agent' => 'qushuiyin-web-updater/1.1.6 (+https://github.com/yuchen0x1/Short-Video-Analysis)',
+            'User-Agent' => 'qushuiyin-web-updater/1.1.7 (+https://github.com/yuchen0x1/Short-Video-Analysis)',
         ], 1, $respHeaders, 8);
         $release = $atomResponse['success']
             ? parseGithubReleaseAtom((string) $atomResponse['data'], $owner, $repo)
@@ -266,7 +320,7 @@ if ($path === "/api/v1/update" || $path === "/api/v1/update/") {
             $assetsUrl = sprintf('https://github.com/%s/%s/releases/expanded_assets/%s', rawurlencode($owner), rawurlencode($repo), rawurlencode((string) $release['tag_name']));
             $assetsResponse = HttpClient::request($assetsUrl, null, [
                 'Accept' => 'text/html',
-                'User-Agent' => 'qushuiyin-web-updater/1.1.6 (+https://github.com/yuchen0x1/Short-Video-Analysis)',
+                'User-Agent' => 'qushuiyin-web-updater/1.1.7 (+https://github.com/yuchen0x1/Short-Video-Analysis)',
             ], 1, $respHeaders, 8);
             if ($assetsResponse['success']) {
                 $release['assets'] = parseGithubExpandedAssets((string) $assetsResponse['data'], $owner, $repo, (string) $release['tag_name']);
@@ -314,7 +368,7 @@ if ($path === "/api/v1/update" || $path === "/api/v1/update/") {
     $compareCurrent = preg_replace('/^v/i', '', $currentVersion);
     $updateAvailable = preg_match('/^\d+(?:\.\d+){0,2}(?:-[0-9A-Za-z.-]+)?$/', (string) $compareCurrent) === 1
         && version_compare($latestVersion, (string) $compareCurrent, '>');
-    Response::success([
+    $payload = [
         'current_version' => $currentVersion,
         'latest_version' => $latestVersion,
         'update_available' => $updateAvailable,
@@ -324,11 +378,19 @@ if ($path === "/api/v1/update" || $path === "/api/v1/update/") {
         'assets' => $assets,
         'android_asset' => $android,
         'windows_asset' => $windows,
-    ], '版本检查完成');
+    ];
+    \App\Services\UpdateCache::set($cacheKey, $payload);
+    Response::success($payload, '版本检查完成');
 }
 
 // GET /api/v1/platforms
 if ($path === "/api/v1/platforms" || $path === "/api/v1/platforms/") {
+    if (Config::get("rate_limit.enabled", true)) {
+        $rateLimitResult = RateLimiter::check($ip);
+        if (!$rateLimitResult["allowed"]) {
+            Response::error("请求过于频繁，请稍后再试", 429);
+        }
+    }
     $parser = new VideoParser();
     Response::success($parser->getSupportedPlatforms(), "支持平台列表");
 }
@@ -352,6 +414,12 @@ if ($path === "/api/v1/parse" || $path === "/api/v1/parse/") {
     }
 
     $weiboCookie = trim((string) ($jsonBody["weiboCookie"] ?? ""));
+    // force=1 / refresh=true 跳过解析缓存，用于媒体直链失效后的重新获取
+    $forceRefresh = in_array(
+        strtolower(trim((string) ($_GET["force"] ?? $_GET["refresh"] ?? $jsonBody["force"] ?? ""))),
+        ["1", "true", "yes"],
+        true
+    );
 
     if ($url === "") {
         Response::validationError(["url" => "URL 参数不能为空"]);
@@ -368,7 +436,7 @@ if ($path === "/api/v1/parse" || $path === "/api/v1/parse/") {
     $data = null;
     try {
         $parser = new VideoParser();
-        $data = $parser->parse($url);
+        $data = $parser->parse($url, $forceRefresh);
     } catch (\InvalidArgumentException $e) {
         CookieManager::clear("weibo");
         Response::error($e->getMessage(), 400);
@@ -406,17 +474,12 @@ if ($path === "/api/v1/profile" || $path === "/api/v1/profile/") {
     $cursor = max(0, (int) ($_GET["cursor"] ?? $_POST["cursor"] ?? 0));
 
     if ($url === "" && $method === "POST") {
-        $body = file_get_contents("php://input");
-        if ($body !== false && $body !== "") {
-            $json = json_decode($body, true);
-            if (is_array($json)) {
-                if (!empty($json["url"])) {
-                    $url = trim($json["url"]);
-                }
-                if (isset($json["cursor"])) {
-                    $cursor = max(0, (int) $json["cursor"]);
-                }
-            }
+        $json = requestJsonBody();
+        if (!empty($json["url"])) {
+            $url = trim((string) $json["url"]);
+        }
+        if (isset($json["cursor"])) {
+            $cursor = max(0, (int) $json["cursor"]);
         }
     }
 
@@ -468,17 +531,12 @@ if ($path === "/api/v1/collection" || $path === "/api/v1/collection/") {
     $cursor = max(0, (int) ($_GET["cursor"] ?? $_POST["cursor"] ?? 0));
 
     if ($url === "" && $method === "POST") {
-        $body = file_get_contents("php://input");
-        if ($body !== false && $body !== "") {
-            $json = json_decode($body, true);
-            if (is_array($json)) {
-                if (!empty($json["url"])) {
-                    $url = trim($json["url"]);
-                }
-                if (isset($json["cursor"])) {
-                    $cursor = max(0, (int) $json["cursor"]);
-                }
-            }
+        $json = requestJsonBody();
+        if (!empty($json["url"])) {
+            $url = trim((string) $json["url"]);
+        }
+        if (isset($json["cursor"])) {
+            $cursor = max(0, (int) $json["cursor"]);
         }
     }
 

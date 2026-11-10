@@ -209,6 +209,73 @@ final class CoreBehaviorTest extends TestCase
         }
     }
 
+    // ---- 媒体白名单跨运行时一致性 ----
+
+    /**
+     * 读取唯一来源 config/media_domains.php。
+     * 不经过 Config::get('media_proxy.allowed_domains')，避免部署方设置
+     * MEDIA_PROXY_ALLOWED_DOMAINS 后让一致性用例失去意义。
+     */
+    private static function defaultMediaDomains(): array
+    {
+        $root = dirname(__DIR__, 2);
+        $domains = require $root . '/config/media_domains.php';
+        return is_array($domains) ? array_values($domains) : [];
+    }
+
+    public function testMediaAllowlistCoversEverySupportedPlatformCdn(): void
+    {
+        $domains = self::defaultMediaDomains();
+        $this->assertNotEmpty($domains, '默认白名单不能为空，strict_mode 下会 fail-closed');
+        $this->assertSame($domains, array_values(array_unique($domains)), '白名单不应包含重复域名');
+
+        // 每个已支持平台至少有一个可直连的媒体 CDN 在默认白名单内
+        $required = [
+            'douyin' => 'douyinvod.com',
+            'kuaishou' => 'kwaicdn.com',
+            'bilibili' => 'bilivideo.com',
+            'xiaohongshu' => 'xhscdn.com',
+            'weibo' => 'weibocdn.com',
+            'shipinhao' => 'finder.video.qq.com',
+            'izuiyou' => 'izuiyou.com',
+            'pipixia' => 'pipix.com',
+            'pipigx' => 'ippzone.com',
+            'weishi' => 'video.weishi.qq.com',
+            'ixigua' => 'ixiguavideo.com',
+            'tiktok' => 'tiktokcdn.com',
+        ];
+        foreach ($required as $platform => $cdn) {
+            $this->assertContains($cdn, $domains, "{$platform} 的媒体 CDN {$cdn} 必须在默认白名单内");
+        }
+    }
+
+    public function testMediaAllowlistMatchesDesktopAndAndroidRuntimes(): void
+    {
+        $root = dirname(__DIR__, 2);
+        $domains = self::defaultMediaDomains();
+
+        $electron = (string) file_get_contents($root . '/apps/app-shell/electron/main.cjs');
+        preg_match('/const MEDIA_ALLOWED_DOMAINS = \[(.*?)\];/s', $electron, $match);
+        $this->assertNotEmpty($match[1] ?? '', 'Electron 必须声明 MEDIA_ALLOWED_DOMAINS');
+        preg_match_all('/\'([a-z0-9.-]+)\'/', $match[1], $electronItems);
+        $electronDomains = array_values(array_unique($electronItems[1]));
+
+        $android = (string) file_get_contents(
+            $root . '/apps/mobile/android/app/src/main/java/com/yuchen/qushuiyin/MediaProxyPlugin.java'
+        );
+        preg_match('/ALLOWED_MEDIA_DOMAINS = .*?Arrays\.asList\((.*?)\)\)\);/s', $android, $androidMatch);
+        $this->assertNotEmpty($androidMatch[1] ?? '', 'Android 必须声明 ALLOWED_MEDIA_DOMAINS');
+        preg_match_all('/"([a-z0-9.-]+)"/', $androidMatch[1], $androidItems);
+        $androidDomains = array_values(array_unique($androidItems[1]));
+
+        sort($domains);
+        sort($electronDomains);
+        sort($androidDomains);
+
+        $this->assertSame($domains, $electronDomains, 'Electron 媒体白名单必须与 config/media_domains.php 一致');
+        $this->assertSame($domains, $androidDomains, 'Android 媒体白名单必须与 config/media_domains.php 一致');
+    }
+
     private static function resetLimiterFactory(): void
     {
         $factory = new \ReflectionProperty(RateLimiter::class, 'factory');

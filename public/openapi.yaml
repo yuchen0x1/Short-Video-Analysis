@@ -71,6 +71,14 @@ paths:
           schema:
             type: string
             example: https://v.douyin.com/xxxx/
+        - name: force
+          in: query
+          required: false
+          description: 传 `1`/`true` 时跳过解析缓存，强制向上游重新获取（用于媒体直链失效后刷新）。
+          schema:
+            type: string
+            enum: ["1", "true"]
+            example: "1"
       responses:
         "200":
           description: 解析成功，返回视频信息
@@ -406,6 +414,10 @@ components:
             data:
               type: object
               properties:
+                platform:
+                  type: string
+                  description: 平台标识（与 /platforms 返回值一致）
+                  example: douyin
                 author:
                   type: string
                 uid:

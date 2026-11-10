@@ -23,6 +23,8 @@ return [
         'github_repo' => Config::env('UPDATE_GITHUB_REPO', 'Short-Video-Analysis'),
         'github_api_url' => Config::env('UPDATE_GITHUB_API_URL', 'https://api.github.com/repos/yuchen0x1/Short-Video-Analysis/releases/latest'),
         'github_releases_url' => Config::env('UPDATE_GITHUB_RELEASES_URL', 'https://github.com/yuchen0x1/Short-Video-Analysis/releases'),
+        // /api/v1/update 的短 TTL 缓存秒数，避免反复消耗 GitHub 匿名配额
+        'cache_ttl' => (int) Config::env('UPDATE_CACHE_TTL', '900'),
     ],
 
     // API 速率限制配置
@@ -40,6 +42,7 @@ return [
     'api' => [
         'key_enabled' => Config::env('API_KEY_ENABLED', 'false') === 'true',
         'key' => Config::env('API_KEY', ''),
+        'max_json_body_bytes' => max(1024, (int) Config::env('MAX_JSON_BODY_BYTES', 1048576)),
     ],
 
     // HTTP 客户端配置
@@ -54,10 +57,16 @@ return [
     'media_proxy' => [
         'enabled' => Config::env('MEDIA_PROXY_ENABLED', 'true') !== 'false',
         'max_file_size' => (int)Config::env('MEDIA_PROXY_MAX_SIZE', '524288000'), // 500MB
-        'allowed_domains' => array_filter(array_map('trim', explode(',', Config::env(
-            'MEDIA_PROXY_ALLOWED_DOMAINS',
-            'douyin.com,douyinvod.com,douyinvod.com.cn,douyinstatic.com,douyinpic.com,bytecdn.cn,ibytedtos.com,bilivideo.com,hdslb.com,mcdn.bilivideo.cn,ixigua.com,ixiguavideo.com,video.weishi.qq.com,ippzone.com,pipix.com,tiktokcdn.com,tiktokcdn-us.com,huya.com,msstatic.com,douyucdn2.cn,douyucdn.cn'
-        )))),
+        // 默认白名单集中在 config/media_domains.php，避免与客户端运行时漂移；
+        // 显式设置 MEDIA_PROXY_ALLOWED_DOMAINS 时以环境变量为准。
+        'allowed_domains' => (static function (): array {
+            $env = trim((string) Config::env('MEDIA_PROXY_ALLOWED_DOMAINS', ''));
+            if ($env !== '') {
+                return array_values(array_filter(array_map('trim', explode(',', $env))));
+            }
+            $domains = require __DIR__ . '/media_domains.php';
+            return is_array($domains) ? array_values($domains) : [];
+        })(),
         'strict_mode' => Config::env('MEDIA_PROXY_STRICT_MODE', 'true') === 'true',
     ],
 

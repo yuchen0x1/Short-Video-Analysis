@@ -1,0 +1,120 @@
+name: quality
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: quality-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  php:
+    name: PHP lint + PHPUnit + smoke
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: curl, json, openssl, mbstring, dom, zip
+          tools: composer:v2
+          coverage: none
+
+      - name: Cache Composer packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.composer/cache
+          key: composer-${{ hashFiles('composer.lock') }}
+          restore-keys: composer-
+
+      - name: Install dependencies
+        run: composer install --no-interaction --prefer-dist --no-progress
+
+      - name: Lint
+        run: composer lint
+
+      - name: Unit tests
+        run: composer test
+
+      - name: Smoke checks
+        run: composer smoke
+
+  js-contracts:
+    name: JS contract tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: parsers contract
+        working-directory: packages/parsers
+        run: npm test
+
+      - name: update-checker contract
+        working-directory: packages/update-checker
+        run: npm test
+
+      - name: a_bogus sidecar
+        run: node --test scripts/a_bogus_server.test.mjs
+
+  clients:
+    name: Desktop + mobile build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: |
+            apps/app-shell/package-lock.json
+            apps/mobile/package-lock.json
+
+      - name: Install desktop deps
+        working-directory: apps/app-shell
+        run: npm ci
+
+      - name: Build desktop renderer
+        working-directory: apps/app-shell
+        run: npx vite build --base=./
+
+      - name: Install mobile deps
+        working-directory: apps/mobile
+        run: npm ci
+
+      - name: Build mobile renderer
+        working-directory: apps/mobile
+        run: npx vite build
+
+  hygiene:
+    name: Repo hygiene
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Tracked generated files
+        run: |
+          if git ls-files --error-unmatch .phpunit.result.cache >/dev/null 2>&1; then
+            echo "::error::.phpunit.result.cache 不应被 Git 跟踪"
+            exit 1
+          fi
+          if [ -d vendor ] && ! grep -q '^/vendor/' .gitignore; then
+            echo "::error::vendor 必须在 .gitignore 中"
+            exit 1
+          fi
+
+      - name: Git diff whitespace
+        run: git diff --check

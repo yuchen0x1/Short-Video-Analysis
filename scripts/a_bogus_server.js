@@ -66,10 +66,11 @@ function sendError(res, status, code, close = false) {
 }
 
 const server = http.createServer((req, res) => {
-    // Health check endpoint: GET /health -> 200 when the signing service is up
+    // Health check endpoint: GET /health -> 200 when the signing service is up.
+    // max_body_bytes 一并返回，测试据此断言 413，避免测试常量与服务端漂移。
     if (req.method === "GET" && req.url === "/health") {
         res.writeHead(200, { "Content-Type": "application/json", "X-Content-Type-Options": "nosniff" });
-        res.end('{"ok":true,"service":"a_bogus"}');
+        res.end(JSON.stringify({ ok: true, service: "a_bogus", max_body_bytes: MAX_BODY_BYTES }));
         return;
     }
 

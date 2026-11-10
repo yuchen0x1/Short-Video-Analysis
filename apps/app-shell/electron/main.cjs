@@ -14,11 +14,23 @@ const WEIBO_LOGIN_URL = 'https://weibo.com/';
 const WEIBO_ALLOWED_HOSTS = new Set(['weibo.com', 'www.weibo.com', 'passport.weibo.com', 'login.sina.com.cn']);
 const MAX_WEIBO_RESPONSE_BYTES = 2 * 1024 * 1024;
 const MAX_HTTP_REDIRECTS = 5;
+// 媒体代理默认域名白名单（与 config/media_domains.php、Android MediaProxyPlugin 保持一致）
+// 覆盖 12 个点播平台与 4 个直播平台实际返回的媒体 CDN。
 const MEDIA_ALLOWED_DOMAINS = [
-  'douyinvod.com', 'douyinvod.com.cn', 'douyinstatic.com', 'douyinpic.com', 'bytecdn.cn', 'ibytedtos.com',
+  // 抖音
+  'douyin.com', 'douyinvod.com', 'douyinvod.com.cn', 'douyinstatic.com', 'douyinpic.com', 'bytecdn.cn', 'ibytedtos.com',
+  // B站 / 西瓜
   'bilivideo.com', 'hdslb.com', 'mcdn.bilivideo.cn', 'ixigua.com', 'ixiguavideo.com',
-  'video.weishi.qq.com', 'ippzone.com', 'pipix.com', 'tiktokcdn.com', 'tiktokcdn-us.com',
+  // 微视 / 皮皮 / TikTok
+  'video.weishi.qq.com', 'ippzone.com', 'pipix.com', 'tiktok.com', 'tiktokcdn.com', 'tiktokcdn-us.com',
+  // 虎牙 / 斗鱼
   'huya.com', 'msstatic.com', 'douyucdn.cn', 'douyucdn2.cn',
+  // 小红书 / 快手 / 微博 / 视频号 / 最右
+  'xhscdn.com',
+  'kwaicdn.com', 'kwimgs.com', 'yximgs.com',
+  'weibocdn.com', 'sinaimg.cn',
+  'finder.video.qq.com', 'qpic.cn',
+  'izuiyou.com', 'xiaochuankeji.cn',
 ];
 let mainWindow = null;
 let weiboLoginWindow = null;
@@ -223,7 +235,7 @@ function setupAutoUpdater() {
   });
   autoUpdater.on('error', (error) => sendUpdate({ status: 'error', message: String((error && error.message) || error) }));
 
-  // 在线更新仅使用国内 Gitee。
+  // 在线更新统一使用 GitHub Releases。
   ipcMain.on('app.update.check', async () => {
     if (!app.isPackaged) {
       sendUpdate({ status: 'dev', message: '正常更新中' });
@@ -700,7 +712,7 @@ app.whenReady().then(async () => {
   }
   createWindow();
   if (app.isPackaged) {
-    // 启动时静默检查国内 Gitee，失败时不打扰用户。
+    // 启动时静默检查 GitHub Releases，失败时不打扰用户。
     checkForUpdatesWithChannel().catch(() => {});
   }
   app.on('activate', () => {

@@ -436,28 +436,46 @@ public class MediaProxyPlugin extends Plugin {
 /** Pure media target checks kept separate from the Android plugin lifecycle for JVM tests. */
 final class MediaProxySecurity {
 
+    // 与 config/media_domains.php、Electron MEDIA_ALLOWED_DOMAINS 保持一致
     static final Set<String> ALLOWED_MEDIA_DOMAINS = Collections.unmodifiableSet(
             new HashSet<>(Arrays.asList(
+                    // 抖音
+                    "douyin.com",
                     "douyinvod.com",
                     "douyinvod.com.cn",
                     "douyinstatic.com",
                     "douyinpic.com",
                     "bytecdn.cn",
                     "ibytedtos.com",
+                    // B站 / 西瓜
                     "bilivideo.com",
                     "hdslb.com",
                     "mcdn.bilivideo.cn",
                     "ixigua.com",
                     "ixiguavideo.com",
+                    // 微视 / 皮皮 / TikTok
                     "video.weishi.qq.com",
                     "ippzone.com",
                     "pipix.com",
+                    "tiktok.com",
                     "tiktokcdn.com",
                     "tiktokcdn-us.com",
+                    // 虎牙 / 斗鱼
                     "huya.com",
                     "msstatic.com",
                     "douyucdn.cn",
-                    "douyucdn2.cn"
+                    "douyucdn2.cn",
+                    // 小红书 / 快手 / 微博 / 视频号 / 最右
+                    "xhscdn.com",
+                    "kwaicdn.com",
+                    "kwimgs.com",
+                    "yximgs.com",
+                    "weibocdn.com",
+                    "sinaimg.cn",
+                    "finder.video.qq.com",
+                    "qpic.cn",
+                    "izuiyou.com",
+                    "xiaochuankeji.cn"
             )));
 
     static boolean isAllowedMediaUrl(String value) {

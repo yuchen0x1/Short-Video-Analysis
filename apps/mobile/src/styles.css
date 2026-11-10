@@ -69,9 +69,15 @@ button:disabled {
 
 .mobile-app {
   min-height: 100vh;
-  padding-bottom: 84px;
+  padding-bottom: calc(84px + env(safe-area-inset-bottom));
   position: relative;
   z-index: 1;
+}
+
+:where(button, input, textarea, a):focus-visible {
+  outline: 2px solid var(--m-cyan);
+  outline-offset: 3px;
+  box-shadow: 0 0 0 3px var(--m-cyan-soft);
 }
 
 /* Header HUD 科技顶栏 */
@@ -451,6 +457,7 @@ button:disabled {
 }
 .mobile-profile-head > div:last-child {
   display: flex;
+  flex-wrap: wrap;
   gap: 6px;
 }
 .mobile-profile-head button {
@@ -767,4 +774,29 @@ button:disabled {
   text-align: center;
   box-shadow: var(--m-cyan-glow), 0 8px 30px rgba(0, 0, 0, 0.7);
   backdrop-filter: blur(16px);
+}
+
+@media (max-width: 380px) {
+  .mobile-profile-head {
+    display: grid;
+    gap: 10px;
+  }
+
+  .mobile-profile-head > div:last-child {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .mobile-profile-head > div:last-child button:last-child {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+  }
 }

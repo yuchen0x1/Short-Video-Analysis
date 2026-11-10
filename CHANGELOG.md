@@ -1,5 +1,24 @@
 # 更新日志
 
+## 1.1.7
+
+### 修复
+
+- 补齐媒体代理默认白名单：新增小红书 `xhscdn.com`、快手 `kwaicdn.com`/`kwimgs.com`/`yximgs.com`、微博 `weibocdn.com`/`sinaimg.cn`、视频号 `finder.video.qq.com`/`qpic.cn`、最右 `izuiyou.com`/`xiaochuankeji.cn` 及 `tiktok.com`/`douyin.com`。此前这些平台解析成功但网页端播放/下载会被代理 403。白名单收敛到 `config/media_domains.php` 单一来源，并新增 PHPUnit 用例强制与 Electron、Android 三处保持同步。
+- 单条解析结果统一归一化：PHP 侧现在与 JS 解析器一致，`platform`、`media_type`、`images`、`music` 字段必定存在，协议相对地址自动补全，图集缺少主地址时回落到首图。
+- `/api/v1/parse` 新增 `force=1`（或 `refresh=true`）跳过解析缓存；网页播放失败后的自动重取改为强制刷新，不再拿回同一个已失效地址。
+- 修复主题「跟随系统」失效：主题持久化只在用户手动切换时写入，系统明暗变化重新生效；`<head>` 内联预置主题，消除深色用户首屏白色闪烁；`theme-color` 随主题更新。
+- 修复 `DiscoveryBehaviorTest` 针对抖音搜索的过时断言（v1.1.6 已支持抖音搜索），并把 `.phpunit.result.cache` 从版本库移除。
+- `a_bogus_server.test.mjs` 的 2 个失败用例：测试硬编码 64KB 上限、服务端实际为 320KB。改为由 `/health` 上报真实 `max_body_bytes`，测试据此断言。
+- Service Worker 缓存名升级到 `v2`；静态资源改为 stale-while-revalidate，导航失败时同时回落到 `./` 与当前请求的缓存。
+
+### 新增
+
+- `/api/v1/update` 增加 900 秒服务端缓存（`UPDATE_CACHE_TTL`），避免公共实例反复消耗 GitHub 匿名 API 配额；传 `force=1` 可绕过。
+- `/api/v1/health` 增加 `mbstring`、`dom` 检查与 `a_bogus` sidecar 探活（`sidecar.reachable`、`warnings`）；sidecar 未启动时返回 `degraded` 但不阻塞整体就绪。
+- 新增 GitHub Actions 质量门禁 `.github/workflows/quality.yml`：PHP lint + PHPUnit + smoke、两个 JS 契约测试、a_bogus sidecar 测试、桌面/移动端构建、仓库卫生检查。
+- 移动端 toast 补充 `role="status"` 与 `aria-live="polite"`。
+
 ## 1.1.6
 
 ### 解析与发现

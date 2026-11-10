@@ -9,7 +9,6 @@ import test from "node:test";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const serverPath = join(__dirname, "a_bogus_server.js");
-const MAX_BODY_BYTES = 64 * 1024;
 
 async function getFreePort() {
     const probe = net.createServer();
@@ -59,7 +58,15 @@ async function startServer() {
         }
         try {
             const response = await request(port, { method: "GET", path: "/health" });
-            if (response.statusCode === 200) return { child, port };
+            if (response.statusCode === 200) {
+                // 以服务端上报的真实上限为准，避免测试常量与实现漂移
+                const health = JSON.parse(response.body);
+                const maxBodyBytes = Number(health.max_body_bytes);
+                if (!Number.isSafeInteger(maxBodyBytes) || maxBodyBytes <= 0) {
+                    throw new Error("health 未返回有效的 max_body_bytes");
+                }
+                return { child, port, maxBodyBytes };
+            }
         } catch {
             // The child may still be starting its listener.
         }
@@ -82,22 +89,22 @@ async function withServer(t) {
 }
 
 test("rejects a Content-Length above the body limit with one 413 response", async (t) => {
-    const { port } = await withServer(t);
+    const { port, maxBodyBytes } = await withServer(t);
     const response = await request(port, {
         method: "POST",
         path: "/",
         headers: {
             "Content-Type": "application/json",
-            "Content-Length": MAX_BODY_BYTES + 1,
+            "Content-Length": maxBodyBytes + 1,
         },
-    }, Buffer.alloc(MAX_BODY_BYTES + 1, 0x61));
+    }, Buffer.alloc(maxBodyBytes + 1, 0x61));
 
     assert.equal(response.statusCode, 413);
     assert.deepEqual(JSON.parse(response.body), { error: "body_too_large" });
 });
 
 test("bounds chunked request accumulation and rejects an oversized body", async (t) => {
-    const { port } = await withServer(t);
+    const { port, maxBodyBytes } = await withServer(t);
     const response = await new Promise((resolve, reject) => {
         const req = http.request({
             hostname: "127.0.0.1",
@@ -115,7 +122,7 @@ test("bounds chunked request accumulation and rejects an oversized body", async 
             }));
         });
         req.on("error", reject);
-        req.write(Buffer.alloc(MAX_BODY_BYTES, 0x61));
+        req.write(Buffer.alloc(maxBodyBytes, 0x61));
         req.end(Buffer.from("x"));
     });
 

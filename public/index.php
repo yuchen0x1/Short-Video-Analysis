@@ -27,6 +27,10 @@ header('Access-Control-Allow-Origin: ' . $corsOrigin);
 header('Access-Control-Allow-Methods: GET, POST, OPTIONS');
 header('Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With, X-API-Key');
 header('Vary: Origin, Accept-Encoding');
+header('X-Content-Type-Options: nosniff');
+header('X-Frame-Options: DENY');
+header('Referrer-Policy: no-referrer');
+header('Permissions-Policy: camera=(), microphone=(), geolocation=()');
 // API 响应默认禁止客户端缓存（解析结果可能变化）
 header('Cache-Control: no-cache, private');
 

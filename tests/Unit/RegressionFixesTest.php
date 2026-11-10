@@ -28,6 +28,48 @@ final class RegressionFixesTest extends TestCase
         putenv('RATE_LIMIT_CACHE_ENABLED');
     }
 
+    /**
+     * PHP 单条解析结果必须与 JS normalizeResult 契约一致：
+     * platform/media_type/images/music 字段齐全，协议相对地址补全。
+     */
+    public function testNormalizeResultMatchesJsContract(): void
+    {
+        $result = \App\Services\VideoParser::normalizeResult('xiaohongshu', [
+            'title' => '图文笔记',
+            'author' => '作者',
+            'avatar' => '//sns-avatar.xhscdn.com/a.jpg',
+            'cover' => '//sns-img.xhscdn.com/cover.jpg',
+            'url' => '',
+            'media_type' => 'image',
+            'images' => ['//sns-img.xhscdn.com/1.jpg', '', 'https://sns-img.xhscdn.com/2.jpg'],
+        ]);
+
+        $this->assertSame('xiaohongshu', $result['platform']);
+        $this->assertSame('image', $result['media_type']);
+        $this->assertSame('https://sns-avatar.xhscdn.com/a.jpg', $result['avatar']);
+        $this->assertSame('https://sns-img.xhscdn.com/cover.jpg', $result['cover']);
+        $this->assertSame([
+            'https://sns-img.xhscdn.com/1.jpg',
+            'https://sns-img.xhscdn.com/2.jpg',
+        ], $result['images']);
+        $this->assertSame('https://sns-img.xhscdn.com/1.jpg', $result['url'], '图集缺少 url 时应回落到首图');
+        $this->assertIsArray($result['music']);
+    }
+
+    public function testNormalizeResultDefaultsForVideoWithoutOptionalFields(): void
+    {
+        $result = \App\Services\VideoParser::normalizeResult('bilibili', [
+            'title' => '视频',
+            'url' => 'https://cdn.example/v.mp4',
+        ]);
+
+        $this->assertSame('video', $result['media_type']);
+        $this->assertSame([], $result['images']);
+        $this->assertSame(['author' => '', 'avatar' => ''], $result['music']);
+        $this->assertSame(0, $result['like']);
+        $this->assertSame('', $result['author']);
+    }
+
     public function testApiResponsesAreNotCached(): void
     {
         $source = (string) file_get_contents($this->root . '/app/Utils/Response.php');
@@ -247,8 +289,35 @@ final class RegressionFixesTest extends TestCase
         $source = (string) file_get_contents($this->root . '/public/api/v1.php');
         $this->assertStringContainsString('"curl" => extension_loaded("curl")', $source);
         $this->assertStringContainsString('"openssl" => extension_loaded("openssl")', $source);
+        $this->assertStringContainsString('"mbstring" => extension_loaded("mbstring")', $source);
+        $this->assertStringContainsString('"dom" => class_exists(\DOMDocument::class)', $source);
         $this->assertStringContainsString('"ready" => $ready', $source);
         $this->assertStringContainsString('$ready ? 200 : 503', $source);
+        // 抖音签名 sidecar 未启动时以 warning 暴露，不阻塞整体就绪
+        $this->assertStringContainsString('a_bogus 签名服务未启动', $source);
+    }
+
+    public function testUpdateEndpointCachesGithubResponses(): void
+    {
+        $source = (string) file_get_contents($this->root . '/public/api/v1.php');
+        $this->assertStringContainsString('UpdateCache::get($cacheKey)', $source);
+        $this->assertStringContainsString('UpdateCache::set($cacheKey, $payload)', $source);
+        $this->assertTrue(class_exists(\App\Services\UpdateCache::class), 'UpdateCache 服务必须存在');
+        $this->assertSame(900, (int) \App\Utils\Config::get('updates.cache_ttl', 0));
+    }
+
+    public function testParseEndpointSupportsForceRefresh(): void
+    {
+        $api = (string) file_get_contents($this->root . '/public/api/v1.php');
+        $service = (string) file_get_contents($this->root . '/app/Services/VideoParser.php');
+        $frontend = (string) file_get_contents($this->root . '/public/app.php');
+
+        $this->assertStringContainsString('$forceRefresh', $api);
+        $this->assertStringContainsString('$parser->parse($url, $forceRefresh)', $api);
+        $this->assertStringContainsString('parse(string $url, bool $force = false)', $service);
+        $this->assertStringContainsString('if (!$force) {', $service);
+        // 播放失败后的自动重取必须带 force，否则会命中同一个 24h 缓存
+        $this->assertStringContainsString('requestParse(currentResult.url,null,true)', $frontend);
     }
 
     public function testOnlineUpdatesUseGitHubReleases(): void
