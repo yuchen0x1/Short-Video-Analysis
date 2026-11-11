@@ -23,6 +23,7 @@
 /apps/mobile/.mimosa/
 /apps/mobile/android/.mimosa/
 /apps/app-shell/.mimosa/
+/.evolution/
 
 # 本地构建日志
 *.log

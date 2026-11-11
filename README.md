@@ -18,6 +18,17 @@
 
 ---
 
+## 最新更新
+
+### v1.1.7 · 2026-11-12
+
+- 媒体播放与下载覆盖更多平台 CDN，解析成功后更稳定地打开视频、图集和音乐。
+- 统一不同端的解析结果格式，并支持失败后强制重新获取，减少重复使用失效地址。
+- 更新检查、健康检查和离线页面更稳健；主题跟随系统时首屏显示更自然。
+- 完善 Windows、Android、Docker 的本地运行说明，方便部署前完成完整自测。
+
+[查看 v1.1.7 完整发布说明](docs/releases/release-notes.md) · [查看全部历史](CHANGELOG.md)
+
 ## 目录
 
 - 界面预览
@@ -34,6 +45,7 @@
 - 目录结构
 - 答疑与排障
 - 安全设计
+- Star History
 - 参与贡献
 - 协议与声明
 
@@ -116,10 +128,10 @@
 
 ### 环境要求
 
-- 网页版 / API：PHP 8.1+（启用 `curl`、`json`、`openssl` 扩展）、Composer、Node.js 18+。
+- 网页版 / API：PHP 8.1+（启用 `curl`、`dom`、`json`、`mbstring`、`openssl` 扩展）、Composer、Node.js 18+。
 - Docker 部署：Docker 与 Docker Compose。
 - 电脑版开发 / 打包：Node.js 18+；Windows 打包使用 `electron-builder`。
-- 移动端开发：Node.js 18+；Android 构建需要 JDK、Android Studio/SDK 和 Gradle 环境。
+- 移动端开发：Node.js 18+；Android 构建需要 JDK 21、Android SDK Platform 35、Build Tools 35（兼容补充 34）和 Gradle 8.11.1；SDK licenses 需要先接受。
 
 > 提示：PHP 解析抖音依赖 `scripts/a_bogus_server.js` 提供签名服务。`composer serve:full`、`start.bat`、`start.sh` 与 Docker 都会自动把它拉起来。
 
@@ -207,6 +219,14 @@ npm run dist:win
 cd apps/mobile
 npm install
 npm run mobile:sync
+```
+
+本地验证 Debug 构建和 JVM 单元测试：
+
+```powershell
+Push-Location android
+.\gradlew.bat :app:assembleDebug :app:testDebugUnitTest
+Pop-Location
 ```
 
 打开 Android 工程：
@@ -582,6 +602,16 @@ A：本项目依赖各平台公开页面和接口行为，平台接口变更后�
 - 只有部署在可信反向代理之后，才应开启 `RATE_LIMIT_TRUST_PROXY_HEADERS=true`。
 - `MEDIA_PROXY_STRICT_MODE=true` 时，如果白名单为空会失败关闭，避免把服务变成开放代理。
 - 不要把个人微博 Cookie 提交到仓库；客户端保存的 Cookie 仅存在本机本地存储或 Electron 会话中。
+
+## Star History
+
+<a href="https://star-history.com/#yuchen0x1/Short-Video-Analysis&Date">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=yuchen0x1/Short-Video-Analysis&type=Date&theme=dark" />
+    <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=yuchen0x1/Short-Video-Analysis&type=Date" />
+    <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=yuchen0x1/Short-Video-Analysis&type=Date" />
+  </picture>
+</a>
 
 ## 参与贡献
 

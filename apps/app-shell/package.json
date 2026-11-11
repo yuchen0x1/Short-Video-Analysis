@@ -11,7 +11,6 @@
     "build": "npm run icons:generate && vite build --base=./",
     "desktop": "npm run build && electron electron/main.cjs",
     "desktop:dev": "electron electron/main.cjs",
-    "prepare:runtime": "node electron/prepare-runtime.cjs",
     "dist:win": "npm run build && electron-builder --win nsis"
   },
   "dependencies": {

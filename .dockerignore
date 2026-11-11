@@ -2,10 +2,25 @@
 .env
 vendor
 .phpunit.cache
+.phpunit.result.cache
 coverage
 upgrade-report
 storage/logs
 storage/cache
 *.log
+
+# Client-side dependencies and build outputs are not part of the PHP image.
+**/node_modules
+**/dist
+**/release
+**/build
+**/.gradle
+**/.externalNativeBuild
+**/.cxx
+.evolution
+
+# The service image runs the root PHP application; client projects are
+# packaged separately and do not belong in the Docker build context.
+/apps
 composer.phar
 composer-setup.php

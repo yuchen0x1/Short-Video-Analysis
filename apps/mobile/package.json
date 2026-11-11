@@ -10,9 +10,7 @@
     "build": "npm run icons:generate && vite build",
     "mobile:sync": "npm run build && cap sync",
     "mobile:add:android": "cap add android",
-    "mobile:add:ios": "cap add ios",
-    "mobile:android": "npm run mobile:sync && cap open android",
-    "mobile:ios": "npm run mobile:sync && cap open ios"
+    "mobile:android": "npm run mobile:sync && cap open android"
   },
   "dependencies": {
     "@capacitor/android": "^7.6.9",

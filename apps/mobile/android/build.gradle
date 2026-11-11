@@ -22,6 +22,12 @@ allprojects {
         google()
         mavenCentral()
     }
+
+    // Keep source files UTF-8 even though the Gradle daemon uses the active
+    // Windows code page to decode test-worker classpath argument files.
+    tasks.withType(JavaCompile).configureEach {
+        options.encoding = 'UTF-8'
+    }
 }
 
 task clean(type: Delete) {

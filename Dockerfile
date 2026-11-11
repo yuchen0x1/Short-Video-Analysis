@@ -4,14 +4,17 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         git \
         unzip \
         libzip-dev \
+        libxml2-dev \
+        libonig-dev \
+        libcurl4-openssl-dev \
         curl \
-    && docker-php-ext-install -j$(nproc) zip \
+    && docker-php-ext-install -j$(nproc) curl dom mbstring zip \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Node.js for a_bogus signature generation
-COPY --from=node:18-slim /usr/local/bin/node /usr/local/bin/node
-COPY --from=node:18-slim /usr/local/lib/node_modules /usr/local/lib/node_modules
+COPY --from=node:22-slim /usr/local/bin/node /usr/local/bin/node
+COPY --from=node:22-slim /usr/local/lib/node_modules /usr/local/lib/node_modules
 
 # Install Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer

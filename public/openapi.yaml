@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: Short Video No-Watermark Downloader API
-  version: 1.0.0
+  version: 1.1.7
   description: |
     短视频无水印解析服务（版本化 API）。
     base 路径为 `/api/v1`，默认不开启鉴权；如需开启，请设置 `API_KEY_ENABLED=true` 与 `API_KEY`，
@@ -24,7 +24,7 @@ paths:
           $ref: "#/components/responses/MethodNotAllowed"
   /update:
     get:
-      summary: 检查国内 Gitee 最新 Release
+      summary: 检查 GitHub 最新 Release
       description: 公开接口，供网站和移动端比较当前版本并获取下载入口。
       operationId: checkUpdate
       responses:
@@ -109,11 +109,17 @@ paths:
                 url:
                   type: string
                   example: https://www.bilibili.com/video/BV1xxxx
+                force:
+                  type: string
+                  description: 传 `1`/`true` 时跳过解析缓存，强制向上游重新获取。
+                  example: "1"
           application/x-www-form-urlencoded:
             schema:
               type: object
               properties:
                 url:
+                  type: string
+                force:
                   type: string
       responses:
         "200":

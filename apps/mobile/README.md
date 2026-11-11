@@ -16,12 +16,18 @@ npm run mobile:add:android
 npm run mobile:android
 ```
 
-生成 iOS 工程：
+## Android 本地验证
 
-```bash
-npm run mobile:add:ios
-npm run mobile:ios
+Windows 开发需要 JDK 21、Android SDK Platform 35、Build Tools 35（构建兼容补充 34）和已接受的 SDK licenses。同步前端并执行 Debug 构建与 JVM 单元测试：
+
+```powershell
+npm run mobile:sync
+Push-Location android
+.\gradlew.bat :app:assembleDebug :app:testDebugUnitTest
+Pop-Location
 ```
+
+APK 输出在 `android/app/build/outputs/apk/debug/app-debug.apk`。项目已处理中文 Windows 路径下 Gradle 测试 worker 的编码问题，源码仍按 UTF-8 编译。
 
 ## 在线更新
 

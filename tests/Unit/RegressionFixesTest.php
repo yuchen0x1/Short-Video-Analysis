@@ -174,7 +174,8 @@ final class RegressionFixesTest extends TestCase
         $this->assertStringContainsString('parseCollection(string $url, int $cursor = 0)', $parser);
         $this->assertStringContainsString('parseValidatedProfile($url, $cursor)', $api);
         $this->assertStringContainsString('parseValidatedCollection($url, $cursor)', $api);
-        $this->assertStringContainsString('parseProfile($validatedUrl, $cursor)', $service);
+        $this->assertStringContainsString('parseProfile($url, $cursor)', $service);
+        $this->assertStringContainsString('normalizeItems(', $service);
         $this->assertStringContainsString('isExplicitDouyinCollectionUrl', $service);
         $this->assertStringContainsString('json["cursor"]', $api);
         $this->assertStringContainsString('state.profile.pages[nextPage]', $frontend);
@@ -247,7 +248,9 @@ final class RegressionFixesTest extends TestCase
     public function testStartScriptsAndDockerfileLoadRouter(): void
     {
         $this->assertFileExists($this->root . '/public/router.php');
-        $this->assertStringContainsString('public/router.php', (string) file_get_contents($this->root . '/Dockerfile'));
+        $dockerfile = (string) file_get_contents($this->root . '/Dockerfile');
+        $this->assertStringContainsString('public/router.php', $dockerfile);
+        $this->assertStringContainsString('docker-php-ext-install -j$(nproc) curl dom mbstring zip', $dockerfile);
         $this->assertStringContainsString('public\\router.php', (string) file_get_contents($this->root . '/start.bat'));
         $this->assertStringContainsString('public/router.php', (string) file_get_contents($this->root . '/start.sh'));
     }

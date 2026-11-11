@@ -19,6 +19,11 @@
 - 新增 GitHub Actions 质量门禁 `.github/workflows/quality.yml`：PHP lint + PHPUnit + smoke、两个 JS 契约测试、a_bogus sidecar 测试、桌面/移动端构建、仓库卫生检查。
 - 移动端 toast 补充 `role="status"` 与 `aria-live="polite"`。
 
+### 部署与文档
+
+- Docker 镜像补齐 PHP `curl`、`dom`、`mbstring`、`zip` 扩展，Composer 平台要求与运行环境保持一致。
+- README、移动端构建说明和 OpenAPI 文档同步到 `1.1.7`，补充 Android 本地验证与解析强制刷新参数。
+
 ## 1.1.6
 
 ### 解析与发现
