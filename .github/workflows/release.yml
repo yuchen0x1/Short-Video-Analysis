@@ -20,7 +20,6 @@ jobs:
       RELEASE_TAG: ${{ github.ref_name }}
       GITHUB_OWNER: yuchen0x1
       GITHUB_REPO: Short-Video-Analysis
-      GH_TOKEN: ${{ github.token }}
       CSC_IDENTITY_AUTO_DISCOVERY: 'false'
     steps:
       - name: Checkout tag
@@ -53,10 +52,14 @@ jobs:
 
       - name: Create draft GitHub Release
         shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: gh release create "$env:RELEASE_TAG" --draft --verify-tag --title "$env:RELEASE_TAG" --generate-notes
 
       - name: Upload release assets
         shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           $assets = Get-ChildItem apps/app-shell/release -File |
             Where-Object { $_.Name -ne 'builder-debug.yml' -and ($_.Name -match '\.(exe|yml|blockmap)$' -or $_.Name -in @('SHA256SUMS.txt', 'update-manifest.json')) } |
@@ -66,6 +69,8 @@ jobs:
 
       - name: Publish release
         shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: gh release edit "$env:RELEASE_TAG" --draft=false --latest
 
   android:
