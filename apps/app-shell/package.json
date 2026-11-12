@@ -1,6 +1,6 @@
 {
   "name": "qushuiyin-desktop-client",
-  "version": "1.1.7",
+  "version": "1.1.8",
   "private": true,
   "main": "electron/main.cjs",
   "description": "去水印解析电脑版客户端",
@@ -11,7 +11,7 @@
     "build": "npm run icons:generate && vite build --base=./",
     "desktop": "npm run build && electron electron/main.cjs",
     "desktop:dev": "electron electron/main.cjs",
-    "dist:win": "npm run build && electron-builder --win nsis"
+    "dist:win": "npm run build && electron-builder --win"
   },
   "dependencies": {
     "electron-updater": "^6.8.9"

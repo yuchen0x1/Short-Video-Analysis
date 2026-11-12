@@ -754,12 +754,33 @@ function setUpdateStatus(payload) {
   const s = updateState.status;
   if (s === 'checking') el.textContent = '正在检查更新…';
   else if (s === 'available') el.textContent = `发现新版本 v${updateState.version}，正在下载…`;
-  else if (s === 'downloading') el.textContent = `正在下载更新 ${updateState.percent || 0}%`;
+  else if (s === 'downloading') {
+    const speed = formatTransferRate(updateState.bytesPerSecond);
+    const remaining = updateState.total > 0 && updateState.bytesPerSecond > 0
+      ? `，约剩余 ${formatDuration((updateState.total - updateState.transferred) / updateState.bytesPerSecond)}`
+      : '';
+    el.textContent = `正在下载更新 ${updateState.percent || 0}%${speed ? ` · ${speed}` : ''}${remaining}`;
+  }
   else if (s === 'downloaded') { el.textContent = `新版本 v${updateState.version} 已就绪`; if (install) install.hidden = false; }
   else if (s === 'none') el.textContent = '当前已是最新版本。';
   else if (s === 'dev') el.textContent = '正常更新中。';
   else if (s === 'error') el.textContent = updateState.message || '检查更新失败。';
   else el.textContent = '正常更新中。';
+}
+
+function formatTransferRate(value) {
+  const bytes = Number(value) || 0;
+  if (bytes <= 0) return '';
+  if (bytes >= 1024 * 1024) return `${(bytes / 1024 / 1024).toFixed(1)} MB/s`;
+  return `${Math.max(1, Math.round(bytes / 1024))} KB/s`;
+}
+
+function formatDuration(seconds) {
+  const value = Math.max(0, Math.round(Number(seconds) || 0));
+  if (value < 60) return `${value} 秒`;
+  const minutes = Math.floor(value / 60);
+  const remainder = value % 60;
+  return `${minutes} 分 ${remainder} 秒`;
 }
 
 // 更新日志 Markdown 最小渲染：先整体转义，再支持标题/列表/引用/加粗/行内代码，防注入。

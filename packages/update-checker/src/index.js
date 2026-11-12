@@ -138,7 +138,7 @@ function assertUpdateUrl(value, { githubOnly = true } = {}) {
   } catch {
     throw new Error('更新源地址无效');
   }
-  if (!['http:', 'https:'].includes(parsed.protocol)) throw new Error('更新源仅支持 HTTP/HTTPS');
+  if (parsed.protocol !== 'https:') throw new Error('更新源仅支持 HTTPS');
   if (parsed.username || parsed.password) throw new Error('更新源地址不允许携带用户凭据');
   if (githubOnly && !isAllowedUpdateHost(parsed.hostname)) throw new Error('更新源仅允许 GitHub 域名');
   return parsed.href;

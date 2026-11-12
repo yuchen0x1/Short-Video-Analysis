@@ -1,5 +1,18 @@
 # 发布说明
 
+## v1.1.8 · 2026-11-12
+
+### 用户可见改进
+
+- Windows 更新下载页现在显示真实下载速度和可计算时的预计剩余时间。
+- 更新来源统一使用 HTTPS；Android 不会把 debug 或 unsigned APK 作为正式升级包。
+
+### 发布与运维
+
+- 新增 GitHub 标签发布流水线，自动构建 NSIS、portable、`latest.yml`、blockmap 和 SHA-256 清单。
+- Android 签名发布任务支持通过 GitHub Secrets 启用，并在上传前验证 APK 签名。
+- 完整配置与限制见 [`docs/AUTO_UPDATE.md`](../AUTO_UPDATE.md)。
+
 ## v1.1.7 · 2026-11-12
 
 ### 用户可见改进

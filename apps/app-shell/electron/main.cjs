@@ -6,7 +6,6 @@ const http = require('node:http');
 const nodeNet = require('node:net');
 const path = require('node:path');
 const { autoUpdater } = require('electron-updater');
-const { fetchGithubLatestTag, githubFeedUrl } = require('./updateChannel.cjs');
 
 const isDevelopment = Boolean(process.env.APP_DEV_SERVER_URL);
 const WEIBO_PARTITION = 'persist:weibo-login-v1';
@@ -218,7 +217,13 @@ function setupAutoUpdater() {
   autoUpdater.on('checking-for-update', () => sendUpdate({ status: 'checking' }));
   autoUpdater.on('update-available', (info) => sendUpdate({ status: 'available', version: info.version }));
   autoUpdater.on('update-not-available', (info) => sendUpdate({ status: 'none', version: info.version }));
-  autoUpdater.on('download-progress', (progress) => sendUpdate({ status: 'downloading', percent: Math.round(progress.percent) }));
+  autoUpdater.on('download-progress', (progress) => sendUpdate({
+    status: 'downloading',
+    percent: Math.round(progress.percent),
+    bytesPerSecond: Number(progress.bytesPerSecond) || 0,
+    transferred: Number(progress.transferred) || 0,
+    total: Number(progress.total) || 0,
+  }));
   autoUpdater.on('update-downloaded', async (info) => {
     sendUpdate({ status: 'downloaded', version: info.version });
     if (mainWindow && !mainWindow.isDestroyed()) {
@@ -256,9 +261,8 @@ function setupAutoUpdater() {
 }
 
 async function checkForUpdatesWithChannel() {
-  const tag = await fetchGithubLatestTag();
-  console.log(`[update] channel=github tag=${tag}`);
-  autoUpdater.setFeedURL({ provider: 'generic', url: githubFeedUrl(tag) });
+  // electron-builder 已把 GitHub provider 写入打包产物的 app-update.yml。
+  // 不在运行时调用 setFeedURL，避免覆盖构建时的 feed 和签名配置。
   return autoUpdater.checkForUpdates();
 }
 

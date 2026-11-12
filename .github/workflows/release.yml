@@ -1,0 +1,175 @@
+name: release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  windows:
+    name: Build and publish Windows release
+    runs-on: windows-latest
+    env:
+      RELEASE_TAG: ${{ github.ref_name }}
+      GITHUB_OWNER: yuchen0x1
+      GITHUB_REPO: Short-Video-Analysis
+      GH_TOKEN: ${{ github.token }}
+      CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+    steps:
+      - name: Checkout tag
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: apps/app-shell/package-lock.json
+
+      - name: Validate release version
+        run: node scripts/check-release-version.mjs
+
+      - name: Install desktop dependencies
+        working-directory: apps/app-shell
+        run: npm ci
+
+      - name: Build Windows installers
+        working-directory: apps/app-shell
+        run: |
+          if (Test-Path release) { Remove-Item -Recurse -Force release }
+          npm run dist:win
+
+      - name: Generate checksum manifest
+        run: node scripts/generate-release-manifest.mjs apps/app-shell/release $env:RELEASE_TAG
+
+      - name: Create draft GitHub Release
+        shell: pwsh
+        run: gh release create "$env:RELEASE_TAG" --draft --verify-tag --title "$env:RELEASE_TAG" --generate-notes
+
+      - name: Upload release assets
+        shell: pwsh
+        run: |
+          $assets = Get-ChildItem apps/app-shell/release -File |
+            Where-Object { $_.Name -ne 'builder-debug.yml' -and ($_.Name -match '\.(exe|yml|blockmap)$' -or $_.Name -in @('SHA256SUMS.txt', 'update-manifest.json')) } |
+            ForEach-Object { $_.FullName }
+          if (-not $assets) { throw '没有可上传的发布资产' }
+          gh release upload "$env:RELEASE_TAG" @assets --clobber
+
+      - name: Publish release
+        shell: pwsh
+        run: gh release edit "$env:RELEASE_TAG" --draft=false --latest
+
+  android:
+    name: Build and attach signed Android APK
+    if: ${{ vars.ANDROID_RELEASE_ENABLED == 'true' }}
+    needs: windows
+    runs-on: ubuntu-latest
+    env:
+      RELEASE_TAG: ${{ github.ref_name }}
+      GITHUB_OWNER: yuchen0x1
+      GITHUB_REPO: Short-Video-Analysis
+      GH_TOKEN: ${{ github.token }}
+      ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+      ANDROID_STORE_PASSWORD: ${{ secrets.ANDROID_STORE_PASSWORD }}
+      ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+      ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+    steps:
+      - name: Checkout tag
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: apps/mobile/package-lock.json
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install Android SDK packages
+        shell: bash
+        run: sdkmanager "platforms;android-35" "build-tools;35.0.0"
+
+      - name: Install mobile dependencies and sync Capacitor
+        working-directory: apps/mobile
+        run: npm ci && npm run mobile:sync
+
+      - name: Configure release signing
+        shell: bash
+        run: |
+          mkdir -p apps/mobile/android/keystore
+          printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 --decode > apps/mobile/android/keystore/release.keystore
+          cat > apps/mobile/android/keystore.properties <<EOF
+          storeFile=keystore/release.keystore
+          storePassword=$ANDROID_STORE_PASSWORD
+          keyAlias=$ANDROID_KEY_ALIAS
+          keyPassword=$ANDROID_KEY_PASSWORD
+          EOF
+
+      - name: Build signed APK
+        working-directory: apps/mobile/android
+        run: |
+          chmod +x gradlew
+          ./gradlew :app:assembleRelease
+
+      - name: Verify APK signature and prepare assets
+        shell: bash
+        run: |
+          mkdir -p release-assets
+          version="${RELEASE_TAG#v}"
+          apk="release-assets/qushuiyin-mobile-client-${version}.apk"
+          cp apps/mobile/android/app/build/outputs/apk/release/app-release.apk "$apk"
+          apksigner="$(find "$ANDROID_HOME/build-tools" -name apksigner | sort -V | tail -n 1)"
+          test -n "$apksigner"
+          "$apksigner" verify --print-certs "$apk"
+          sha256sum "$apk" > "${apk}.sha256"
+
+      - name: Add Android asset to release manifests
+        shell: bash
+        run: |
+          mkdir -p release-manifest
+          gh release download "$RELEASE_TAG" --pattern update-manifest.json --pattern SHA256SUMS.txt --dir release-manifest
+          node --input-type=module <<'NODE'
+          import crypto from 'node:crypto';
+          import fs from 'node:fs';
+          import path from 'node:path';
+          const tag = process.env.RELEASE_TAG;
+          const owner = process.env.GITHUB_OWNER;
+          const repo = process.env.GITHUB_REPO;
+          const apk = fs.readdirSync('release-assets').find((name) => name.endsWith('.apk'));
+          const apkPath = path.join('release-assets', apk);
+          const bytes = fs.readFileSync(apkPath);
+          const asset = {
+            name: apk,
+            size: bytes.length,
+            sha256: crypto.createHash('sha256').update(bytes).digest('hex'),
+            download_url: `https://github.com/${owner}/${repo}/releases/download/${encodeURIComponent(tag)}/${encodeURIComponent(apk)}`,
+          };
+          const manifestPath = 'release-manifest/update-manifest.json';
+          const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
+          manifest.assets = [...manifest.assets.filter((item) => item.name !== asset.name), asset];
+          fs.writeFileSync(manifestPath, JSON.stringify(manifest, null, 2) + '\n');
+          fs.appendFileSync('release-manifest/SHA256SUMS.txt', `${asset.sha256}  ${asset.name}\n`);
+          NODE
+
+      - name: Upload signed Android assets
+        shell: bash
+        run: gh release upload "$RELEASE_TAG" release-assets/* release-manifest/update-manifest.json release-manifest/SHA256SUMS.txt --clobber

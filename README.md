@@ -8,7 +8,7 @@
 
 覆盖 12 个主流短视频平台，一次解析视频、图集、封面与作者信息，提供网页版、电脑版、Android 端与版本化 HTTP API。
 
-[![Version](https://img.shields.io/badge/版本-v1.1.7-22d3ee)](https://github.com/yuchen0x1/Short-Video-Analysis/releases/latest) [![Platforms](https://img.shields.io/badge/平台-12个-8b5cf6)](#覆盖平台) [![PHP](https://img.shields.io/badge/PHP-8.1%2B-777bb4)](#技术选型与环境要求) [![License](https://img.shields.io/badge/License-AGPL--3.0--only-9cf)](LICENSE)
+[![Version](https://img.shields.io/badge/版本-v1.1.8-22d3ee)](https://github.com/yuchen0x1/Short-Video-Analysis/releases/latest) [![Platforms](https://img.shields.io/badge/平台-12个-8b5cf6)](#覆盖平台) [![PHP](https://img.shields.io/badge/PHP-8.1%2B-777bb4)](#技术选型与环境要求) [![License](https://img.shields.io/badge/License-AGPL--3.0--only-9cf)](LICENSE)
 
 ![网页版工作台](assets/screenshots/web-home.png)
 
@@ -20,6 +20,14 @@
 
 ## 最新更新
 
+### v1.1.8 · 2026-11-12
+
+- 接入 GitHub 标签发布流水线，自动构建 Windows NSIS/portable 产物、`latest.yml`、blockmap 与 SHA-256 清单。
+- 更新检查源统一要求 HTTPS；桌面端使用构建时 GitHub provider，下载界面显示真实速度和预计剩余时间。
+- Android 发布任务支持通过 GitHub Secrets 构建并验签正式 APK，避免把 debug/unsigned 包推荐为升级包。
+
+[查看 v1.1.8 完整发布说明](docs/releases/release-notes.md)
+
 ### v1.1.7 · 2026-11-12
 
 - 媒体播放与下载覆盖更多平台 CDN，解析成功后更稳定地打开视频、图集和音乐。
@@ -27,7 +35,7 @@
 - 更新检查、健康检查和离线页面更稳健；主题跟随系统时首屏显示更自然。
 - 完善 Windows、Android、Docker 的本地运行说明，方便部署前完成完整自测。
 
-[查看 v1.1.7 完整发布说明](docs/releases/release-notes.md) · [查看全部历史](CHANGELOG.md)
+[查看全部历史](CHANGELOG.md)
 
 ## 推广介绍图
 
@@ -533,13 +541,15 @@ npm run mobile:sync
 
 ### 自动更新机制
 
+自动更新、GitHub 标签发布、资产校验和签名限制见 [`docs/AUTO_UPDATE.md`](docs/AUTO_UPDATE.md)。正式版本使用 `vMAJOR.MINOR.PATCH` 标签触发 GitHub Actions；发布前必须先同步根目录、桌面端、移动端和 Android 的版本号。
+
 各端统一使用 GitHub Releases 作为版本源：
 
 - **网站**：访问 `/api/v1/update`，服务端读取 GitHub 最新 Release（REST API 主路径，API 限流时自动回退 `releases.atom` 与 expanded assets 页面）；页面启动时自动检查，也可手动检查并打开发布页下载。
 - **Android**：启动时自动检查 GitHub Release，关于页可手动检查；发现 APK 后通过系统下载器下载。正式签名 APK 可用于升级，测试签名 APK 仅适合测试。
 - **Windows 安装版**：由 `electron-updater` 读取 GitHub Release 的 `latest.yml`，启动后自动检查、下载并提示重启安装；关于页可手动检查。
 
-发布新版本时，先同步根目录、`apps/app-shell`、`apps/mobile` 和 `packages/*` 的版本号，再在 GitHub 创建 `vX.Y.Z` Release 并上传 Windows 安装包/便携版、`latest.yml`/blockmap 和 Android APK。手机版可通过 `VITE_UPDATE_API_URL` 指向已部署的 `/api/v1/update` 自定义更新源。
+发布新版本时，先同步根目录、`apps/app-shell`、`apps/mobile` 和 Android 的版本号，再推送 `vX.Y.Z` 标签；GitHub Actions 会自动构建并发布 Windows 安装包、便携版、`latest.yml`/blockmap 和 SHA-256 清单。Android 正式 APK 需要额外配置签名密钥后再上传。手机版可通过 `VITE_UPDATE_API_URL` 指向已部署的 `/api/v1/update` 自定义更新源。
 
 版本变更记录见 [`CHANGELOG.md`](CHANGELOG.md)。
 

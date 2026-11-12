@@ -1,5 +1,18 @@
 # 更新日志
 
+## 1.1.8
+
+### 更新与发布
+
+- 新增 GitHub 标签发布工作流，自动构建 Windows NSIS/portable 安装产物并发布 `latest.yml`、blockmap、SHA-256 清单和机器可读更新清单。
+- 桌面端改用构建时写入的 GitHub updater 配置，更新下载状态显示真实速度与预计剩余时间。
+- 更新检查器只接受 HTTPS 更新源；网站和 Android 不再推荐 debug/unsigned APK。
+- Android 工作流支持在配置签名 Secrets 后自动构建、验签并追加正式 APK。
+
+### 已知限制
+
+- 当前仓库未配置 Windows 代码签名证书；Android 正式发布需要配置受保护的 keystore Secrets。
+
 ## 1.1.7
 
 ### 修复

@@ -2,7 +2,7 @@
     "name": "yuchen0x1/short-video-watermark-remover",
     "description": "一款高效的短视频去水印下载工具。",
     "type": "project",
-    "version": "1.1.7",
+    "version": "1.1.8",
     "license": "AGPL-3.0-only",
     "authors": [
         {

@@ -300,7 +300,7 @@ if ($path === "/api/v1/update" || $path === "/api/v1/update/") {
     }
     $headers = [
         'Accept' => 'application/vnd.github+json',
-        'User-Agent' => 'qushuiyin-web-updater/1.1.7 (+https://github.com/yuchen0x1/Short-Video-Analysis)',
+        'User-Agent' => 'qushuiyin-web-updater/1.1.8 (+https://github.com/yuchen0x1/Short-Video-Analysis)',
     ];
     $response = HttpClient::request($apiUrl, null, $headers, 1, $respHeaders, 8);
     $release = $response['success']
@@ -311,7 +311,7 @@ if ($path === "/api/v1/update" || $path === "/api/v1/update/") {
         // GitHub 匿名 REST API 按出口 IP 限流；回退到官方 Release Atom 与附件页。
         $atomResponse = HttpClient::request($atomUrl, null, [
             'Accept' => 'application/atom+xml',
-            'User-Agent' => 'qushuiyin-web-updater/1.1.7 (+https://github.com/yuchen0x1/Short-Video-Analysis)',
+            'User-Agent' => 'qushuiyin-web-updater/1.1.8 (+https://github.com/yuchen0x1/Short-Video-Analysis)',
         ], 1, $respHeaders, 8);
         $release = $atomResponse['success']
             ? parseGithubReleaseAtom((string) $atomResponse['data'], $owner, $repo)
@@ -320,7 +320,7 @@ if ($path === "/api/v1/update" || $path === "/api/v1/update/") {
             $assetsUrl = sprintf('https://github.com/%s/%s/releases/expanded_assets/%s', rawurlencode($owner), rawurlencode($repo), rawurlencode((string) $release['tag_name']));
             $assetsResponse = HttpClient::request($assetsUrl, null, [
                 'Accept' => 'text/html',
-                'User-Agent' => 'qushuiyin-web-updater/1.1.7 (+https://github.com/yuchen0x1/Short-Video-Analysis)',
+                'User-Agent' => 'qushuiyin-web-updater/1.1.8 (+https://github.com/yuchen0x1/Short-Video-Analysis)',
             ], 1, $respHeaders, 8);
             if ($assetsResponse['success']) {
                 $release['assets'] = parseGithubExpandedAssets((string) $assetsResponse['data'], $owner, $repo, (string) $release['tag_name']);
@@ -356,12 +356,13 @@ if ($path === "/api/v1/update" || $path === "/api/v1/update/") {
         ];
     }
     $android = null;
-    $androidScore = PHP_INT_MAX;
     $windows = null;
     foreach ($assets as $asset) {
         if (preg_match('/\.apk$/i', $asset['name'])) {
-            $score = preg_match('/unsigned/i', $asset['name']) ? 2 : (preg_match('/debug/i', $asset['name']) ? 1 : 0);
-            if ($score < $androidScore) { $android = $asset; $androidScore = $score; }
+            // Debug/unsigned APK 无法覆盖正式签名安装，不应作为在线升级包推荐。
+            if (!preg_match('/(?:debug|unsigned)/i', $asset['name']) && $android === null) {
+                $android = $asset;
+            }
         }
         if ($windows === null && preg_match('/\.exe$/i', $asset['name']) && preg_match('/setup/i', $asset['name'])) $windows = $asset;
     }

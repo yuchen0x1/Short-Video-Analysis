@@ -89,7 +89,7 @@ await assert.rejects(
     repository: { ...UPDATE_REPOSITORY, apiUrl: 'ftp://api.github.com/repos/x/y/releases/latest' },
     request: async () => ({ status: 200, data: githubPayload }),
   }),
-  /更新源仅支持 HTTP\/HTTPS/
+  /更新源仅支持 HTTPS/
 );
 
 // 自定义站点 API（VITE_UPDATE_API_URL 场景）：允许非 GitHub 域名，只要求 HTTPS 与无凭据
@@ -110,6 +110,19 @@ const siteResult = await checkForUpdate({
 assert.equal(siteResult.latestVersion, '1.2.0');
 assert.equal(siteResult.updateAvailable, true);
 assert.equal(siteResult.androidAsset.name, 'update.apk');
+
+await assert.rejects(
+  () => checkForUpdate({
+    currentVersion: '1.1.2',
+    repository: {
+      owner: 'yuchen0x1', repo: 'Short-Video-Analysis', provider: 'api',
+      apiUrl: 'http://updates.example.cn/api/v1/update',
+      releasesUrl: 'https://updates.example.cn/releases',
+    },
+    request: async () => ({ status: 200, data: siteEnvelope }),
+  }),
+  /更新源仅支持 HTTPS/
+);
 
 // 自定义站点 API 的资产 URL 仍不允许携带凭据
 await assert.rejects(
