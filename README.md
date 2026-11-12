@@ -29,8 +29,23 @@
 
 [查看 v1.1.7 完整发布说明](docs/releases/release-notes.md) · [查看全部历史](CHANGELOG.md)
 
+## 推广介绍图
+
+> **粘贴分享链接，直接变成可用视频。**
+>
+> 去水印解析是一套本地优先的短视频工作台：自动识别平台，解析视频、图集、封面和音乐，并在同一工作区完成播放、下载、复制、收藏与历史管理。支持网页版、Windows 电脑版、Android 客户端和版本化 HTTP API。
+
+<p align="center">
+  <img src="assets/screenshots/promo-home-v1.1.7.png" alt="去水印解析 v1.1.7 首页工作台" width="100%" />
+</p>
+
+<p align="center">
+  <img src="assets/screenshots/promo-result-v1.1.7.png" alt="去水印解析 v1.1.7 解析结果与下载工作区" width="100%" />
+</p>
+
 ## 目录
 
+- 推广介绍图
 - 界面预览
 - 项目定位
 - 功能全景
