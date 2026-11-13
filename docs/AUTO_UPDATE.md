@@ -41,8 +41,8 @@ git push origin v1.2.0
 ## 本地验证
 
 ```powershell
-node scripts/check-release-version.mjs v1.1.9
-node scripts/generate-release-manifest.mjs apps/app-shell/release v1.1.9
+node scripts/check-release-version.mjs v1.1.10
+node scripts/generate-release-manifest.mjs apps/app-shell/release v1.1.10
 
 Push-Location apps/app-shell
 npm ci

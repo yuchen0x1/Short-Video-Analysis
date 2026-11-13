@@ -8,7 +8,7 @@
 
 覆盖 12 个主流短视频平台，一次解析视频、图集、封面与作者信息，仅提供 Windows 电脑版与 PHP 网页版；HTTP API 属于网页版服务。
 
-[![Version](https://img.shields.io/badge/版本-v1.1.9-22d3ee)](https://github.com/yuchen0x1/Short-Video-Analysis/releases/latest) [![Platforms](https://img.shields.io/badge/平台-12个-8b5cf6)](#覆盖平台) [![PHP](https://img.shields.io/badge/PHP-8.1%2B-777bb4)](#技术选型与环境要求) [![License](https://img.shields.io/badge/License-AGPL--3.0--only-9cf)](LICENSE)
+[![Version](https://img.shields.io/badge/版本-v1.1.10-22d3ee)](https://github.com/yuchen0x1/Short-Video-Analysis/releases/latest) [![Platforms](https://img.shields.io/badge/平台-12个-8b5cf6)](#覆盖平台) [![PHP](https://img.shields.io/badge/PHP-8.1%2B-777bb4)](#技术选型与环境要求) [![License](https://img.shields.io/badge/License-AGPL--3.0--only-9cf)](LICENSE)
 
 ![网页版工作台](assets/screenshots/web-home.png)
 
@@ -20,17 +20,14 @@
 
 ## 最新更新
 
-**main 分支待发布**：产品范围统一为电脑版与网页版，移除独立移动工程与其构建发布配置，保留网页版分页修复；[完整待发布记录](docs/releases/release-notes.md) · [产品范围说明](docs/PRODUCT_SCOPE.md)。
+### v1.1.10 · 2026-11-13
 
-### v1.1.9 · 2026-11-13
+- 产品统一为 Windows 电脑版与 PHP 网页版，手机浏览器与 PWA 继续可用；独立移动客户端退出维护范围。
+- 电脑版安装包包含完整历史更新日志，Windows 安装版与便携版继续提供 GitHub 自动更新文件和校验清单。
+- 网页发现页失败重试不再跳页，重复请求与迟到结果不会破坏当前列表。
+- PHP 抖音搜索兼容两种结果结构，合法空列表不再误报失败；网页更新不再推荐移动安装包。
 
-- 网页版新增历史与收藏搜索、JSON 备份与合并恢复；导入校验失败不会覆盖已有资料。
-- 批量解析与重试共用运行状态，停止后可继续失败/停止项；修复「全部打包 ZIP」点击错误，并限制打包大小和并发。
-- 旧版解析入口补齐 API Key 校验，微博解析隔离账号缓存，CSV 导出防止外部标题被直接识别为公式。
-- 修正缓存路径越出项目目录、浅色模式输入面板对比度及手机端模式按钮换行。
-- Windows 便携版使用固定命名，下载链接与校验清单保持一致。
-
-[完整发布历史](docs/releases/release-notes.md) · [本轮分析与验收报告](docs/EVOLUTION-2026-11-13.md)
+[完整发布历史](docs/releases/release-notes.md) · [产品范围](docs/PRODUCT_SCOPE.md)
 
 ## 推广介绍图
 
