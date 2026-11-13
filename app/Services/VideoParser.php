@@ -103,7 +103,7 @@ class VideoParser
      * 归一化解析结果，与 packages/parsers/src/index.js 的 normalizeResult 保持一致。
      *
      * 补齐 platform/media_type/images/music 等字段，保证 API 契约、
-     * OpenAPI 文档与桌面/移动端（JS 解析器）返回结构一致。
+     * OpenAPI 文档与电脑版（JS 解析器）返回结构一致。
      */
     public static function normalizeResult(string $platform, array $result): array
     {

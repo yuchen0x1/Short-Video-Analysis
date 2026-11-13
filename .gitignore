@@ -28,15 +28,13 @@ __pycache__/
 /apps/app-shell/release-*/
 /apps/app-shell/android/
 /apps/app-shell/ios/
-/apps/mobile/node_modules/
-/apps/mobile/dist/
-/apps/mobile/ios/
 /.mimosa/
 /.zcode/
-/apps/mobile/.mimosa/
-/apps/mobile/android/.mimosa/
 /apps/app-shell/.mimosa/
 /.evolution/
 
 # 本地构建日志
 *.log
+
+# 本项目仅维护电脑版与网页版；阻止旧移动工程重新上传
+/apps/mobile/

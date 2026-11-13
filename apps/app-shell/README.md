@@ -35,4 +35,4 @@ npm run dist:win
 
 产物写入 `release`，包括 NSIS 安装程序和 portable 便携版。打包机只需要 Node.js、npm 依赖和 Windows 构建环境。
 
-手机版在 `apps/mobile`，是另一套移动端布局和交互。
+项目只提供本目录的 Windows 电脑版和根目录 PHP 网页版；手机浏览器访问属于网页版。

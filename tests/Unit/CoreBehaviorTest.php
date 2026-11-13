@@ -262,7 +262,7 @@ final class CoreBehaviorTest extends TestCase
         }
     }
 
-    public function testMediaAllowlistMatchesDesktopAndAndroidRuntimes(): void
+    public function testMediaAllowlistMatchesDesktopRuntime(): void
     {
         $root = dirname(__DIR__, 2);
         $domains = self::defaultMediaDomains();
@@ -273,20 +273,10 @@ final class CoreBehaviorTest extends TestCase
         preg_match_all('/\'([a-z0-9.-]+)\'/', $match[1], $electronItems);
         $electronDomains = array_values(array_unique($electronItems[1]));
 
-        $android = (string) file_get_contents(
-            $root . '/apps/mobile/android/app/src/main/java/com/yuchen/qushuiyin/MediaProxyPlugin.java'
-        );
-        preg_match('/ALLOWED_MEDIA_DOMAINS = .*?Arrays\.asList\((.*?)\)\)\);/s', $android, $androidMatch);
-        $this->assertNotEmpty($androidMatch[1] ?? '', 'Android 必须声明 ALLOWED_MEDIA_DOMAINS');
-        preg_match_all('/"([a-z0-9.-]+)"/', $androidMatch[1], $androidItems);
-        $androidDomains = array_values(array_unique($androidItems[1]));
-
         sort($domains);
         sort($electronDomains);
-        sort($androidDomains);
 
         $this->assertSame($domains, $electronDomains, 'Electron 媒体白名单必须与 config/media_domains.php 一致');
-        $this->assertSame($domains, $androidDomains, 'Android 媒体白名单必须与 config/media_domains.php 一致');
     }
 
     private static function resetLimiterFactory(): void

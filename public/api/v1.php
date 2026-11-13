@@ -271,7 +271,7 @@ if ($path === "/api/v1/health") {
 }
 
 // GET /api/v1/update
-// 从 GitHub Release API 获取公开最新版本，供网站和移动端统一使用。
+// 从 GitHub Release API 获取公开最新版本，供网页版查询当前正式版本。
 if ($path === "/api/v1/update" || $path === "/api/v1/update/") {
     if (Config::get("rate_limit.enabled", true)) {
         $rateLimitResult = RateLimiter::check($ip);
@@ -291,7 +291,7 @@ if ($path === "/api/v1/update" || $path === "/api/v1/update/") {
         ? (string) (\Composer\InstalledVersions::getPrettyVersion("yuchen0x1/short-video-watermark-remover") ?? "dev")
         : "dev";
     // 短 TTL 缓存：避免每次页面加载都消耗 GitHub 匿名配额（按出口 IP 计算）
-    $cacheKey = $currentVersion . '|' . $apiUrl;
+    $cacheKey = 'desktop-web|' . $currentVersion . '|' . $apiUrl;
     if (($_GET['force'] ?? '') === '') {
         $cachedUpdate = \App\Services\UpdateCache::get($cacheKey);
         if (is_array($cachedUpdate)) {
@@ -347,7 +347,7 @@ if ($path === "/api/v1/update" || $path === "/api/v1/update/") {
     foreach (is_array($release['assets'] ?? null) ? $release['assets'] : [] as $asset) {
         $name = trim((string) ($asset['name'] ?? ''));
         $url = trim((string) ($asset['browser_download_url'] ?? ''));
-        if ($name === '' || !preg_match('#^https://#i', $url)) continue;
+        if ($name === '' || !preg_match('#^https://#i', $url) || preg_match('/\.(?:apk|aab|ipa)$/i', $name)) continue;
         $assets[] = [
             'name' => $name,
             'url' => $url,
@@ -355,15 +355,8 @@ if ($path === "/api/v1/update" || $path === "/api/v1/update/") {
             'digest' => (string) ($asset['digest'] ?? ''),
         ];
     }
-    $android = null;
     $windows = null;
     foreach ($assets as $asset) {
-        if (preg_match('/\.apk$/i', $asset['name'])) {
-            // Debug/unsigned APK 无法覆盖正式签名安装，不应作为在线升级包推荐。
-            if (!preg_match('/(?:debug|unsigned)/i', $asset['name']) && $android === null) {
-                $android = $asset;
-            }
-        }
         if ($windows === null && preg_match('/\.exe$/i', $asset['name']) && preg_match('/setup/i', $asset['name'])) $windows = $asset;
     }
     $compareCurrent = preg_replace('/^v/i', '', $currentVersion);
@@ -377,7 +370,7 @@ if ($path === "/api/v1/update" || $path === "/api/v1/update/") {
         'published_at' => (string) ($release['published_at'] ?? ''),
         'notes' => (string) ($release['body'] ?? ''),
         'assets' => $assets,
-        'android_asset' => $android,
+        'android_asset' => null, // 兼容旧 API 字段；项目不再提供独立移动安装包。
         'windows_asset' => $windows,
     ];
     \App\Services\UpdateCache::set($cacheKey, $payload);

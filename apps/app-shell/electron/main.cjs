@@ -13,7 +13,7 @@ const WEIBO_LOGIN_URL = 'https://weibo.com/';
 const WEIBO_ALLOWED_HOSTS = new Set(['weibo.com', 'www.weibo.com', 'passport.weibo.com', 'login.sina.com.cn']);
 const MAX_WEIBO_RESPONSE_BYTES = 2 * 1024 * 1024;
 const MAX_HTTP_REDIRECTS = 5;
-// 媒体代理默认域名白名单（与 config/media_domains.php、Android MediaProxyPlugin 保持一致）
+// 媒体代理默认域名白名单（与 config/media_domains.php 保持一致）
 // 覆盖 12 个点播平台与 4 个直播平台实际返回的媒体 CDN。
 const MEDIA_ALLOWED_DOMAINS = [
   // 抖音

@@ -117,7 +117,6 @@ final class DiscoveryBehaviorTest extends TestCase
         $readme = (string) file_get_contents($this->root . '/README.md');
         $mediaDomains = (string) file_get_contents($this->root . '/config/media_domains.php');
         $electron = (string) file_get_contents($this->root . '/apps/app-shell/electron/main.cjs');
-        $mobile = (string) file_get_contents($this->root . '/apps/mobile/src/main.js');
 
         $this->assertStringContainsString('/api/v1/hot', $api);
         $this->assertStringContainsString('/api/v1/search', $api);
@@ -131,8 +130,6 @@ final class DiscoveryBehaviorTest extends TestCase
         $this->assertStringContainsString('batch-thumb-placeholder', $frontend);
         $this->assertStringContainsString('discover-thumb-placeholder', (string) file_get_contents($this->root . '/apps/app-shell/src/main.js'));
         $this->assertStringContainsString('mediaUrl(item.cover)', (string) file_get_contents($this->root . '/apps/app-shell/src/main.js'));
-        $this->assertStringContainsString('mediaUrl(item.cover)', $mobile);
-        $this->assertStringContainsString('mobile-discover-thumb-placeholder', $mobile);
         $this->assertStringContainsString('douyinpic.com', $mediaDomains);
         $this->assertStringContainsString('hdslb.com', $mediaDomains);
         $this->assertStringContainsString('media_domains.php', (string) file_get_contents($this->root . '/config/app.php'));

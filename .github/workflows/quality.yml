@@ -62,21 +62,14 @@ jobs:
         working-directory: packages/parsers
         run: npm test
 
-      - name: update-checker contract
-        working-directory: packages/update-checker
-        run: npm test
-
       - name: a_bogus sidecar
         run: node --test scripts/a_bogus_server.test.mjs
 
       - name: Web workbench regression tests
         run: node --test tests/workbench.test.cjs
 
-      - name: Mobile workflow regression tests
-        run: node --test tests/mobile-workbench.test.mjs
-
   clients:
-    name: Desktop + mobile build
+    name: Desktop build
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -85,9 +78,7 @@ jobs:
         with:
           node-version: '22'
           cache: npm
-          cache-dependency-path: |
-            apps/app-shell/package-lock.json
-            apps/mobile/package-lock.json
+          cache-dependency-path: apps/app-shell/package-lock.json
 
       - name: Install desktop deps
         working-directory: apps/app-shell
@@ -96,49 +87,6 @@ jobs:
       - name: Build desktop renderer
         working-directory: apps/app-shell
         run: npx vite build --base=./
-
-      - name: Install mobile deps
-        working-directory: apps/mobile
-        run: npm ci
-
-      - name: Build mobile renderer
-        working-directory: apps/mobile
-        run: npx vite build
-
-  android:
-    name: Android debug build + JVM tests
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-          cache: npm
-          cache-dependency-path: apps/mobile/package-lock.json
-
-      - uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: '21'
-
-      - uses: android-actions/setup-android@v3
-        with:
-          packages: platform-tools
-          log-accepted-android-sdk-licenses: false
-
-      - name: Android SDK
-        run: sdkmanager "platforms;android-35" "build-tools;35.0.0" "build-tools;34.0.0"
-
-      - name: Install and sync mobile
-        working-directory: apps/mobile
-        run: npm ci && npm run mobile:sync
-
-      - name: Compile Android and run JVM tests
-        working-directory: apps/mobile/android
-        run: |
-          chmod +x gradlew
-          ./gradlew --no-daemon :app:assembleDebug :app:testDebugUnitTest
 
   hygiene:
     name: Repo hygiene

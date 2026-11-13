@@ -409,6 +409,8 @@ components:
                 android_asset:
                   type: object
                   nullable: true
+                  deprecated: true
+                  description: 旧接口兼容字段，固定为 null；当前项目仅提供电脑版和网页版。
                 windows_asset:
                   type: object
                   nullable: true

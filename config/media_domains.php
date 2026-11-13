@@ -6,10 +6,8 @@ declare(strict_types=1);
  * 媒体代理默认域名白名单（单一来源）
  *
  * 覆盖 12 个点播平台与 4 个直播平台实际返回的媒体 CDN。
- * 修改此文件后，必须同步以下两个运行时（有 PHPUnit 用例校验一致性）：
+ * 修改此文件后，必须同步电脑版运行时（有 PHPUnit 用例校验一致性）：
  * - apps/app-shell/electron/main.cjs  MEDIA_ALLOWED_DOMAINS
- * - apps/mobile/android/app/src/main/java/com/yuchen/qushuiyin/MediaProxyPlugin.java
- *   MediaProxySecurity.ALLOWED_MEDIA_DOMAINS
  *
  * 匹配规则见 MediaProxy::matchesDomain：完全相等或 ".域名" 子域名后缀。
  */

@@ -8,7 +8,7 @@ const URL_PATTERN = /https?:\/\/[^\s"'<>，。；：！？【】（）《》]+/i
 
 const shell = window.appShell || {};
 
-// 本地解析：传输层经 IPC 走主进程 net.fetch（无 CORS），与手机版共用同一套解析器
+// 本地解析：传输层经 IPC 走主进程 net.fetch（无 CORS），使用独立的共享 JS 解析器包
 const ipcTransport = {
   async request({ url, method, headers, body, timeoutMs = 15000, credentialMode }) {
     const request = credentialMode === 'weibo-session' && shell.weiboRequest
@@ -982,7 +982,7 @@ function applyTheme() {
   localStorage.setItem(THEME_STORAGE, state.theme);
 }
 
-$('#platform-label').textContent = shell.platform === 'desktop' ? '电脑版' : shell.platform === 'mobile' ? '手机版' : 'Web 客户端';
+$('#platform-label').textContent = shell.platform === 'desktop' ? '电脑版' : 'Web 客户端';
 applyTheme();
 renderHistory();
 checkHealth();

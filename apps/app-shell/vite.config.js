@@ -11,7 +11,7 @@ export default defineConfig({
   },
   resolve: {
     alias: {
-      // 共享解析器包（网页版、电脑版与手机版共用同一套 JS 解析代码）
+      // 电脑版 JS 解析器包（与 PHP 网页版保持结果契约一致）
       '@parsers': fileURLToPath(new URL('../../packages/parsers/src/', import.meta.url)),
     },
   },

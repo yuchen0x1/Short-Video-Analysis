@@ -329,7 +329,6 @@ final class RegressionFixesTest extends TestCase
             '.env.example',
             'config/app.php',
             'public/api/v1.php',
-            'packages/update-checker/src/index.js',
             'apps/app-shell/package.json',
             'apps/app-shell/electron/main.cjs',
             'apps/app-shell/electron/updateChannel.cjs',
@@ -347,13 +346,13 @@ final class RegressionFixesTest extends TestCase
     public function testOnlineUpdateFallsBackWhenGithubApiIsRateLimited(): void
     {
         $api = (string) file_get_contents($this->root . '/public/api/v1.php');
-        $checker = (string) file_get_contents($this->root . '/packages/update-checker/src/index.js');
+        $checker = (string) file_get_contents($this->root . '/apps/app-shell/electron/updateChannel.cjs');
 
         $this->assertStringContainsString('parseGithubReleaseAtom', $api);
         $this->assertStringContainsString('parseGithubExpandedAssets', $api);
         $this->assertStringContainsString('releases.atom', $api);
-        $this->assertStringContainsString('fetchGithubReleaseFallback', $checker);
-        $this->assertStringContainsString('releases/expanded_assets/', $checker);
+        $this->assertStringContainsString('fetchGithubLatestTag', $checker);
+        $this->assertStringContainsString('fetchRedirectTag', $checker);
     }
 
     public function testMediaProxyPropagatesUpstreamFailureStatus(): void

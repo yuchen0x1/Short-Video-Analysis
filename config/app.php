@@ -17,7 +17,7 @@ return [
         'env' => Config::env('APP_ENV', 'production'), // production, staging, local
     ],
 
-    // 在线更新源：桌面端由 electron-updater 使用，网站/手机版通过 API 检查（统一使用 GitHub Releases）
+    // 在线更新源：桌面端由 electron-updater 使用，网页版通过 API 检查（统一使用 GitHub Releases）
     'updates' => [
         'github_owner' => Config::env('UPDATE_GITHUB_OWNER', 'yuchen0x1'),
         'github_repo' => Config::env('UPDATE_GITHUB_REPO', 'Short-Video-Analysis'),

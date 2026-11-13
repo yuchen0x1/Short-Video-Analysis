@@ -6,7 +6,7 @@
 
 **粘贴一条分享链接，还你一份干净的无水印视频。**
 
-覆盖 12 个主流短视频平台，一次解析视频、图集、封面与作者信息，提供网页版、电脑版、Android 端与版本化 HTTP API。
+覆盖 12 个主流短视频平台，一次解析视频、图集、封面与作者信息，仅提供 Windows 电脑版与 PHP 网页版；HTTP API 属于网页版服务。
 
 [![Version](https://img.shields.io/badge/版本-v1.1.9-22d3ee)](https://github.com/yuchen0x1/Short-Video-Analysis/releases/latest) [![Platforms](https://img.shields.io/badge/平台-12个-8b5cf6)](#覆盖平台) [![PHP](https://img.shields.io/badge/PHP-8.1%2B-777bb4)](#技术选型与环境要求) [![License](https://img.shields.io/badge/License-AGPL--3.0--only-9cf)](LICENSE)
 
@@ -20,7 +20,7 @@
 
 ## 最新更新
 
-**main 分支待发布**：修复网页版/移动端发现分页、Android 图集保存、移动端异常历史与存储错误；[完整待发布记录](docs/releases/release-notes.md) · [维护与清理报告](docs/MAINTENANCE-2026-11-13.md)。
+**main 分支待发布**：产品范围统一为电脑版与网页版，移除独立移动工程与其构建发布配置，保留网页版分页修复；[完整待发布记录](docs/releases/release-notes.md) · [产品范围说明](docs/PRODUCT_SCOPE.md)。
 
 ### v1.1.9 · 2026-11-13
 
@@ -36,7 +36,7 @@
 
 > **粘贴分享链接，直接变成可用视频。**
 >
-> 去水印解析是一套本地优先的短视频工作台：自动识别平台，解析视频、图集、封面和音乐，并在同一工作区完成播放、下载、复制、收藏与历史管理。支持网页版、Windows 电脑版、Android 客户端和版本化 HTTP API。
+> 去水印解析是一套本地优先的短视频工作台：自动识别平台，解析视频、图集、封面和音乐，并在同一工作区完成播放、下载、复制、收藏与历史管理。提供 Windows 电脑版与 PHP 网页版，后者包含版本化 HTTP API。
 
 <p align="center">
   <img src="assets/screenshots/promo-home-v1.1.7.png" alt="去水印解析 v1.1.7 首页工作台" width="100%" />
@@ -69,13 +69,13 @@
 
 ## 界面预览
 
-网页版、电脑版与 Android 端共享同一套解析能力与工作台式界面：粘贴分享文案后自动提取链接，解析结果、下载与最近记录在同一个工作区内完成。
+网页版与电脑版采用各自适配的界面，提供短视频解析工作流：粘贴分享文案后自动提取链接，解析结果、下载与最近记录在同一个工作区内完成。
 
 推广截图已在上方「推广介绍图」集中展示。
 
 所有版本统一通过 GitHub Releases 发布，客户端内置在线更新：
 
-![GitHub Releases 发布页](assets/screenshots/github-release.png)
+[查看最新 Windows 发布与下载](https://github.com/yuchen0x1/Short-Video-Analysis/releases/latest)
 
 ## 项目定位
 
@@ -83,8 +83,7 @@
 
 - **根目录 PHP 应用**：提供网页版界面、媒体代理和 `/api/v1` 版本化 API。
 - **`apps/app-shell`**：Electron 电脑版客户端，在本机使用共享 JS 解析器完成解析。
-- **`apps/mobile`**：Capacitor Android 移动端客户端，同样使用共享 JS 解析器，并带 Android 原生下载桥。
-- **`packages/parsers`**：平台无关的 JS 解析器包，供桌面端和移动端复用。
+- **`packages/parsers`**：平台无关的 JS 解析器包，供电脑版使用，与 PHP 网页版保持结果契约一致。
 
 目前已接入 12 个平台的平台识别与解析入口。部分平台的可用性取决于公开接口状态、分享链接类型或登录 Cookie，平台接口变更后可能需要同步修复解析器。
 
@@ -92,10 +91,10 @@
 
 - **单条解析** —— 从分享文案中提取 URL，解析标题、作者、封面、无水印媒体地址等字段。
 - **图集解析** —— 解析器返回 `media_type=image` 时给出 `images` 图片数组，支持逐张下载。
-- **音乐下载** —— 抖音等平台解析出背景音乐播放地址时，网页版、电脑版与手机版都会提供「下载音乐」入口。
+- **音乐下载** —— 抖音等平台解析出背景音乐播放地址时，网页版与电脑版都会提供「下载音乐」入口。
 - **批量解析** —— 网页版每行一个链接，单次最多 20 条；成功项可一键全部打包 ZIP（媒体总大小最多 128 MiB，逐个下载、单文件请求最多 60 秒），失败或停止项可一键重试。页面刷新后批量队列不会保留。
 - **主页解析** —— `/api/v1/profile` 与客户端支持抖音公开主页分页解析；必须使用明确的抖音主页链接，不支持短链主页。
-- **合集解析** —— `/api/v1/collection` 与客户端支持抖音合集分页解析，返回合集标题、作者与逐页作品列表；网页版、电脑版与手机版均支持「加载全部 + 全部下载」。
+- **合集解析** —— `/api/v1/collection` 与客户端支持抖音合集分页解析，返回合集标题、作者与逐页作品列表；网页版与电脑版均支持「加载全部 + 全部下载」。
 - **直播解析** —— `/api/v1/live` 支持抖音直播（live.douyin.com）、B站直播（live.bilibili.com）、虎牙直播（huya.com/房间号）与斗鱼直播（douyu.com/房间号）直播间解析，返回主播、标题、人气与拉流地址列表；虎牙下发 FLV 原画（按 CDN 线去重），斗鱼下发 FLV 多画质（原画2K60/蓝光8M/蓝光4M/超清/高清），支持用 VLC、PotPlayer、IINA 等播放器打开。
 - **发现（热榜/搜索）** —— `/api/v1/hot` 支持抖音热点榜与 B站综合热门；`/api/v1/search` 支持 B站与抖音关键词搜索。合规边界：仅响应用户主动查询、按需分页、不落库。
 - **公开评论** —— `/api/v1/comments` 支持 B站单视频公开评论查看（按需分页，仅查看不保存）。
@@ -103,18 +102,18 @@
 - **资料管理（网页版）** —— 按标题、作者或链接搜索历史和收藏；导出/导入版本化 JSON 备份，按原始分享链接合并去重，保留已有同链接记录，不导出 Cookie。单文件上限 4 MiB，每类最多 2000 条；旧数据首次写入时迁移，旧存储键保留。CSV 用于查看，JSON 用于恢复。
 - **收藏夹** —— 网页版可在解析结果、批量结果与历史记录中星标收藏，保存在当前浏览器，支持一键重新解析与导出 CSV。
 - **HLS 支持** —— 媒体代理对 m3u8 播放列表自动改写，分片/子列表/密钥 URI 全部经由代理转发（注入 Referer/UA 并逐跳校验），带防盗链的 HLS 流（如 B站直播）可直接打开播放。
-- **历史记录** —— 网页版默认保留最近 20 条（导入更多历史后保留该容量，最多 2000 条），移动端保存最近 20 条，桌面端保存最近 100 条，均为本地浏览器/客户端存储。
-- **媒体代理** —— PHP、Electron、Android 三端均提供本地或服务端媒体代理，注入 Referer/UA 并支持 Range 播放。
+- **历史记录** —— 网页版默认保留最近 20 条（导入更多历史后保留该容量，最多 2000 条），桌面端保存最近 100 条，均为本地浏览器/客户端存储。
+- **媒体代理** —— PHP 网页版与 Electron 电脑版均提供本地或服务端媒体代理，注入 Referer/UA 并支持 Range 播放。
 - **API 鉴权** —— `API_KEY_ENABLED=true` 后，除 `/api/v1/health` 外的接口均需 API Key；旧版 `/?url=...`、`/index.php?url=...` 和媒体代理同样校验。网页外壳仍可打开，内置网页尚无 API Key 登录界面。
 - **限流与缓存** —— 基于 Symfony Cache / RateLimiter，默认文件缓存，可切换 Redis。微博结果不进入解析缓存；缓存文件位于本项目 `storage/cache`，旧父目录缓存不再读取，且不会自动删除。
-- **自动更新** —— 网站、Android 与 Windows 客户端默认检查 GitHub 最新 Release；Windows Electron 客户端自动下载并支持重启安装。
+- **自动更新** —— 网站与 Windows 客户端默认检查 GitHub 最新 Release；Windows Electron 客户端自动下载并支持重启安装。
 - **PWA 安装** —— 网页版提供 Web App Manifest 与 Service Worker，支持安装到桌面/主屏并离线打开页面壳；全局快捷键 `Ctrl/Cmd+Enter` 触发解析、`Ctrl/Cmd+K` 聚焦输入框，主题可跟随系统明暗切换。
 
 ## 覆盖平台
 
 **主流平台**
 
-- **抖音**：`douyin.com`、`v.douyin.com` —— PHP Web/API 依赖本地 `a_bogus` 签名服务；桌面端和移动端使用 JS 本地签名。
+- **抖音**：`douyin.com`、`v.douyin.com` —— PHP Web/API 依赖本地 `a_bogus` 签名服务；电脑版使用 JS 本地签名。
 - **快手**：`kuaishou.com`、`kuaishou.cn` —— 支持单条解析。
 - **B站**：`bilibili.com`、`b23.tv` —— 支持单条解析。
 - **小红书**：`xiaohongshu.com`、`xhslink.com` —— 支持视频与图文图集解析。
@@ -139,7 +138,6 @@
 | 后端 / API | PHP 8.1+、Composer、Symfony Cache、Symfony RateLimiter、vlucas/phpdotenv |
 | 网页版 | PHP 模板页面 + 原生 HTML/CSS/JavaScript |
 | 电脑版 | Electron 44、Vite 7、electron-updater |
-| 移动端 | Capacitor 7、Vite 7、Android 原生插件 |
 | 共享解析器 | 原生 ES Modules，无运行时第三方依赖 |
 | 测试 | PHPUnit 9.6、离线 JS parser 契约测试、仓库 smoke 检查 |
 
@@ -148,7 +146,6 @@
 - 网页版 / API：PHP 8.1+（启用 `curl`、`dom`、`json`、`mbstring`、`openssl` 扩展）、Composer、Node.js 18+。
 - Docker 部署：Docker 与 Docker Compose。
 - 电脑版开发 / 打包：Node.js 18+；Windows 打包使用 `electron-builder`。
-- 移动端开发：Node.js 18+；Android 构建需要 JDK 21、Android SDK Platform 35、Build Tools 35（兼容补充 34）和 Gradle 8.11.1；SDK licenses 需要先接受。
 
 > 提示：PHP 解析抖音依赖 `scripts/a_bogus_server.js` 提供签名服务。`composer serve:full`、`start.bat`、`start.sh` 与 Docker 都会自动把它拉起来。
 
@@ -230,37 +227,9 @@ npm run dist:win
 
 产物输出到 `apps/app-shell/release/`。电脑版使用共享 JS 解析器和主进程网络桥，不需要运行根目录 PHP 服务。
 
-### 方式四：Android 客户端（Capacitor）
-
-```bash
-cd apps/mobile
-npm install
-npm run mobile:sync
-```
-
-本地验证 Debug 构建和 JVM 单元测试：
-
-```powershell
-Push-Location android
-.\gradlew.bat :app:assembleDebug :app:testDebugUnitTest
-Pop-Location
-```
-
-打开 Android 工程：
-
-```bash
-npm run mobile:android
-```
-
-如果 `android/` 工程不存在，再执行：
-
-```bash
-npm run mobile:add:android
-```
-
-当前仓库已包含 `apps/mobile/android/`。Android 端使用共享 JS 解析器、CapacitorHttp、原生本地媒体代理和 DownloadManager 下载桥，不需要运行根目录 PHP 服务。
-
 ## 使用指引
+
+本项目只维护电脑版和网页版。PWA 是网页版的安装入口，Docker 是网页版部署方式，均不是新增的独立客户端。历史 APK 不代表当前产品范围，详见 [产品范围](docs/PRODUCT_SCOPE.md)。
 
 ### 网页版
 
@@ -271,11 +240,11 @@ npm run mobile:add:android
 5. 切换到「主页解析」，提交明确的抖音主页链接，按页浏览公开作品；
 6. 切换到「合集解析」，提交抖音合集链接，支持「加载全部」后整组合集下载。
 
-### 电脑版与 Android 端
+### 电脑版
 
 1. 直接粘贴分享文案或链接；
 2. 「主页」模式仅支持抖音公开主页分页；「合集」模式支持抖音合集分页，两者均支持全量加载与批量下载；
-3. 「发现」页查看 B站热门 / 抖音热点榜，或关键词搜索 B站、抖音视频，条目可一键解析；
+3. 「发现」页查看 B站热门 / 抖音热点榜，或关键词搜索 B站视频，条目可一键解析；
 4. B站视频解析结果提供「查看评论」入口（电脑版）；
 5. 微博解析失败时，在「关于」页配置微博 Cookie；电脑版还可使用内置微博网页登录。
 
@@ -338,7 +307,7 @@ curl -X POST "http://127.0.0.1:18180/api/v1/parse" \
 
 图集作品返回 `media_type: "image"`，`images` 为图片地址数组，`url` 通常取第一张图。
 
-单条解析结果固定包含 `platform`、`media_type`、`images`、`music` 四个字段（与桌面/移动端 JS 解析器一致）。媒体直链带时效，失效后可加 `force=1` 跳过缓存重新获取：
+单条解析结果固定包含 `platform`、`media_type`、`images`、`music` 四个字段（与电脑版 JS 解析器一致）。媒体直链带时效，失效后可加 `force=1` 跳过缓存重新获取：
 
 ```bash
 curl "http://127.0.0.1:18180/api/v1/parse?url=https%3A%2F%2Fv.douyin.com%2Fxxxx&force=1"
@@ -505,13 +474,6 @@ cd packages/parsers
 npm test
 ```
 
-更新检查器契约测试：
-
-```bash
-cd packages/update-checker
-npm test
-```
-
 live 审计脚本需要真实网络和平台接口状态：
 
 ```bash
@@ -519,37 +481,26 @@ cd packages/parsers
 npm run test:live
 ```
 
-GitHub Actions 流水线 `.github/workflows/quality.yml` 在 push 到 `main`、推送 `v*` 标签和 Pull Request 时自动执行：PHP lint + PHPUnit + smoke、`packages/parsers` 与 `packages/update-checker` 契约测试、`scripts/a_bogus_server.test.mjs`、桌面端与移动端构建，以及仓库卫生检查（`node scripts/check-repository-hygiene.mjs`、`git diff --check`）。检查会阻止安装包、依赖目录、本机配置与已知凭据模式进入版本库；早期 Gitee Go 流水线已删除。发布流程以「打包发布」章节为准。
+GitHub Actions 流水线 `.github/workflows/quality.yml` 在 push 到 `main`、推送 `v*` 标签和 Pull Request 时自动执行：PHP lint + PHPUnit + smoke、`packages/parsers` 契约测试、`scripts/a_bogus_server.test.mjs`、电脑版构建，以及仓库卫生检查（`node scripts/check-repository-hygiene.mjs`、`git diff --check`）。检查会阻止安装包、依赖目录、本机配置与已知凭据模式进入版本库；早期 Gitee Go 流水线已删除。发布流程以「打包发布」章节为准。
 
 ### 打包发布
 
 **Windows（Electron）**：本地构建执行 `cd apps/app-shell && npm install && npm run dist:win`，安装包、便携版与 `latest.yml` 生成于 `apps/app-shell/release/`，随后上传到 GitHub Release；客户端通过 GitHub Releases 在线更新通道自动检测新版本。
 
-**Android**：签名说明见 [`apps/mobile/SIGNING.md`](apps/mobile/SIGNING.md)。构建前先同步 Web 资源：
-
-```bash
-cd apps/mobile
-npm install
-npm run mobile:sync
-```
-
-然后使用 Android Studio 或 `apps/mobile/android/gradlew` 构建 APK/AAB。
-
 ### 自动更新机制
 
-自动更新、GitHub 标签发布、资产校验和签名限制见 [`docs/AUTO_UPDATE.md`](docs/AUTO_UPDATE.md)。正式版本使用 `vMAJOR.MINOR.PATCH` 标签触发 GitHub Actions；发布前必须先同步根目录、桌面端、移动端和 Android 的版本号。
+自动更新、GitHub 标签发布、资产校验和签名限制见 [`docs/AUTO_UPDATE.md`](docs/AUTO_UPDATE.md)。正式版本使用 `vMAJOR.MINOR.PATCH` 标签触发 GitHub Actions；发布前必须先同步根目录、电脑版、共享解析包、npm lock 与 OpenAPI 的版本号。
 
 各端统一使用 GitHub Releases 作为版本源：
 
 - **网站**：访问 `/api/v1/update`，服务端读取 GitHub 最新 Release（REST API 主路径，API 限流时自动回退 `releases.atom` 与 expanded assets 页面）；页面启动时自动检查，也可手动检查并打开发布页下载。
-- **Android**：启动时自动检查 GitHub Release，关于页可手动检查；发现 APK 后通过系统下载器下载。正式签名 APK 可用于升级，测试签名 APK 仅适合测试。
 - **Windows 安装版**：由 `electron-updater` 读取 GitHub Release 的 `latest.yml`，启动后自动检查、下载并提示重启安装；关于页可手动检查。
 
-发布新版本时，先同步根目录、`apps/app-shell`、`apps/mobile` 和 Android 的版本号，再推送 `vX.Y.Z` 标签；GitHub Actions 会自动构建并发布 Windows 安装包、便携版、`latest.yml`/blockmap 和 SHA-256 清单。Android 正式 APK 需要额外配置签名密钥后再上传。手机版可通过 `VITE_UPDATE_API_URL` 指向已部署的 `/api/v1/update` 自定义更新源。
+发布新版本时，先通过 `node scripts/check-release-version.mjs vX.Y.Z`，再推送相应标签；GitHub Actions 仅构建并发布 Windows 安装版、便携版、自动更新文件和校验清单。网页版通过 PHP 部署更新，手机可直接访问响应式页面或安装 PWA。
 
 版本变更记录见 [`CHANGELOG.md`](CHANGELOG.md)。
 
-> **从 2.x 升级到 1.0.0**：项目自 1.0.0 起重置版本体系，1.0.0 低于旧版 2.4.0，旧客户端的自动更新不会推送此次变更。已安装 2.x 的用户请卸载后手动安装 1.0.0（Windows 覆盖安装、Android 需先卸载旧版，因 Android `versionCode` 已重置为 1）。此后版本号从 1.0.0 重新递增，自动更新恢复正常。
+> **从 2.x 升级到 1.0.0**：项目自 1.0.0 起重置版本体系，1.0.0 低于旧版 2.4.0，旧客户端的自动更新不会推送此次变更。已安装 2.x 的用户请卸载后手动安装 1.0.0（先备份本机数据；旧 Android 迁移记录仅保留在历史日志中）。此后版本号从 1.0.0 重新递增，自动更新恢复正常。
 
 ## 目录结构
 
@@ -566,7 +517,6 @@ npm run mobile:sync
 ├── tests/                # PHPUnit 单元和回归测试
 ├── packages/parsers/     # 共享 JS 解析器包
 ├── apps/app-shell/       # Electron 电脑版客户端
-├── apps/mobile/          # Capacitor Android 移动端客户端
 ├── Dockerfile            # PHP API Docker 镜像
 ├── docker-compose.yml    # Docker Compose 开发/部署入口
 └── CHANGELOG.md          # 更新日志
@@ -604,8 +554,8 @@ A：查看容器日志，确认容器内 `8000` 服务和 `a_bogus` 服务已启
 **Q：可以直接部署到公网吗？**
 A：可以，但建议至少开启 API Key，并根据业务流量调整限流。媒体代理默认有域名白名单、私网拦截和大小限制。
 
-**Q：电脑版或 Android 端需要后端服务吗？**
-A：不需要运行根目录 PHP 服务。它们使用 `packages/parsers` 的共享 JS 解析器，并通过 Electron 主进程或 Capacitor 原生网络层发起平台请求。
+**Q：电脑版需要后端服务吗？**
+A：不需要运行根目录 PHP 服务。电脑版使用 `packages/parsers` 的 JS 解析器，通过 Electron 主进程访问平台；网页版需要运行 PHP 服务。
 
 **Q：为什么同一个链接有时解析失败？**
 A：平台接口、作品权限、地区、登录态和分享链接类型都会影响结果。先确认原链接可访问，再看是否需要 Cookie 或更新解析器。
@@ -636,7 +586,7 @@ A：本项目依赖各平台公开页面和接口行为，平台接口变更后�
 
 1. 新增或修复解析器时，同时更新 PHP 解析器和共享 JS 解析器，或明确说明只影响某一端。
 2. 修改平台字段结构时，同步检查 `public/openapi.yaml`、前端展示和 parser 契约测试。
-3. 提交前运行 `composer lint`、`composer test`、`composer smoke`、`cd packages/parsers && npm test` 和 `cd packages/update-checker && npm test`。
+3. 提交前运行 `composer lint`、`composer test`、`composer smoke`、`cd packages/parsers && npm test`。
 4. 不要提交 `.env`、Cookie、真实 API Key、签名密钥或本地打包产物。
 
 ## 协议与声明

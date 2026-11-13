@@ -8,9 +8,10 @@ const forbidden = [
   /(^|\/)release(?:-[^/]*)?\//,
   /(^|\/)\.env(?:\.(?!example$)[^/]+)?$/,
   /(^|\/)(keystore\.properties|local\.properties|\.phpunit\.result\.cache)$/,
-  /\.(?:exe|apk|aab|jks|keystore|p12|pfx|log|pyc|bak|tmp)$/i,
-  /^apps\/mobile\/android\/(?:.*\/)?build\//,
-  /^apps\/mobile\/android\/app\/src\/main\/assets\/(?:public\/|capacitor\.)/,
+  /\.(?:exe|apk|aab|ipa|jks|keystore|p12|pfx|log|pyc|bak|tmp)$/i,
+  /^apps\/(?!app-shell\/)/,
+  /(^|\/)(android|ios)\//,
+  /^packages\/update-checker\//,
   /^\.workflow\//,
 ];
 const secret = /-----BEGIN (?:RSA |EC |OPENSSH |DSA )?PRIVATE KEY-----|\bgh[pousr]_[A-Za-z0-9]{30,}\b|\bgithub_pat_[A-Za-z0-9_]{50,}\b/;
