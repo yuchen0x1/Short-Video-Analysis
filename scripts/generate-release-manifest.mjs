@@ -24,6 +24,8 @@ const files = fs.readdirSync(releaseDir, { withFileTypes: true })
 
 if (!files.some((name) => /^latest\.yml$/i.test(name))) throw new Error('发布目录缺少 latest.yml');
 if (!files.some((name) => /setup.*\.exe$/i.test(name))) throw new Error('发布目录缺少 Windows 安装包');
+const unsafeNames = files.filter((name) => !/^[A-Za-z0-9][A-Za-z0-9._-]*$/.test(name));
+if (unsafeNames.length) throw new Error(`资产文件名可能被 GitHub 改写，请先使用 ASCII 文件名：${unsafeNames.join(', ')}`);
 
 const assets = files.map((name) => {
   const filePath = path.join(releaseDir, name);

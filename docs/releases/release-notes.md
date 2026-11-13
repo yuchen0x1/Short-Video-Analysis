@@ -14,6 +14,7 @@
 ### 发布内容与限制
 
 - Windows 提供安装版、便携版、自动更新元数据和 SHA-256 清单；修复 CI 依赖本地 Electron 路径导致构建失败的问题。
+- Windows 便携版采用 `qushuiyin-desktop-client-portable-1.1.9.exe` 命名，避免 GitHub 改写中文文件名后导致下载链接与校验清单不一致。
 - 资料搜索、JSON 备份、批量/ZIP 与主题改进适用于网页版；Windows 与 Android 共享微博账号缓存隔离修复。
 - Windows 产物仍未配置代码签名证书。Android 版本号已同步，但只有配置正式签名且启用 Android 发布任务时才提供 APK，不发布测试签名包。
 - 12 平台的真实联网成功率、原生升级安装仍需独立验收；已有离线测试和前端构建不代表该流程已验证。

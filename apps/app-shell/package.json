@@ -71,6 +71,9 @@
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true
+    },
+    "portable": {
+      "artifactName": "${name}-portable-${version}.${ext}"
     }
   },
   "allowScripts": {
