@@ -42,6 +42,7 @@
 - 强化 `.gitignore`：本机 env 覆盖、签名容器/密钥、本机 SDK 配置、编辑器目录、Python 缓存与 coverage；保留 `.env.example`。Android 原生源码、Gradle wrapper、图标和 CA 文件继续跟踪。
 - 新增 `node scripts/check-repository-hygiene.mjs` 并纳入 CI，检查实际 Git 跟踪列表，阻止生成包、本机配置、已知私钥/token 模式进入仓库。只报告文件路径，不输出命中的凭据。
 - CI 增加 Android Debug 编译与 JVM 测试，后续维护同时验证原生 Android 工程；无须正式签名密钥，也不会发布测试 APK。
+- 首次云端运行在 SDK 初始化阶段失败：setup-android 默认安装已不可用的 `tools` 包。按其 [官方配置说明](https://github.com/android-actions/setup-android/blob/v3/README.md#additional-packages) 显式指定 `platform-tools`，质量与签名发布流程同步修正；许可证正文不再重复输出到日志。
 - 对现有 Git 历史对象执行相同私钥/GitHub token 模式扫描，未命中。这是启发式检查，不覆盖所有类型的凭据。
 - 没有重写 Git 历史、移动版本标签或删除旧 Releases；旧安装包可能仍服务于用户回退和版本溯源。
 

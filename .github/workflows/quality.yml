@@ -123,6 +123,9 @@ jobs:
           java-version: '21'
 
       - uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools
+          log-accepted-android-sdk-licenses: false
 
       - name: Android SDK
         run: sdkmanager "platforms;android-35" "build-tools;35.0.0" "build-tools;34.0.0"
