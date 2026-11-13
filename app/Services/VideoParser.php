@@ -70,17 +70,20 @@ class VideoParser
             throw new \InvalidArgumentException('直播间链接请使用直播解析入口');
         }
 
-        $cacheKey = ParseCache::makeKey($url);
-        if (!$force) {
+        $platform = $this->getPlatform($url);
+        if (!$platform) {
+            throw new \InvalidArgumentException("不支持的视频平台");
+        }
+
+        // 微博依赖用户/站点 Cookie，禁止读取或写入跨请求共享缓存。
+        // v2 命名空间也隔离升级前可能由凭据请求写入的旧条目。
+        $cacheable = $platform !== 'weibo' && !\App\Utils\CookieManager::has($platform);
+        $cacheKey = 'public_v2_' . ParseCache::makeKey($url);
+        if ($cacheable && !$force) {
             $cached = ParseCache::get($cacheKey);
             if ($cached !== null) {
                 return $cached;
             }
-        }
-
-        $platform = $this->getPlatform($url);
-        if (!$platform) {
-            throw new \InvalidArgumentException("不支持的视频平台");
         }
 
         $result = self::normalizeResult(
@@ -89,7 +92,9 @@ class VideoParser
         );
 
         // Cache the result
-        ParseCache::set($cacheKey, $result);
+        if ($cacheable) {
+            ParseCache::set($cacheKey, $result);
+        }
 
         return $result;
     }

@@ -17,6 +17,7 @@ $webAppVersion = class_exists(\Composer\InstalledVersions::class)
 <link rel="apple-touch-icon" sizes="192x192" href="icon-192.png">
 <title>去水印解析 · 短视频工具</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%231b4a49'/%3E%3Cpath d='M9 9h6v6H9zM17 17h6v6h-6zM17 9h6v6h-6zM9 17h6v6H9z' fill='%23f5c85d'/%3E%3C/svg%3E">
+<script src="workbench.js"></script>
 <script>
 // 首屏前确定主题，避免深色用户先看到浅色闪烁；只读取不写入，持久化交给显式切换。
 (function(){try{var saved=localStorage.getItem('watermark-parse-theme-v2');var dark=saved==='dark'||(saved!=='light'&&(!window.matchMedia||!window.matchMedia('(prefers-color-scheme: light)').matches));if(dark)document.documentElement.classList.add('dark')}catch(e){document.documentElement.classList.add('dark')}})();
@@ -1328,6 +1329,18 @@ footer {
   .batch-actions, .profile-actions { grid-column: 1 / -1; justify-content: flex-start; }
   .result-actions .btn { flex: 1 1 calc(50% - 8px); }
 }
+.library-search { width:100%; min-height:42px; border:1px solid var(--line); border-radius:8px; padding:10px 12px; background:transparent; color:inherit; font:inherit; margin-bottom:12px; }
+:root:not(.dark) .ingest-panel { background:var(--paper); }
+:root:not(.dark) .account-form input { background:#fff; }
+.account-actions { display:flex; flex-wrap:wrap; gap:8px; align-items:center; }
+.history-empty { display:grid; justify-items:center; gap:8px; padding:22px 10px; color:var(--muted); text-align:center; font-size:13px; }
+.history-empty[hidden] { display:none; }
+.history-empty strong { color:var(--ink); }
+.history-empty-icon { color:var(--neon-cyan); }
+.library-search:focus-visible, button:focus-visible, a:focus-visible { outline:2px solid #22d3ee; outline-offset:3px; }
+#batch-summary { font-variant-numeric:tabular-nums; }
+@media (max-width:520px) { .mode-switch { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); } .mode-btn { white-space:nowrap; } }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior:auto !important; animation:none !important; transition:none !important; } }
 </style>
 </head>
 <body>
@@ -1345,9 +1358,9 @@ footer {
       <div id="error" class="error-alert" role="alert" aria-live="assertive" hidden><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M12 8v5"></path><path d="M12 16h.01"></path></svg><span id="error-text"></span></div>
     </section>
     <section id="result" class="panel result-panel" hidden aria-label="解析结果"><div class="result-layout"><div class="result-video-wrap"><video id="result-video" controls playsinline preload="metadata"></video></div><div class="result-info"><span id="result-platform" class="result-tag">解析完成</span><h2 id="result-title" class="result-title"></h2><p id="result-meta" class="result-meta"></p><div class="creator-row"><img id="result-avatar" class="avatar" alt="" hidden><div><div class="creator-label">发布作者</div><div id="result-author" class="creator-name"></div></div></div><dl class="result-stats"><div class="result-stat"><dt>点赞</dt><dd id="result-like">-</dd></div><div class="result-stat"><dt>发布时间</dt><dd id="result-time">-</dd></div></dl><div class="result-actions"><a id="download-btn" class="btn btn-primary" download target="_blank" rel="noopener"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12"></path><path d="m7 10 5 5 5-5"></path><path d="M5 21h14"></path></svg><span>下载视频</span></a><button id="zip-btn" class="btn btn-primary" type="button" hidden><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg><span>打包下载图集 (ZIP)</span></button><a id="music-btn" class="btn" download target="_blank" rel="noopener" hidden><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18V5l12-2v13"></path><circle cx="6" cy="18" r="3"></circle><circle cx="18" cy="16" r="3"></circle></svg><span>下载音乐</span></a><button id="comments-btn" class="btn" type="button" hidden><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg><span>查看评论</span></button><button id="copy-btn" class="btn" type="button"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v1"></path></svg><span>复制链接</span></button><button id="copy-text-btn" class="btn" type="button"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><path d="M14 2v6h6"></path><path d="M8 13h8"></path><path d="M8 17h5"></path></svg><span>复制文案</span></button><button id="fav-btn" class="btn" type="button"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg><span>收藏</span></button><a id="open-btn" class="btn btn-quiet" target="_blank" rel="noopener"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3h7v7"></path><path d="M10 14 21 3"></path><path d="M21 14v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5"></path></svg><span>打开视频</span></a></div></div></div></section>
-    <section id="batch-results" class="panel batch-panel" hidden aria-label="批量解析结果"><div class="section-heading"><div><h2>批量处理结果</h2><p>完成的项目可以直接播放、下载或复制文案。</p></div><div class="profile-toolbar"><button id="batch-export" class="btn" type="button" hidden>导出 CSV</button><button id="batch-zip" class="btn btn-teal" type="button" hidden>全部打包 ZIP</button><button id="batch-retry" class="btn btn-quiet" type="button" hidden>重试失败项</button><span id="batch-summary" class="batch-summary"></span></div></div><div id="batch-list" class="batch-list"></div><div id="batch-empty" class="batch-empty" hidden>还没有批量任务。</div></section>
+    <section id="batch-results" class="panel batch-panel" hidden aria-label="批量解析结果"><div class="section-heading"><div><h2>批量处理结果</h2><p>完成的项目可以直接播放、下载或复制文案。</p></div><div class="profile-toolbar"><button id="batch-export" class="btn" type="button" hidden>导出 CSV</button><button id="batch-zip" class="btn btn-teal" type="button" hidden>全部打包 ZIP</button><button id="batch-retry" class="btn btn-quiet" type="button" hidden>重试失败 / 已停止项</button><span id="batch-summary" class="batch-summary"></span></div></div><div id="batch-list" class="batch-list"></div><div id="batch-empty" class="batch-empty" hidden>还没有批量任务。</div></section>
   </div>
-  <aside class="sidebar"><section id="favorites" class="panel side-panel" aria-label="我的收藏"><div class="side-heading"><div><h2>我的收藏</h2><p>手动星标的内容，只保存在当前浏览器</p></div><span id="favorites-count" class="count-badge">0</span></div><div class="account-actions favorites-actions"><button id="favorites-export" class="btn" type="button">导出 CSV</button></div><div id="favorites-list" class="history-list"></div><div id="favorites-empty" class="history-empty"><div class="history-empty-icon"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg></div><strong>这里还没有收藏</strong><span>在结果、批量或历史记录里点星标收藏</span></div></section><section id="history" class="panel side-panel" aria-label="最近解析"><div class="side-heading"><div><h2>最近处理</h2><p>只保存在当前浏览器</p></div><span id="history-count" class="count-badge">0</span></div><div id="history-list" class="history-list"></div><div id="history-empty" class="history-empty"><div class="history-empty-icon"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h16v14H4z"></path><path d="M8 9h8"></path><path d="M8 13h5"></path></svg></div><strong>这里还没有记录</strong><span>解析完成后会自动出现在这里</span></div><div class="side-divider"></div><div class="account-actions"><button id="history-export" class="btn" type="button">导出 CSV</button><button id="clear-history-btn" class="clear-btn" type="button"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2-2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg> 清空记录</button></div></section><section class="panel side-panel" aria-label="账号设置"><div class="side-heading"><div><h2>账号</h2><p>当前需要登录态的平台：微博</p></div><span id="weibo-cookie-status" class="account-status"><i></i><span>未配置</span></span></div><div class="account-form"><label class="field-label" for="weibo-cookie-input">微博凭据</label><input id="weibo-cookie-input" type="password" autocomplete="off" spellcheck="false" placeholder="粘贴微博网页版 Cookie"><p class="input-hint">在微博网页版登录后复制 Cookie；解析微博链接时仅随本次 POST 请求发送，不会写入 URL。</p><div class="account-actions"><button id="weibo-cookie-save" class="btn" type="button">保存到本浏览器</button><button id="weibo-cookie-clear" class="btn btn-quiet" type="button">清除</button></div></div></section><section class="panel side-panel" aria-label="工作台信息"><div class="side-heading"><div><h2>工作台</h2><p>让每次整理更顺手</p></div></div><div class="quick-list"><div class="quick-row"><span class="quick-label"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3 2"></path></svg>单个解析</span><strong class="quick-value">即时</strong></div><div class="quick-row"><span class="quick-label"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 6h13"></path><path d="M8 12h13"></path><path d="M8 18h13"></path><path d="M3 6h.01"></path><path d="M3 12h.01"></path><path d="M3 18h.01"></path></svg>批量处理</span><strong class="quick-value">最多 3 路</strong></div><div class="quick-row"><span class="quick-label"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v18"></path><path d="M3 12h18"></path></svg>记录方式</span><strong class="quick-value">本地保存</strong></div></div></section></aside>
+  <aside class="sidebar"><section class="panel side-panel" aria-label="资料管理"><div class="side-heading"><div><h2>我的资料</h2><p>搜索记录，或将收藏带到另一台设备</p></div></div><label class="field-label" for="library-search">搜索标题、作者或链接</label><input id="library-search" class="library-search" type="search" placeholder="在收藏和历史中查找" autocomplete="off"><div class="account-actions"><button id="library-backup" class="btn" type="button">备份 JSON</button><button id="library-import" class="btn" type="button">导入备份</button><input id="library-file" type="file" accept=".json,application/json" hidden></div><p id="library-status" class="input-hint" role="status" aria-live="polite">导入会合并去重，保留已有记录；备份不含登录凭据。</p></section><section id="favorites" class="panel side-panel" aria-label="我的收藏"><div class="side-heading"><div><h2>我的收藏</h2><p>手动星标的内容，只保存在当前浏览器</p></div><span id="favorites-count" class="count-badge">0</span></div><div class="account-actions favorites-actions"><button id="favorites-export" class="btn" type="button">导出 CSV</button></div><div id="favorites-list" class="history-list"></div><div id="favorites-empty" class="history-empty"><div class="history-empty-icon"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg></div><strong>这里还没有收藏</strong><span>在结果、批量或历史记录里点星标收藏</span></div></section><section id="history" class="panel side-panel" aria-label="最近解析"><div class="side-heading"><div><h2>最近处理</h2><p>只保存在当前浏览器</p></div><span id="history-count" class="count-badge">0</span></div><div id="history-list" class="history-list"></div><div id="history-empty" class="history-empty"><div class="history-empty-icon"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h16v14H4z"></path><path d="M8 9h8"></path><path d="M8 13h5"></path></svg></div><strong>这里还没有记录</strong><span>解析完成后会自动出现在这里</span></div><div class="side-divider"></div><div class="account-actions"><button id="history-export" class="btn" type="button">导出 CSV</button><button id="clear-history-btn" class="clear-btn" type="button"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2-2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg> 清空记录</button></div></section><section class="panel side-panel" aria-label="账号设置"><div class="side-heading"><div><h2>账号</h2><p>当前需要登录态的平台：微博</p></div><span id="weibo-cookie-status" class="account-status"><i></i><span>未配置</span></span></div><div class="account-form"><label class="field-label" for="weibo-cookie-input">微博凭据</label><input id="weibo-cookie-input" type="password" autocomplete="off" spellcheck="false" placeholder="粘贴微博网页版 Cookie"><p class="input-hint">在微博网页版登录后复制 Cookie；解析微博链接时仅随本次 POST 请求发送，不会写入 URL。</p><div class="account-actions"><button id="weibo-cookie-save" class="btn" type="button">保存到本浏览器</button><button id="weibo-cookie-clear" class="btn btn-quiet" type="button">清除</button></div></div></section><section class="panel side-panel" aria-label="工作台信息"><div class="side-heading"><div><h2>工作台</h2><p>让每次整理更顺手</p></div></div><div class="quick-list"><div class="quick-row"><span class="quick-label"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3 2"></path></svg>单个解析</span><strong class="quick-value">即时</strong></div><div class="quick-row"><span class="quick-label"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 6h13"></path><path d="M8 12h13"></path><path d="M8 18h13"></path><path d="M3 6h.01"></path><path d="M3 12h.01"></path><path d="M3 18h.01"></path></svg>批量处理</span><strong class="quick-value">最多 3 路</strong></div><div class="quick-row"><span class="quick-label"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v18"></path><path d="M3 12h18"></path></svg>记录方式</span><strong class="quick-value">本地保存</strong></div></div></section></aside>
 </main>
 <footer>去水印解析 · 仅用于个人学习与研究</footer>
 <script>
@@ -1594,45 +1607,42 @@ function renderResult(data,raw){
 }
 
 function updateFavBtn(raw){if(!favBtn||!raw)return;const fav=isFavorite(raw);favBtn.classList.toggle('is-fav',fav);const span=favBtn.querySelector('span');if(span)span.textContent=fav?'已收藏':'收藏';favBtn.querySelector('svg').outerHTML=fav?STAR_FILLED_ICON.replace('width="14"','width="16"').replace('height="14"','height="16"'):'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>'}
-function loadHistory(){try{const x=JSON.parse(localStorage.getItem(HISTORY_KEY)||'[]');return Array.isArray(x)?x:[]}catch(e){return[]}}function saveHistory(x){localStorage.setItem(HISTORY_KEY,JSON.stringify(x))}function addHistory(item){const list=loadHistory().filter(x=>x.rawUrl!==item.url);list.unshift({rawUrl:item.url,title:item.data.title||'',author:item.data.author||'',like:item.data.like??0,time:item.data.time??0,cover:item.data.cover||'',videoUrl:item.data.url||'',savedAt:Date.now()});saveHistory(list.slice(0,HISTORY_LIMIT))}function removeHistory(i){const list=loadHistory();list.splice(i,1);saveHistory(list);renderHistory()}
-function loadFavorites(){try{const x=JSON.parse(localStorage.getItem(FAVORITE_KEY)||'[]');return Array.isArray(x)?x:[]}catch(e){return[]}}function saveFavorites(x){localStorage.setItem(FAVORITE_KEY,JSON.stringify(x))}function isFavorite(rawUrl){return loadFavorites().some(f=>f.rawUrl===rawUrl)}function toggleFavorite(item){const rawUrl=item.url||item.rawUrl||'';if(!rawUrl)return;const list=loadFavorites(),idx=list.findIndex(f=>f.rawUrl===rawUrl);if(idx>=0){list.splice(idx,1)}else{list.unshift({rawUrl:rawUrl,title:item.title||item.data?.title||'',author:item.author||item.data?.author||'',like:item.like??item.data?.like??0,time:item.time??item.data?.time??0,cover:item.cover||item.data?.cover||'',videoUrl:item.data?.url||item.videoUrl||'',savedAt:Date.now()})}saveFavorites(list);renderFavorites();return idx<0}function renderFavorites(){const list=loadFavorites();favoritesCount.textContent=String(list.length);favoritesEmpty.hidden=list.length>0;favoritesList.innerHTML=list.map((item,i)=>'<article class="history-entry" data-index="'+i+'"><img class="history-thumb" src="'+esc(item.cover?mediaUrl(item.cover):'')+'" alt="" loading="lazy"><div class="history-copy"><h3 class="history-title">'+esc(item.title||'未命名视频')+'</h3><p class="history-meta">'+esc([platformName(item.rawUrl),formatTime(item.time)].filter(Boolean).join(' · '))+'</p></div><div class="history-actions"><button type="button" data-favaction="reparse" title="重新解析" aria-label="重新解析">'+PLAY_ICON+'</button><button type="button" data-favaction="copy" title="复制链接" aria-label="复制链接">'+COPY_ICON+'</button><button type="button" data-favaction="unfav" title="取消收藏" aria-label="取消收藏">'+STAR_FILLED_ICON+'</button></div></article>').join('')}
-function historyItemHtml(item,i){const t=item.cover?mediaUrl(item.cover):'';const starFav=isFavorite(item.rawUrl)?' is-fav':'';return'<article class="history-entry" data-index="'+i+'"><img class="history-thumb" src="'+esc(t)+'" alt="" loading="lazy"><div class="history-copy"><h3 class="history-title">'+esc(item.title||'未命名视频')+'</h3><p class="history-meta">'+esc([platformName(item.rawUrl),formatTime(item.time)].filter(Boolean).join(' · '))+'</p></div><div class="history-actions"><button type="button" data-action="reparse" title="重新解析" aria-label="重新解析">'+PLAY_ICON+'</button><button type="button" data-action="copy" title="复制链接" aria-label="复制链接">'+COPY_ICON+'</button><button type="button" data-action="delete" title="删除记录" aria-label="删除记录">'+TRASH_ICON+'</button><button type="button" data-action="favorite" title="收藏" aria-label="收藏" class="'+starFav.trim()+'">'+(isFavorite(item.rawUrl)?STAR_FILLED_ICON:STAR_ICON)+'</button></div></article>'}
-function renderHistory(){const list=loadHistory();historyCount.textContent=String(list.length);historyEmpty.hidden=list.length>0;historyList.innerHTML=list.map(historyItemHtml).join('')}
-function setBatchRunning(on){batchRunning=on;batchParseBtn.disabled=on;batchStopBtn.hidden=!on;batchProgress.hidden=!on;batchParseBtn.querySelector('span').textContent=on?'处理中…':'开始批量处理'}function updateBatchSummary(){const ok=batchItems.filter(x=>x&&x.data).length,fail=batchItems.filter(x=>x&&x.error).length;batchSummary.textContent=[ok?'成功 '+ok:'',fail?'失败 '+fail:''].filter(Boolean).join(' · ');if(batchExportBtn)batchExportBtn.hidden=ok===0;if(batchZipBtn)batchZipBtn.hidden=ok===0;if(batchRetryBtn)batchRetryBtn.hidden=fail===0}
+const library=Workbench.createLibrary({getItem:key=>localStorage.getItem(key),setItem:(key,value)=>localStorage.setItem(key,value)});
+function libraryStatus(message){$('#library-status').textContent=message}
+function readLibrary(kind){try{return library.read()[kind]}catch(error){libraryStatus('无法读取本地资料：'+error.message+'。原数据保持不变。');return[]}}
+function saveLibrary(kind,items){try{library.save(kind,items);return true}catch(error){libraryStatus('保存失败：'+error.message+'。请检查浏览器存储空间或导出备份。');return false}}
+function loadHistory(){return readLibrary('history')}function saveHistory(items){return saveLibrary('history',items)}function addHistory(item){const list=loadHistory().filter(x=>x.rawUrl!==item.url);list.unshift({rawUrl:item.url,title:item.data.title||'',author:item.data.author||'',like:item.data.like??0,time:item.data.time??0,cover:item.data.cover||'',videoUrl:item.data.url||'',savedAt:Date.now()});saveHistory(list.slice(0,Math.max(HISTORY_LIMIT,loadHistory().length)))}function removeHistory(i){const list=loadHistory();list.splice(i,1);saveHistory(list);renderHistory()}
+function loadFavorites(){return readLibrary('favorites')}function saveFavorites(items){return saveLibrary('favorites',items)}function isFavorite(rawUrl){return loadFavorites().some(f=>f.rawUrl===rawUrl)}function toggleFavorite(item){const rawUrl=item.url||item.rawUrl||'';if(!rawUrl)return;const list=loadFavorites(),idx=list.findIndex(f=>f.rawUrl===rawUrl);if(idx>=0){list.splice(idx,1)}else{list.unshift({rawUrl:rawUrl,title:item.title||item.data?.title||'',author:item.author||item.data?.author||'',like:item.like??item.data?.like??0,time:item.time??item.data?.time??0,cover:item.cover||item.data?.cover||'',videoUrl:item.data?.url||item.videoUrl||'',savedAt:Date.now()})}if(!saveFavorites(list))return false;renderFavorites();return idx<0}function renderFavorites(){const list=loadFavorites(),query=$('#library-search').value,visible=list.map((item,i)=>({item,i})).filter(({item})=>Workbench.matches(item,query));favoritesCount.textContent=String(visible.length)+' / '+list.length;favoritesEmpty.hidden=visible.length>0;favoritesEmpty.querySelector('strong').textContent=list.length?'没有匹配的收藏':'这里还没有收藏';favoritesList.innerHTML=visible.map(({item,i})=>'<article class="history-entry" data-index="'+i+'">'+historyThumb(item.cover)+'<div class="history-copy"><h3 class="history-title">'+esc(item.title||'未命名视频')+'</h3><p class="history-meta">'+esc([platformName(item.rawUrl),formatTime(item.time)].filter(Boolean).join(' · '))+'</p></div><div class="history-actions"><button type="button" data-favaction="reparse" title="重新解析" aria-label="重新解析">'+PLAY_ICON+'</button><button type="button" data-favaction="copy" title="复制链接" aria-label="复制链接">'+COPY_ICON+'</button><button type="button" data-favaction="unfav" title="取消收藏" aria-label="取消收藏">'+STAR_FILLED_ICON+'</button></div></article>').join('')}
+function historyThumb(cover){return cover?'<img class="history-thumb" src="'+esc(mediaUrl(cover))+'" alt="" loading="lazy">':'<span class="history-thumb" aria-hidden="true"></span>'}
+function historyItemHtml(item,i){const t=item.cover?mediaUrl(item.cover):'';const starFav=isFavorite(item.rawUrl)?' is-fav':'';return'<article class="history-entry" data-index="'+i+'">'+historyThumb(item.cover)+'<div class="history-copy"><h3 class="history-title">'+esc(item.title||'未命名视频')+'</h3><p class="history-meta">'+esc([platformName(item.rawUrl),formatTime(item.time)].filter(Boolean).join(' · '))+'</p></div><div class="history-actions"><button type="button" data-action="reparse" title="重新解析" aria-label="重新解析">'+PLAY_ICON+'</button><button type="button" data-action="copy" title="复制链接" aria-label="复制链接">'+COPY_ICON+'</button><button type="button" data-action="delete" title="删除记录" aria-label="删除记录">'+TRASH_ICON+'</button><button type="button" data-action="favorite" title="收藏" aria-label="收藏" class="'+starFav.trim()+'">'+(isFavorite(item.rawUrl)?STAR_FILLED_ICON:STAR_ICON)+'</button></div></article>'}
+function renderHistory(){const list=loadHistory(),visible=list.map((item,i)=>({item,i})).filter(({item})=>Workbench.matches(item,$('#library-search').value));historyCount.textContent=String(visible.length)+' / '+list.length;historyEmpty.hidden=visible.length>0;historyEmpty.querySelector('strong').textContent=list.length?'没有匹配的记录':'这里还没有记录';historyList.innerHTML=visible.map(({item,i})=>historyItemHtml(item,i)).join('')}
+function setBatchRunning(on){batchRunning=on;batchParseBtn.disabled=on;batchInput.disabled=on;batchRetryBtn.disabled=on;batchStopBtn.hidden=!on;batchProgress.hidden=!on;batchParseBtn.querySelector('span').textContent=on?'处理中…':'开始批量处理'}function updateBatchSummary(){const ok=batchItems.filter(x=>x&&x.data).length,fail=batchItems.filter(x=>x&&x.error).length;batchSummary.textContent=[ok?'成功 '+ok:'',fail?'失败 '+fail:''].filter(Boolean).join(' · ');if(batchExportBtn)batchExportBtn.hidden=ok===0;if(batchZipBtn)batchZipBtn.hidden=ok===0;if(batchRetryBtn)batchRetryBtn.hidden=fail===0}
 function batchItemHtml(item,i){if(item.loading)return'<article class="batch-item is-loading" data-index="'+i+'"><div class="batch-thumb"></div><div class="batch-content"><h3 class="batch-title">处理中</h3><p class="batch-meta">正在读取视频信息…</p></div><div class="batch-actions"><span class="batch-meta">请稍候</span></div></article>';if(item.error)return'<article class="batch-item is-error" data-index="'+i+'"><div class="batch-content"><h3 class="batch-title">'+esc(item.url)+'</h3><p class="batch-meta">'+esc(item.error)+'</p></div><div class="batch-actions"><button class="btn" type="button" data-action="retry">重试</button></div></article>';const d=item.data,t=d.cover?mediaUrl(d.cover):'';const favIcon=isFavorite(item.url)?STAR_FILLED_ICON:STAR_ICON;return'<article class="batch-item" data-index="'+i+'"><img class="batch-thumb" src="'+esc(t)+'" alt="" loading="lazy"><div class="batch-content"><h3 class="batch-title">'+esc(d.title||'未命名视频')+'</h3><p class="batch-meta">'+esc(platformName(item.url))+' · '+esc(d.author||'未知作者')+' · 点赞 '+esc(formatCount(d.like))+'</p></div><div class="batch-actions"><button class="btn" type="button" data-action="play">'+PLAY_ICON+'播放</button><a class="btn" href="'+esc(buildDownloadUrl(d.url,d.title))+'" download="'+esc((d.title||'video')+'.mp4')+'" target="_blank" rel="noopener">'+DOWNLOAD_ICON+'下载</a><button class="btn" type="button" data-action="copy">'+COPY_ICON+'复制</button><button class="btn" type="button" data-action="favorite" title="收藏" aria-label="收藏">'+favIcon+'收藏</button></div></article>'}
 function renderBatchList(){batchEmpty.hidden=batchItems.length>0;batchList.innerHTML=batchItems.map(batchItemHtml).join('');updateBatchSummary()}
+async function runBatchIndices(indices,force=false){
+  if(batchRunning||!indices.length)return;
+  hideError();batchCancelRequested=false;batchAbortController=new AbortController();
+  const items=batchItems,controller=batchAbortController;
+  indices.forEach(i=>{items[i]={url:items[i].url,loading:true}});
+  setBatchRunning(true);renderBatchList();
+  try{
+    await Workbench.runQueue(items,indices,(url,signal)=>requestParse(url,signal,force),{signal:controller.signal,onChange:i=>{
+      if(items[i].data){addHistory(items[i]);renderHistory()}
+      batchProgressText.textContent='已处理 '+indices.filter(n=>!items[n].loading).length+'/'+indices.length;
+      renderBatchList();
+    }});
+  }finally{batchAbortController=null;setBatchRunning(false);renderBatchList();renderHistory()}
+}
 async function parseBatch(){
+  if(batchRunning)return;
   const urls=batchInput.value.split(/\n/).map(extractUrl).map(x=>x.trim()).filter(x=>/^https?:\/\//i.test(x)).filter((x,i,a)=>a.indexOf(x)===i);
   if(!urls.length){showError('请先粘贴至少一个有效的视频链接');return}
   if(urls.length>BATCH_LIMIT){showError('批量任务最多支持 '+BATCH_LIMIT+' 条链接，请分批处理');return}
-  hideError();
-  batchItems=urls.map(url=>({url,loading:true}));
-  batchCancelRequested=false;
-  batchAbortController=new AbortController();
-  batchSection.hidden=false;
-  renderBatchList();
-  setBatchRunning(true);
-  let done=0,next=0;
-  async function worker(){
-    while(!batchCancelRequested){
-      const i=next++;
-      if(i>=urls.length)return;
-      const url=urls[i];
-      try{batchItems[i]=await requestParse(url,batchAbortController.signal);addHistory(batchItems[i])}
-      catch(e){batchItems[i]={url,error:batchCancelRequested||e.name==='AbortError'?'已停止处理':(e.message||'解析失败')}}
-      done++;
-      batchProgressText.textContent='正在处理 '+done+'/'+urls.length;
-      renderBatchList();
-    }
-  }
-  await Promise.all(Array.from({length:Math.min(3,urls.length)},()=>worker()));
-  if(batchCancelRequested)batchItems=batchItems.map(x=>x&&x.loading?{url:x.url,error:'已停止处理'}:x);
-  renderBatchList();renderHistory();setBatchRunning(false);
-  batchAbortController=null;
-  batchProgressText.textContent=batchCancelRequested?'已停止':'已完成 '+urls.length+' 项';
+  batchItems=urls.map(url=>({url,loading:true}));batchSection.hidden=false;
+  await runBatchIndices(batchItems.map((_,i)=>i));
   batchSection.scrollIntoView({behavior:'smooth',block:'start'});
 }
-async function retryBatchItem(i){const old=batchItems[i];if(!old||batchRunning)return;batchItems[i]={url:old.url,loading:true};renderBatchList();try{batchItems[i]=await requestParse(old.url);addHistory(batchItems[i])}catch(e){batchItems[i]={url:old.url,error:e.message||'解析失败'}}renderBatchList();renderHistory()}
+async function retryBatchItem(i){if(batchItems[i]?.error)await runBatchIndices([i],true)}
 async function copyText(text){try{await navigator.clipboard.writeText(text)}catch(e){const t=document.createElement('textarea');t.value=text;t.style.position='fixed';t.style.opacity='0';document.body.appendChild(t);t.select();document.execCommand('copy');t.remove()}}
 function flashButton(b,text){const s=b.querySelector('span'),target=s||b;if(!target)return;const old=target.textContent;target.textContent=text;setTimeout(()=>target.textContent=old,1200)}
 function buildShareText(x){return[x.data.title||'未命名视频',platformName(x.url),'无水印链接：'+buildDownloadUrl(x.data.url,x.data.title)].join('\n')}
@@ -1897,7 +1907,7 @@ commentsMore.addEventListener('click',()=>{state.comments.page+=1;loadComments(f
 
 // ---- CSV 导出（仅导出本机已有数据） ----
 function exportCsv(filename,rows){
-  const csv=rows.map(row=>row.map(cell=>'"'+String(cell??'').replace(/"/g,'""')+'"').join(',')).join('\r\n');
+  const csv=rows.map(row=>row.map(Workbench.csvCell).join(',')).join('\r\n');
   const blob=new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8'});
   const link=document.createElement('a');
   link.href=URL.createObjectURL(blob);
@@ -1923,21 +1933,22 @@ $('#batch-export')?.addEventListener('click',()=>{
 $('#batch-zip')?.addEventListener('click',async()=>{
   const items=batchItems.filter(x=>x&&x.data);
   if(!items.length){showError('还没有可打包的结果');return}
-  const btn=batchZipBtn,span=btn.querySelector('span'),origText=span.textContent;
+  const btn=batchZipBtn,span=btn.querySelector('span')||btn,origText=span.textContent;
   btn.disabled=true;
   try{
-    const entries=[];let done=0;
-    const tasks=items.map((x,index)=>{
+    const entries=[];let done=0,totalBytes=0;
+    const total=items.reduce((n,x)=>n+mediaUrls(x.data).length,0);
+    for(const [index,x] of items.entries()){
       const urls=mediaUrls(x.data),extension=mediaType(x.data)==='image'?'jpg':'mp4',base=safeName(x.data,index);
-      return urls.map((url,i)=>{
-        return fetch(mediaUrl(url)).then(async res=>{
-          if(!res.ok)throw new Error(`「${base}」第 ${i+1} 个文件下载失败`);
-          const buf=await res.arrayBuffer();
-          entries.push({name:`${base}${urls.length>1?'-'+String(i+1).padStart(2,'0'):''}.${extension}`,data:new Uint8Array(buf)});
-        }).then(()=>{done++;span.textContent=`正在下载打包 (${done}/${items.reduce((n,x)=>n+mediaUrls(x.data).length,0)})…`});
-      });
-    }).flat();
-    await Promise.all(tasks);
+      for(const [i,url] of urls.entries()){
+        span.textContent=`正在下载打包 (${done+1}/${total})…`;
+        const res=await fetch(mediaUrl(url),{signal:AbortSignal.timeout(60000)});
+        const bytes=await Workbench.readLimited(res,128*1024*1024-totalBytes);
+        totalBytes+=bytes.length;
+        entries.push({name:`${String(index+1).padStart(2,'0')}-${base}${urls.length>1?'-'+String(i+1).padStart(2,'0'):''}.${extension}`,data:bytes});
+        done++;
+      }
+    }
     span.textContent='生成 ZIP…';
     const blob=createZipBlob(entries);
     const blobUrl=URL.createObjectURL(blob);
@@ -1951,25 +1962,7 @@ $('#batch-zip')?.addEventListener('click',async()=>{
     span.textContent=origText;btn.disabled=false;
   }
 });
-$('#batch-retry')?.addEventListener('click',async()=>{
-  if(batchRunning){showError('批量处理进行中，请等待完成后再重试');return}
-  const failed=batchItems.map((x,i)=>({x,i})).filter(({x})=>x&&x.error&&x.error!=='已停止处理');
-  if(!failed.length){showError('没有需要重试的失败项');return}
-  const btn=batchRetryBtn;
-  btn.disabled=true;
-  try{
-    for(const {x,i} of failed){
-      batchItems[i]={url:x.url,loading:true};
-      renderBatchList();
-      try{batchItems[i]=await requestParse(x.url);addHistory(batchItems[i])}
-      catch(e){batchItems[i]={url:x.url,error:e.message||'解析失败'}}
-      renderBatchList();
-    }
-    flashButton(btn,'重试完成');
-  }finally{
-    btn.disabled=false;
-  }
-});
+$('#batch-retry')?.addEventListener('click',()=>runBatchIndices(batchItems.map((item,i)=>item.error?i:-1).filter(i=>i>=0),true));
 const profileExportButton=profileSection.querySelector('#profile-export');
 profileExportButton?.addEventListener('click',()=>{
   if(!state.profile){showError('请先解析主页或合集');return}
@@ -2091,15 +2084,15 @@ input.addEventListener('paste',event=>{const text=event.clipboardData&&event.cli
 input.addEventListener('input',()=>{const url=extractUrl(input.value);if(url!==input.value&&/^https?:\/\//i.test(url))input.value=url});
 
 parseBtn.addEventListener('click',parseVideo);
-input.addEventListener('keydown',e=>{if(e.key==='Enter')parseVideo()});
+input.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.ctrlKey&&!e.metaKey){e.preventDefault();parseVideo()}});
 batchParseBtn.addEventListener('click',parseBatch);
 batchStopBtn.addEventListener('click',()=>{if(!batchRunning)return;batchCancelRequested=true;if(batchAbortController)batchAbortController.abort();batchProgressText.textContent='正在停止…'});
-batchInput.addEventListener('keydown',e=>{if((e.ctrlKey||e.metaKey)&&e.key==='Enter')parseBatch()});
+
 copyBtn.addEventListener('click',async()=>{if(currentResult&&downloadBtn.href){await copyText(downloadBtn.href);flashButton(copyBtn,'已复制')}});
 copyTextBtn.addEventListener('click',async()=>{if(currentResult){await copyText(buildShareText(currentResult));flashButton(copyTextBtn,'已复制')}});
 favBtn?.addEventListener('click',()=>{if(!currentResult)return;toggleFavorite(currentResult);updateFavBtn(currentResult.url)});
 
-// 图集一键打包 ZIP（纯客户端零依赖流式封装，不占用服务器任何流量和 CPU）
+// 图集 ZIP 在客户端封装，媒体经服务端代理获取；限制累计内存与请求时间。
 const CRC_TABLE=new Uint32Array(256);
 for(let i=0;i<256;i++){let c=i;for(let k=0;k<8;k++)c=((c&1)?(0xEDB88320^(c>>>1)):(c>>>1));CRC_TABLE[i]=c>>>0}
 function computeCrc32(buf){let crc=0xFFFFFFFF;for(let i=0;i<buf.length;i++)crc=CRC_TABLE[(crc^buf[i])&0xFF]^(crc>>>8);return(crc^0xFFFFFFFF)>>>0}
@@ -2130,12 +2123,12 @@ zipBtn?.addEventListener('click',async()=>{
   const span=zipBtn.querySelector('span');
   const origText=span.textContent;
   try{
-    const entries=[];
+    let totalBytes=0;const entries=[];
     for(let i=0;i<urls.length;i++){
       span.textContent=`正在打包 (${i+1}/${urls.length})…`;
-      const res=await fetch(mediaUrl(urls[i]));
+      const res=await fetch(mediaUrl(urls[i]),{signal:AbortSignal.timeout(60000)});
       if(!res.ok)throw new Error(`第 ${i+1} 张图片下载失败`);
-      const buf=await res.arrayBuffer();
+      const buf=await Workbench.readLimited(res,128*1024*1024-totalBytes);totalBytes+=buf.length;
       entries.push({name:`${baseTitle}-${String(i+1).padStart(2,'0')}.jpg`,data:new Uint8Array(buf)});
     }
     span.textContent='生成 ZIP…';
@@ -2179,6 +2172,24 @@ const systemThemeQuery=window.matchMedia?window.matchMedia('(prefers-color-schem
 if(systemThemeQuery&&systemThemeQuery.addEventListener)systemThemeQuery.addEventListener('change',e=>{if(!localStorage.getItem('watermark-parse-theme-v2'))applyTheme(e.matches?'light':'dark',false)});
 if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('service-worker.js').catch(()=>{}))}
 favoritesList?.addEventListener('click',async e=>{const card=e.target.closest('.history-entry'),a=e.target.closest('[data-favaction]');if(!card||!a)return;const item=loadFavorites()[Number(card.dataset.index)];if(!item)return;const action=a.dataset.favaction;if(action==='reparse'){setMode('single');input.value=item.rawUrl;await parseUrlIntoResult(item.rawUrl)}if(action==='copy'){await copyText(item.rawUrl);a.innerHTML='✓';setTimeout(()=>a.innerHTML=COPY_ICON,1000)}if(action==='unfav'){toggleFavorite(item);renderFavorites()}});
+$('#library-search').addEventListener('input',()=>{renderHistory();renderFavorites()});
+$('#library-backup').addEventListener('click',()=>{try{
+  const blob=new Blob([library.export()],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');
+  a.href=url;a.download='short-video-library-'+new Date().toISOString().slice(0,10)+'.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),30000);
+  libraryStatus('备份已生成，包含历史和收藏，不含登录凭据。');
+}catch(error){libraryStatus('备份失败：'+error.message)}});
+$('#library-import').addEventListener('click',()=>$('#library-file').click());
+$('#library-file').addEventListener('change',async event=>{
+  const file=event.target.files[0];if(!file)return;
+  const button=$('#library-import');button.disabled=true;libraryStatus('正在校验并合并备份…');
+  try{
+    if(file.size>Workbench.MAX_BACKUP_BYTES)throw new Error('备份文件不能超过 4 MiB');
+    const data=library.import(await file.text());renderHistory();renderFavorites();
+    libraryStatus('导入完成：历史 '+data.history.length+' 条，收藏 '+data.favorites.length+' 条。已有同链接记录保持不变。');
+  }catch(error){libraryStatus('导入失败：'+error.message+'。原数据保持不变。')}
+  finally{button.disabled=false;event.target.value=''}
+});
+window.addEventListener('storage',event=>{if(event.key==='watermark-library-v2'){renderHistory();renderFavorites()}});
 // 全局快捷键：Ctrl/Cmd+Enter 触发解析，Ctrl/Cmd+K 聚焦输入框
 document.addEventListener('keydown',event=>{
   const mod=event.ctrlKey||event.metaKey;

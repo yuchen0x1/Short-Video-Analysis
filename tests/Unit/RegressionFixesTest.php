@@ -318,7 +318,7 @@ final class RegressionFixesTest extends TestCase
         $this->assertStringContainsString('$forceRefresh', $api);
         $this->assertStringContainsString('$parser->parse($url, $forceRefresh)', $api);
         $this->assertStringContainsString('parse(string $url, bool $force = false)', $service);
-        $this->assertStringContainsString('if (!$force) {', $service);
+        $this->assertStringContainsString('if ($cacheable && !$force) {', $service);
         // 播放失败后的自动重取必须带 force，否则会命中同一个 24h 缓存
         $this->assertStringContainsString('requestParse(currentResult.url,null,true)', $frontend);
     }

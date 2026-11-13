@@ -933,6 +933,18 @@ await check('微博无手工 Cookie 时使用网页登录态模式', async () =>
   parsers.setWeiboCookie('fixture=weibo');
 });
 
+await check('微博切换凭据后同一链接重新请求，不复用账号缓存', async () => {
+  const url = 'https://weibo.com/tv/show?fid=1034:4899473006910557';
+  parsers.setWeiboCookie('fixture=account-a');
+  await parsers.parse(url);
+  parsers.setWeiboCookie('fixture=account-b');
+  const before = calls.length;
+  await parsers.parse(url);
+  const call = calls.slice(before).find(item => item.url.includes('weibo.com/tv/api/component/page/tv/show/'));
+  assert.equal(call?.headers.Cookie, 'fixture=account-b');
+  parsers.setWeiboCookie('fixture=weibo');
+});
+
 const failed = checks.filter((checkResult) => !checkResult.ok);
 console.log(`\n离线契约审计：${checks.length - failed.length} 通过，${failed.length} 失败`);
 process.exitCode = failed.length ? 1 : 0;

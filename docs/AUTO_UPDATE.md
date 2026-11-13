@@ -19,10 +19,10 @@ git push origin v1.2.0
 
 `.github/workflows/release.yml` 会执行以下步骤：
 
-1. 校验根目录 Composer、Electron、Android 的版本号都等于标签版本。
-2. 在 Windows runner 安装依赖并构建 NSIS 安装包、portable 包和 `latest.yml`。
+1. 校验根目录 Composer、Electron、Android、共享包、npm lock 与 OpenAPI 的版本号都等于标签版本。
+2. 在 Windows runner 安装依赖并构建 NSIS 安装包、portable 包和 `latest.yml`。打包器自动获取对应 Electron runtime，显式 `--publish never` 防止标签触发隐式上传。
 3. 生成 `SHA256SUMS.txt` 与 `update-manifest.json`。
-4. 创建 GitHub Draft Release 并上传资产。
+4. 从 `docs/releases/release-notes.md` 提取当前版本说明，创建 GitHub Draft Release 并上传资产；失败重跑可复用草稿，禁止覆盖已经正式发布的同版本资产。
 5. 资产上传成功后才将 Draft Release 发布为 Latest Release。
 6. 当仓库变量 `ANDROID_RELEASE_ENABLED=true` 时，后置 Android job 使用受保护的 keystore Secrets 构建、验签并追加 APK 资产。
 
@@ -49,8 +49,8 @@ Android 客户端只选择 Release 中非 `debug`、非 `unsigned` 的 APK。客
 ## 本地验证
 
 ```powershell
-node scripts/check-release-version.mjs v1.1.7
-node scripts/generate-release-manifest.mjs apps/app-shell/release v1.1.7
+node scripts/check-release-version.mjs v1.1.9
+node scripts/generate-release-manifest.mjs apps/app-shell/release v1.1.9
 
 Push-Location packages/update-checker
 npm test

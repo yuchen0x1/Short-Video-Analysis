@@ -8,7 +8,7 @@
 
 覆盖 12 个主流短视频平台，一次解析视频、图集、封面与作者信息，提供网页版、电脑版、Android 端与版本化 HTTP API。
 
-[![Version](https://img.shields.io/badge/版本-v1.1.8-22d3ee)](https://github.com/yuchen0x1/Short-Video-Analysis/releases/latest) [![Platforms](https://img.shields.io/badge/平台-12个-8b5cf6)](#覆盖平台) [![PHP](https://img.shields.io/badge/PHP-8.1%2B-777bb4)](#技术选型与环境要求) [![License](https://img.shields.io/badge/License-AGPL--3.0--only-9cf)](LICENSE)
+[![Version](https://img.shields.io/badge/版本-v1.1.9-22d3ee)](https://github.com/yuchen0x1/Short-Video-Analysis/releases/latest) [![Platforms](https://img.shields.io/badge/平台-12个-8b5cf6)](#覆盖平台) [![PHP](https://img.shields.io/badge/PHP-8.1%2B-777bb4)](#技术选型与环境要求) [![License](https://img.shields.io/badge/License-AGPL--3.0--only-9cf)](LICENSE)
 
 ![网页版工作台](assets/screenshots/web-home.png)
 
@@ -20,22 +20,14 @@
 
 ## 最新更新
 
-### v1.1.8 · 2026-11-12
+### v1.1.9 · 2026-11-13
 
-- 接入 GitHub 标签发布流水线，自动构建 Windows NSIS/portable 产物、`latest.yml`、blockmap 与 SHA-256 清单。
-- 更新检查源统一要求 HTTPS；桌面端使用构建时 GitHub provider，下载界面显示真实速度和预计剩余时间。
-- Android 发布任务支持通过 GitHub Secrets 构建并验签正式 APK，避免把 debug/unsigned 包推荐为升级包。
+- 网页版新增历史与收藏搜索、JSON 备份与合并恢复；导入校验失败不会覆盖已有资料。
+- 批量解析与重试共用运行状态，停止后可继续失败/停止项；修复「全部打包 ZIP」点击错误，并限制打包大小和并发。
+- 旧版解析入口补齐 API Key 校验，微博解析隔离账号缓存，CSV 导出防止外部标题被直接识别为公式。
+- 修正缓存路径越出项目目录、浅色模式输入面板对比度及手机端模式按钮换行。
 
-[查看 v1.1.8 完整发布说明](docs/releases/release-notes.md)
-
-### v1.1.7 · 2026-11-12
-
-- 媒体播放与下载覆盖更多平台 CDN，解析成功后更稳定地打开视频、图集和音乐。
-- 统一不同端的解析结果格式，并支持失败后强制重新获取，减少重复使用失效地址。
-- 更新检查、健康检查和离线页面更稳健；主题跟随系统时首屏显示更自然。
-- 完善 Windows、Android、Docker 的本地运行说明，方便部署前完成完整自测。
-
-[查看全部历史](CHANGELOG.md)
+[完整发布历史](docs/releases/release-notes.md) · [本轮分析与验收报告](docs/EVOLUTION-2026-11-13.md)
 
 ## 推广介绍图
 
@@ -98,19 +90,20 @@
 - **单条解析** —— 从分享文案中提取 URL，解析标题、作者、封面、无水印媒体地址等字段。
 - **图集解析** —— 解析器返回 `media_type=image` 时给出 `images` 图片数组，支持逐张下载。
 - **音乐下载** —— 抖音等平台解析出背景音乐播放地址时，网页版、电脑版与手机版都会提供「下载音乐」入口。
-- **批量解析** —— 网页版每行一个链接，单次最多 20 条；成功项可一键全部打包 ZIP，失败项可一键断点重试。
+- **批量解析** —— 网页版每行一个链接，单次最多 20 条；成功项可一键全部打包 ZIP（媒体总大小最多 128 MiB，逐个下载、单文件请求最多 60 秒），失败或停止项可一键重试。页面刷新后批量队列不会保留。
 - **主页解析** —— `/api/v1/profile` 与客户端支持抖音公开主页分页解析；必须使用明确的抖音主页链接，不支持短链主页。
 - **合集解析** —— `/api/v1/collection` 与客户端支持抖音合集分页解析，返回合集标题、作者与逐页作品列表；网页版、电脑版与手机版均支持「加载全部 + 全部下载」。
 - **直播解析** —— `/api/v1/live` 支持抖音直播（live.douyin.com）、B站直播（live.bilibili.com）、虎牙直播（huya.com/房间号）与斗鱼直播（douyu.com/房间号）直播间解析，返回主播、标题、人气与拉流地址列表；虎牙下发 FLV 原画（按 CDN 线去重），斗鱼下发 FLV 多画质（原画2K60/蓝光8M/蓝光4M/超清/高清），支持用 VLC、PotPlayer、IINA 等播放器打开。
 - **发现（热榜/搜索）** —— `/api/v1/hot` 支持抖音热点榜与 B站综合热门；`/api/v1/search` 支持 B站与抖音关键词搜索。合规边界：仅响应用户主动查询、按需分页、不落库。
 - **公开评论** —— `/api/v1/comments` 支持 B站单视频公开评论查看（按需分页，仅查看不保存）。
 - **CSV 导出** —— 网页版支持导出最近记录、我的收藏、批量结果与主页/合集列表为 CSV（UTF-8 BOM，Excel 可直接打开）。
+- **资料管理（网页版）** —— 按标题、作者或链接搜索历史和收藏；导出/导入版本化 JSON 备份，按原始分享链接合并去重，保留已有同链接记录，不导出 Cookie。单文件上限 4 MiB，每类最多 2000 条；旧数据首次写入时迁移，旧存储键保留。CSV 用于查看，JSON 用于恢复。
 - **收藏夹** —— 网页版可在解析结果、批量结果与历史记录中星标收藏，保存在当前浏览器，支持一键重新解析与导出 CSV。
 - **HLS 支持** —— 媒体代理对 m3u8 播放列表自动改写，分片/子列表/密钥 URI 全部经由代理转发（注入 Referer/UA 并逐跳校验），带防盗链的 HLS 流（如 B站直播）可直接打开播放。
-- **历史记录** —— 网页版和移动端各保存最近 20 条，桌面端保存最近 100 条，均为本地浏览器/客户端存储。
+- **历史记录** —— 网页版默认保留最近 20 条（导入更多历史后保留该容量，最多 2000 条），移动端保存最近 20 条，桌面端保存最近 100 条，均为本地浏览器/客户端存储。
 - **媒体代理** —— PHP、Electron、Android 三端均提供本地或服务端媒体代理，注入 Referer/UA 并支持 Range 播放。
-- **API 鉴权** —— `API_KEY_ENABLED=true` 后，除 `/api/v1/health` 外的接口均需 API Key。
-- **限流与缓存** —— 基于 Symfony Cache / RateLimiter，默认文件缓存，可切换 Redis。
+- **API 鉴权** —— `API_KEY_ENABLED=true` 后，除 `/api/v1/health` 外的接口均需 API Key；旧版 `/?url=...`、`/index.php?url=...` 和媒体代理同样校验。网页外壳仍可打开，内置网页尚无 API Key 登录界面。
+- **限流与缓存** —— 基于 Symfony Cache / RateLimiter，默认文件缓存，可切换 Redis。微博结果不进入解析缓存；缓存文件位于本项目 `storage/cache`，旧父目录缓存不再读取，且不会自动删除。
 - **自动更新** —— 网站、Android 与 Windows 客户端默认检查 GitHub 最新 Release；Windows Electron 客户端自动下载并支持重启安装。
 - **PWA 安装** —— 网页版提供 Web App Manifest 与 Service Worker，支持安装到桌面/主屏并离线打开页面壳；全局快捷键 `Ctrl/Cmd+Enter` 触发解析、`Ctrl/Cmd+K` 聚焦输入框，主题可跟随系统明暗切换。
 

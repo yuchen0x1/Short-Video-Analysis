@@ -69,6 +69,9 @@ jobs:
       - name: a_bogus sidecar
         run: node --test scripts/a_bogus_server.test.mjs
 
+      - name: Web workbench regression tests
+        run: node --test tests/workbench.test.cjs
+
   clients:
     name: Desktop + mobile build
     runs-on: ubuntu-latest

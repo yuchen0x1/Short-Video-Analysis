@@ -43,9 +43,10 @@ jobs:
 
       - name: Build Windows installers
         working-directory: apps/app-shell
-        run: |
-          if (Test-Path release) { Remove-Item -Recurse -Force release }
-          npm run dist:win
+        run: npm run dist:win
+
+      - name: Prepare release notes
+        run: node scripts/prepare-release-notes.mjs $env:RELEASE_TAG .evolution/release-notes.md
 
       - name: Generate checksum manifest
         run: node scripts/generate-release-manifest.mjs apps/app-shell/release $env:RELEASE_TAG
@@ -54,7 +55,15 @@ jobs:
         shell: pwsh
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release create "$env:RELEASE_TAG" --draft --verify-tag --title "$env:RELEASE_TAG" --generate-notes
+        run: |
+          gh release view "$env:RELEASE_TAG" --json isDraft 2>$null
+          if ($LASTEXITCODE -eq 0) {
+            $release = gh release view "$env:RELEASE_TAG" --json isDraft | ConvertFrom-Json
+            if (-not $release.isDraft) { throw '该版本已发布，禁止重跑覆盖正式资产' }
+            gh release edit "$env:RELEASE_TAG" --notes-file .evolution/release-notes.md
+          } else {
+            gh release create "$env:RELEASE_TAG" --draft --verify-tag --title "$env:RELEASE_TAG" --notes-file .evolution/release-notes.md
+          }
 
       - name: Upload release assets
         shell: pwsh

@@ -73,7 +73,7 @@ return [
     // 日志配置
     'logging' => [
         'level' => Config::env('LOG_LEVEL', 'error'), // debug, info, warning, error
-        'file' => __DIR__ . '/../../storage/logs/app.log',
+        'file' => __DIR__ . '/../storage/logs/app.log',
         'max_files' => (int)Config::env('LOG_MAX_FILES', '30'),
     ],
 ];

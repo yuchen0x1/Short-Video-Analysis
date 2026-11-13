@@ -1,6 +1,6 @@
 {
   "name": "@qushuiyin/parsers",
-  "version": "1.1.8",
+  "version": "1.1.9",
   "private": true,
   "description": "短视频无水印解析器（平台无关，传输层注入：Capacitor / Node fetch 均可）",
   "type": "module",

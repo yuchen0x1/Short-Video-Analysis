@@ -17,7 +17,7 @@ return [
         'prefix' => 'video_spider_parse_',
         // 文件缓存配置
         'file' => [
-            'directory' => __DIR__ . '/../../storage/cache/parse/',
+            'directory' => __DIR__ . '/../storage/cache/parse/',
         ],
         // Redis 缓存配置（可选）
         'redis' => [
@@ -33,7 +33,7 @@ return [
         'enabled' => Config::env('RATE_LIMIT_CACHE_ENABLED', 'true') !== 'false',
         'driver' => Config::env('RATE_LIMIT_CACHE_DRIVER', 'file'),
         'file' => [
-            'directory' => __DIR__ . '/../../storage/cache/rate_limit/',
+            'directory' => __DIR__ . '/../storage/cache/rate_limit/',
         ],
         'redis' => [
             'host' => Config::env('REDIS_HOST', '127.0.0.1'),

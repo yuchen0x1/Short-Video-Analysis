@@ -18,6 +18,19 @@ use App\Utils\SharedUrl;
  */
 final class CoreBehaviorTest extends TestCase
 {
+    public function testConfiguredStoragePathsStayInsideRepository(): void
+    {
+        $root = dirname(__DIR__, 2);
+        foreach (['cache.parse.file.directory', 'cache.rate_limit.file.directory', 'logging.file'] as $key) {
+            $path = Config::get($key);
+            $this->assertIsString($path, $key);
+            // Resolve the existing config/.. prefix without creating any directories.
+            $normalized = str_replace(['/', '\\'], DIRECTORY_SEPARATOR, $path);
+            $this->assertStringStartsWith($root . DIRECTORY_SEPARATOR . 'config' . DIRECTORY_SEPARATOR . '..' . DIRECTORY_SEPARATOR . 'storage', $normalized);
+            $this->assertStringNotContainsString('..' . DIRECTORY_SEPARATOR . '..', $normalized);
+        }
+    }
+
     public function testSharedUrlExtractsAndTrimsShareText(): void
     {
         $this->assertSame(

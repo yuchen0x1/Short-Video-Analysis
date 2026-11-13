@@ -1,6 +1,6 @@
 // 缓存名带版本：发布新版本时改这里即可让旧缓存整体失效，避免新旧外壳混用。
-const CACHE_NAME = 'qushuiyin-shell-v2';
-const SHELL_ASSETS = ['./manifest.webmanifest', './icon.svg', './icon-192.png', './icon-512.png'];
+const CACHE_NAME = 'qushuiyin-shell-v3';
+const SHELL_ASSETS = ['./workbench.js', './manifest.webmanifest', './icon.svg', './icon-192.png', './icon-512.png'];
 // 离线兜底入口：/ 与 /index.php 都映射到同一份导航缓存
 const NAV_FALLBACK_KEY = './';
 
@@ -15,7 +15,7 @@ self.addEventListener('install', event => {
 self.addEventListener('activate', event => {
   event.waitUntil(
     caches.keys()
-      .then(keys => Promise.all(keys.filter(key => key !== CACHE_NAME).map(key => caches.delete(key))))
+      .then(keys => Promise.all(keys.filter(key => key.startsWith('qushuiyin-shell-') && key !== CACHE_NAME).map(key => caches.delete(key))))
       .then(() => self.clients.claim())
   );
 });

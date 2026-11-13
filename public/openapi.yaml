@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: Short Video No-Watermark Downloader API
-  version: 1.1.8
+  version: 1.1.9
   description: |
     短视频无水印解析服务（版本化 API）。
     base 路径为 `/api/v1`，默认不开启鉴权；如需开启，请设置 `API_KEY_ENABLED=true` 与 `API_KEY`，

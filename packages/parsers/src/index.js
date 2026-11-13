@@ -89,12 +89,13 @@ export async function parse(url, options = {}) {
   }
 
   const cacheKey = makeParseKey('parse', url);
-  const cached = cacheGet(cacheKey);
+  // 微博可以随时切换 Cookie 或宿主登录态，不能复用上一账号的结果。
+  const cached = platform === 'weibo' ? null : cacheGet(cacheKey);
   if (cached && !options.force) return cached;
 
   const parser = modules[platform];
   const result = normalizeResult(platform, await parser.parse(url));
-  cacheSet(cacheKey, result, 86400);
+  if (platform !== 'weibo') cacheSet(cacheKey, result, 86400);
   return result;
 }
 

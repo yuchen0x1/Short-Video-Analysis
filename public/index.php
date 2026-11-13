@@ -85,6 +85,9 @@ if ($acceptsHtml) {
     exit;
 }
 
+// 旧版解析入口与 v1 API、媒体代理使用相同的鉴权边界。
+ApiAuth::verify();
+
 // 速率限制检查（解析请求；媒体转发已在上方按独立限额校验）
 if (Config::get('rate_limit.enabled', true)) {
     $rateLimitResult = RateLimiter::check($ip);
