@@ -77,6 +77,14 @@ public class MediaProxySecurityTest {
     }
 
     @Test
+    public void mediaProxyHandlesRedirectStatusLimit() {
+        assertTrue(MediaProxyPlugin.isRedirectStatus(301));
+        assertTrue(MediaProxyPlugin.isRedirectStatus(307));
+        assertFalse(MediaProxyPlugin.isRedirectStatus(200));
+        assertFalse(MediaProxyPlugin.isRedirectStatus(304));
+    }
+
+    @Test
     public void downloadRequestsStorageOnlyOnAndroidNineAndBelow() {
         assertTrue(DownloadPermissionSecurity.shouldRequestStoragePermission(28, false));
         assertTrue(DownloadPermissionSecurity.shouldRequestStoragePermission(23, false));

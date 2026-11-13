@@ -36,7 +36,7 @@ class Discovery
     }
 
     /**
-     * 关键词搜索单页（仅 B站；抖音搜索需完整登录态，暂不开放）。
+     * 关键词搜索单页（B站与抖音；上游风控时返回受控错误）。
      */
     public function search(string $platform, string $keyword, int $page = 1): array
     {
@@ -355,13 +355,11 @@ class Discovery
         ], 0);
 
         $json = $result['success'] ? json_decode((string) $result['data'], true) : null;
-        $payload = is_array($json['data'] ?? null) ? $json['data'] : [];
-        // 响应结构异常（风控拦截）才视为受限；结构正常但列表为空说明已翻到末页
-        if (!is_array($json) || $payload === []) {
+        $payload = $this->douyinSearchPayload(is_array($json) ? $json : null);
+        if ($payload === null) {
             Logger::error('抖音搜索接口返回空数据', [
                 'keyword' => $keyword,
                 'http_code' => $result['http_code'] ?? 0,
-                'body' => mb_substr((string) ($result['data'] ?? ''), 0, 200),
             ]);
             throw new \RuntimeException('抖音搜索暂时受限，请稍后再试');
         }
@@ -404,6 +402,20 @@ class Discovery
             'has_more' => (int) ($payload['has_more'] ?? 0) === 1,
             'next_page' => $page + 1,
         ];
+    }
+
+    /** Accept both top-level result lists and nested response envelopes, including an empty final page. */
+    private function douyinSearchPayload(?array $json): ?array
+    {
+        if ($json === null || (int) ($json['status_code'] ?? 0) !== 0 || !is_array($json['data'] ?? null)) {
+            return null;
+        }
+        if (array_is_list($json['data'])) {
+            return $json;
+        }
+        $payload = $json['data'];
+        return (int) ($payload['status_code'] ?? 0) === 0 && is_array($payload['data'] ?? null)
+            && array_is_list($payload['data']) ? $payload : null;
     }
 
     private function stripTags(string $title): string

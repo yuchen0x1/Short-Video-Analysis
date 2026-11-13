@@ -8,7 +8,7 @@
 - `android/keystore.properties`：签名参数（`storeFile` / `storePassword` / `keyAlias` / `keyPassword`）。
 - `android/app/build.gradle`：已接入 `signingConfigs.release`，release 构建会自动读取上述文件。
 
-这些文件都在被 `.gitignore` 忽略的 `apps/mobile/android/` 目录下，不会进入版本库。
+Android 工程源码会进入版本库；只有 `keystore/`、`keystore.properties` 和密钥扩展名被忽略。密钥必须单独备份，不能提交到 Git。
 
 ## 打 release APK
 
@@ -16,8 +16,7 @@
 cd apps/mobile
 # 1. 构建共享 JS parser 和移动端界面
 npm run build
-# 2. 首次需要生成 Android 工程
-npx cap add android
+# 2. 仓库已包含 Android 工程，无需再次 cap add
 # 3. 同步 Web 资源和 Capacitor 原生插件
 npx cap sync android
 # 4. 构建签名版
@@ -45,7 +44,7 @@ keytool -genkeypair -v -keystore keystore/release.keystore -alias qushuiyin -key
 
 ## 在线更新配置
 
-默认检查 GitHub 的项目 Release。只有在需要自定义更新 API 时，才在 `apps/mobile/.env` 设置 `VITE_UPDATE_API_URL`；地址必须使用 HTTP(S) 协议，不能携带用户凭据。
+默认检查 GitHub 的项目 Release。只有在需要自定义更新 API 时，才在 `apps/mobile/.env` 设置 `VITE_UPDATE_API_URL`；地址必须使用 HTTPS 协议，不能携带用户凭据。
 
 ## 重要提醒
 

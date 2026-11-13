@@ -1,5 +1,5 @@
 // 原生桥接：CapacitorHttp 传输适配器（原生网络层，无 CORS）+ 本地媒体代理封装
-import { Capacitor, registerPlugin } from '@capacitor/core';
+import { Capacitor, CapacitorHttp, registerPlugin } from '@capacitor/core';
 
 const MediaProxyPlugin = registerPlugin('MediaProxyPlugin');
 
@@ -10,7 +10,6 @@ const isNative = Capacitor.isNativePlatform();
 // - 响应头键统一小写（ttwid 等 Set-Cookie 读取）
 const capacitorHttpTransport = {
   async request({ url, method, headers, body, timeoutMs = 15000 }) {
-    const { CapacitorHttp } = await import('@capacitor/core');
     const response = await CapacitorHttp.request({
       url,
       method,

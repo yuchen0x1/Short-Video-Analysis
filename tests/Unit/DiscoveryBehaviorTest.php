@@ -35,6 +35,23 @@ final class DiscoveryBehaviorTest extends TestCase
         $discovery->search('bilibili', '   ');
     }
 
+    public function testDouyinSearchAcceptsBothPayloadShapesAndAnEmptyFinalPage(): void
+    {
+        $method = new \ReflectionMethod(Discovery::class, 'douyinSearchPayload');
+        $method->setAccessible(true);
+        $service = new Discovery();
+        $flat = ['status_code' => 0, 'data' => [['aweme_id' => '123']], 'has_more' => 1];
+        $nested = ['data' => $flat];
+        $this->assertSame($flat, $method->invoke($service, $flat));
+        $this->assertSame($flat, $method->invoke($service, $nested));
+        $empty = ['data' => [], 'has_more' => 0];
+        $this->assertSame($empty, $method->invoke($service, $empty));
+        $this->assertNull($method->invoke($service, ['status_code' => 1, 'data' => []]));
+        $this->assertNull($method->invoke($service, ['data' => ['status_code' => 1, 'data' => []]]));
+        $this->assertNull($method->invoke($service, ['data' => ['unexpected' => true]]));
+        $this->assertNull($method->invoke($service, null));
+    }
+
     public function testSearchRejectsUnsupportedPlatformWithoutNetwork(): void
     {
         $discovery = new Discovery();

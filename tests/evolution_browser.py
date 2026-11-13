@@ -12,6 +12,7 @@ import subprocess
 import time
 import urllib.error
 import urllib.request
+from urllib.parse import urlparse, parse_qs
 import zipfile
 
 from playwright.sync_api import sync_playwright, expect
@@ -137,6 +138,24 @@ try:
         expect(page.locator('#result')).to_be_visible()
         expect(page.locator('#error')).to_be_hidden()
         print('PASS browser: Ctrl+Enter submits once without cancelling itself')
+
+        discovery_pages = []
+        def discovery_fixture(route):
+            number = int(parse_qs(urlparse(route.request.url).query).get('page', ['1'])[0])
+            discovery_pages.append(number)
+            if number == 2 and discovery_pages.count(2) == 1:
+                route.fulfill(status=502, json={'success': False, 'message': 'fixture discovery failure'})
+            else:
+                route.fulfill(json={'success': True, 'data': {'items': [{'title': f'fixture page {number}', 'url': 'https://www.bilibili.com/video/BV1234567890'}], 'has_more': number == 1}})
+        page.route('**/api/v1/hot*', discovery_fixture)
+        page.locator('#discover-mode-btn').click()
+        expect(page.locator('#discover-more')).to_be_visible()
+        page.locator('#discover-more').click()
+        expect(page.locator('#error')).to_contain_text('fixture discovery failure')
+        page.locator('#discover-more').click()
+        expect(page.locator('#discover-list .batch-item')).to_have_count(2)
+        assert discovery_pages == [1, 2, 2], discovery_pages
+        print('PASS browser: discovery retry retains results and retries the failed page')
 
         for width in [768, 390]:
             page.set_viewport_size({'width': width, 'height': 844})

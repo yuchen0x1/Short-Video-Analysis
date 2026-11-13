@@ -1825,14 +1825,25 @@ function renderDiscover(){
 }
 async function loadDiscover(reset){
   const d=state.discover;
+  if(d.loading)return;
   if(d.tab==='search'&&!d.keyword){showError('请先在上方输入搜索关键词');return}
-  if(reset){d.page=1;d.items=[];discoverSection.hidden=false;discoverList.innerHTML=''}
+  const page=reset?1:d.page+1;
+  const query={tab:d.tab,platform:d.platform,keyword:d.keyword};
+  const key=JSON.stringify([query.tab,query.platform,query.keyword]);
+  if(d.queryKey&&d.queryKey!==key){d.items=[];d.page=0;d.hasMore=false;d.total=0;renderDiscover()}
+  d.queryKey=key;
+  d.loading=true;
+  const controls=[discoverTabHot,discoverTabSearch,discoverPlatformBili,discoverPlatformDouyin,discoverRefresh,discoverMore];
+  controls.forEach(button=>button.disabled=true);
+  if(reset){discoverSection.hidden=false}
   setLoading(true,d.tab==='hot'?'正在获取热榜…':'正在搜索…');
   try{
-    const data=d.tab==='hot'
-      ?await fetchDiscoverJson('api/v1/hot?platform='+d.platform+'&page='+d.page)
-      :await fetchDiscoverJson('api/v1/search?platform='+d.platform+'&keyword='+encodeURIComponent(d.keyword)+'&page='+d.page);
+    const data=query.tab==='hot'
+      ?await fetchDiscoverJson('api/v1/hot?platform='+query.platform+'&page='+page)
+      :await fetchDiscoverJson('api/v1/search?platform='+query.platform+'&keyword='+encodeURIComponent(query.keyword)+'&page='+page);
+    if(['tab','platform','keyword'].some(key=>d[key]!==query[key]))return;
     d.items=reset?(data.items||[]):d.items.concat(data.items||[]);
+    d.page=page;
     d.hasMore=Boolean(data.has_more);
     d.total=data.total||d.items.length;
     renderDiscover();
@@ -1840,6 +1851,8 @@ async function loadDiscover(reset){
   }catch(error){
     showError(error.message||'获取失败，请稍后再试');
   }finally{
+    d.loading=false;
+    controls.forEach(button=>button.disabled=false);
     setLoading(false);
   }
 }
@@ -1858,7 +1871,7 @@ discoverTabSearch.addEventListener('click',()=>{setDiscoverTab('search');if(stat
 discoverPlatformBili.addEventListener('click',()=>{setDiscoverPlatform('bilibili');loadDiscover(true)});
 discoverPlatformDouyin.addEventListener('click',()=>{setDiscoverPlatform('douyin');loadDiscover(true)});
 discoverRefresh.addEventListener('click',()=>loadDiscover(true));
-discoverMore.addEventListener('click',()=>{state.discover.page+=1;loadDiscover(false)});
+discoverMore.addEventListener('click',()=>loadDiscover(false));
 discoverList.addEventListener('click',async e=>{
   const button=e.target.closest('[data-discover-parse]');
   if(!button)return;

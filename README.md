@@ -20,6 +20,8 @@
 
 ## 最新更新
 
+**main 分支待发布**：修复网页版/移动端发现分页、Android 图集保存、移动端异常历史与存储错误；[完整待发布记录](docs/releases/release-notes.md) · [维护与清理报告](docs/MAINTENANCE-2026-11-13.md)。
+
 ### v1.1.9 · 2026-11-13
 
 - 网页版新增历史与收藏搜索、JSON 备份与合并恢复；导入校验失败不会覆盖已有资料。
@@ -517,7 +519,7 @@ cd packages/parsers
 npm run test:live
 ```
 
-GitHub Actions 流水线 `.github/workflows/quality.yml` 在 push 到 `main`、推送 `v*` 标签和 Pull Request 时自动执行：PHP lint + PHPUnit + smoke、`packages/parsers` 与 `packages/update-checker` 契约测试、`scripts/a_bogus_server.test.mjs`、桌面端与移动端构建，以及仓库卫生检查（禁止跟踪 `.phpunit.result.cache`、`git diff --check`）。`.workflow/quality-pipeline.yml` 是早期 Gitee Go 流水线的历史配置，已不再使用。发布流程以「打包发布」章节为准。
+GitHub Actions 流水线 `.github/workflows/quality.yml` 在 push 到 `main`、推送 `v*` 标签和 Pull Request 时自动执行：PHP lint + PHPUnit + smoke、`packages/parsers` 与 `packages/update-checker` 契约测试、`scripts/a_bogus_server.test.mjs`、桌面端与移动端构建，以及仓库卫生检查（`node scripts/check-repository-hygiene.mjs`、`git diff --check`）。检查会阻止安装包、依赖目录、本机配置与已知凭据模式进入版本库；早期 Gitee Go 流水线已删除。发布流程以「打包发布」章节为准。
 
 ### 打包发布
 

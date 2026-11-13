@@ -72,6 +72,9 @@ jobs:
       - name: Web workbench regression tests
         run: node --test tests/workbench.test.cjs
 
+      - name: Mobile workflow regression tests
+        run: node --test tests/mobile-workbench.test.mjs
+
   clients:
     name: Desktop + mobile build
     runs-on: ubuntu-latest
@@ -102,22 +105,50 @@ jobs:
         working-directory: apps/mobile
         run: npx vite build
 
+  android:
+    name: Android debug build + JVM tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: apps/mobile/package-lock.json
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - uses: android-actions/setup-android@v3
+
+      - name: Android SDK
+        run: sdkmanager "platforms;android-35" "build-tools;35.0.0" "build-tools;34.0.0"
+
+      - name: Install and sync mobile
+        working-directory: apps/mobile
+        run: npm ci && npm run mobile:sync
+
+      - name: Compile Android and run JVM tests
+        working-directory: apps/mobile/android
+        run: |
+          chmod +x gradlew
+          ./gradlew --no-daemon :app:assembleDebug :app:testDebugUnitTest
+
   hygiene:
     name: Repo hygiene
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
-      - name: Tracked generated files
-        run: |
-          if git ls-files --error-unmatch .phpunit.result.cache >/dev/null 2>&1; then
-            echo "::error::.phpunit.result.cache 不应被 Git 跟踪"
-            exit 1
-          fi
-          if [ -d vendor ] && ! grep -q '^/vendor/' .gitignore; then
-            echo "::error::vendor 必须在 .gitignore 中"
-            exit 1
-          fi
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Tracked files and secret patterns
+        run: node scripts/check-repository-hygiene.mjs
 
       - name: Git diff whitespace
         run: git diff --check
