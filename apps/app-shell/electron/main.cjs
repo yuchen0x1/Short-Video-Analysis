@@ -5,6 +5,7 @@ const fs = require('node:fs');
 const http = require('node:http');
 const nodeNet = require('node:net');
 const path = require('node:path');
+const { fileURLToPath } = require('node:url');
 const { autoUpdater } = require('electron-updater');
 
 const isDevelopment = Boolean(process.env.APP_DEV_SERVER_URL);
@@ -41,6 +42,14 @@ function sendUpdate(payload) {
   lastUpdateStatus = payload;
   if (mainWindow && !mainWindow.isDestroyed()) {
     mainWindow.webContents.send('app.update.status', payload);
+  }
+}
+
+function assertTrustedRenderer(event) {
+  const sender = event?.sender;
+  const senderUrl = event?.senderFrame?.url || sender?.getURL?.() || '';
+  if (!sender || !mainWindow || sender !== mainWindow.webContents || !isTrustedMainFrameUrl(senderUrl)) {
+    throw new Error('不受信任的渲染进程请求');
   }
 }
 
@@ -100,9 +109,10 @@ async function readBoundedText(response) {
 }
 
 function setupWeiboLoginIpc() {
-  ipcMain.handle('weibo.login.status', () => getWeiboLoginStatus());
+  ipcMain.handle('weibo.login.status', (event) => { assertTrustedRenderer(event); return getWeiboLoginStatus(); });
 
-  ipcMain.handle('weibo.login.open', () => {
+  ipcMain.handle('weibo.login.open', (event) => {
+    assertTrustedRenderer(event);
     if (weiboLoginWindow && !weiboLoginWindow.isDestroyed()) {
       weiboLoginWindow.focus();
       return getWeiboLoginStatus();
@@ -149,7 +159,8 @@ function setupWeiboLoginIpc() {
     return getWeiboLoginStatus();
   });
 
-  ipcMain.handle('weibo.login.logout', async () => {
+  ipcMain.handle('weibo.login.logout', async (event) => {
+    assertTrustedRenderer(event);
     const weiboSession = getWeiboSession();
     for (const origin of ['https://weibo.com', 'https://www.weibo.com', 'https://passport.weibo.com', 'https://login.sina.com.cn']) {
       await weiboSession.clearStorageData({
@@ -162,7 +173,8 @@ function setupWeiboLoginIpc() {
     return getWeiboLoginStatus();
   });
 
-  ipcMain.handle('weibo.request', async (_event, payload) => {
+  ipcMain.handle('weibo.request', async (event, payload) => {
+    assertTrustedRenderer(event);
     const url = String(payload?.url || '');
     const method = String(payload?.method || 'POST').toUpperCase();
     const timeoutMs = Math.max(1000, Math.min(Number(payload?.timeoutMs || 15000), 30000));
@@ -241,7 +253,8 @@ function setupAutoUpdater() {
   autoUpdater.on('error', (error) => sendUpdate({ status: 'error', message: String((error && error.message) || error) }));
 
   // 在线更新统一使用 GitHub Releases。
-  ipcMain.on('app.update.check', async () => {
+  ipcMain.on('app.update.check', async (event) => {
+    try { assertTrustedRenderer(event); } catch (error) { sendUpdate({ status: 'error', message: error.message }); return; }
     if (!app.isPackaged) {
       sendUpdate({ status: 'dev', message: '正常更新中' });
       return;
@@ -252,12 +265,13 @@ function setupAutoUpdater() {
       sendUpdate({ status: 'error', message: friendlyUpdateError(error) });
     }
   });
-  ipcMain.on('app.update.install', () => {
+  ipcMain.on('app.update.install', (event) => {
+    try { assertTrustedRenderer(event); } catch { return; }
     if (app.isPackaged) autoUpdater.quitAndInstall();
   });
-  ipcMain.handle('app.version', () => app.getVersion());
-  ipcMain.handle('app.update.status', () => lastUpdateStatus);
-  ipcMain.handle('app.changelog', () => readChangelog());
+  ipcMain.handle('app.version', (event) => { assertTrustedRenderer(event); return app.getVersion(); });
+  ipcMain.handle('app.update.status', (event) => { assertTrustedRenderer(event); return lastUpdateStatus; });
+  ipcMain.handle('app.changelog', (event) => { assertTrustedRenderer(event); return readChangelog(); });
 }
 
 async function checkForUpdatesWithChannel() {
@@ -457,7 +471,8 @@ async function fetchParserResponse({ url, method, headers, body, fetchImpl = net
 }
 
 function setupParserIpc() {
-  ipcMain.handle('app.httpRequest', async (_event, payload) => {
+  ipcMain.handle('app.httpRequest', async (event, payload) => {
+    assertTrustedRenderer(event);
     const url = String(payload?.url || '');
     if (!isAllowedParserUrl(url)) {
       throw new Error('不允许的请求地址');
@@ -626,14 +641,16 @@ function startMediaProxy() {
 }
 
 // 让 preload 能拿到代理端口和地址
-ipcMain.handle('app.mediaProxyPort', () => {
+ipcMain.handle('app.mediaProxyPort', (event) => {
+  assertTrustedRenderer(event);
   if (!mediaProxyPort) {
     throw new Error('媒体代理尚未启动');
   }
   return mediaProxyPort;
 });
 
-ipcMain.handle('app.mediaProxyUrl', (_event, payload) => {
+ipcMain.handle('app.mediaProxyUrl', (event, payload) => {
+  assertTrustedRenderer(event);
   const target = String(payload?.url || '');
   if (!parseMediaUrl(target)) {
     throw new Error('不允许的媒体地址');
@@ -655,7 +672,11 @@ function isTrustedMainFrameUrl(url) {
       const dev = new URL(process.env.APP_DEV_SERVER_URL);
       return parsed.origin === dev.origin;
     }
-    return parsed.protocol === 'file:';
+    if (parsed.protocol !== 'file:') return false;
+    const distRoot = path.resolve(__dirname, '..', 'dist');
+    const candidate = path.resolve(fileURLToPath(parsed));
+    const relative = path.relative(distRoot, candidate);
+    return relative === 'index.html' || (relative && !relative.startsWith('..') && !path.isAbsolute(relative));
   } catch {
     return false;
   }

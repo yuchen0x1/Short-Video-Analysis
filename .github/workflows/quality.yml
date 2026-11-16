@@ -62,6 +62,10 @@ jobs:
         working-directory: packages/parsers
         run: npm test
 
+      - name: parsers cache behavior
+        working-directory: packages/parsers
+        run: npm run test:cache
+
       - name: a_bogus sidecar
         run: node --test scripts/a_bogus_server.test.mjs
 

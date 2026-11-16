@@ -276,7 +276,7 @@ if ($path === "/api/v1/update" || $path === "/api/v1/update/") {
     if (Config::get("rate_limit.enabled", true)) {
         $rateLimitResult = RateLimiter::check($ip);
         if (!$rateLimitResult["allowed"]) {
-            Response::error("请求过于频繁，请稍后再试", 429);
+            Response::rateLimited("请求过于频繁，请稍后再试", (int) $rateLimitResult['reset_time']);
         }
     }
     $owner = trim((string) Config::get('updates.github_owner', 'yuchen0x1'));
@@ -300,7 +300,7 @@ if ($path === "/api/v1/update" || $path === "/api/v1/update/") {
     }
     $headers = [
         'Accept' => 'application/vnd.github+json',
-        'User-Agent' => 'qushuiyin-web-updater/1.1.8 (+https://github.com/yuchen0x1/Short-Video-Analysis)',
+        'User-Agent' => 'qushuiyin-web-updater/1.1.11 (+https://github.com/yuchen0x1/Short-Video-Analysis)',
     ];
     $response = HttpClient::request($apiUrl, null, $headers, 1, $respHeaders, 8);
     $release = $response['success']
@@ -311,7 +311,7 @@ if ($path === "/api/v1/update" || $path === "/api/v1/update/") {
         // GitHub 匿名 REST API 按出口 IP 限流；回退到官方 Release Atom 与附件页。
         $atomResponse = HttpClient::request($atomUrl, null, [
             'Accept' => 'application/atom+xml',
-            'User-Agent' => 'qushuiyin-web-updater/1.1.8 (+https://github.com/yuchen0x1/Short-Video-Analysis)',
+            'User-Agent' => 'qushuiyin-web-updater/1.1.11 (+https://github.com/yuchen0x1/Short-Video-Analysis)',
         ], 1, $respHeaders, 8);
         $release = $atomResponse['success']
             ? parseGithubReleaseAtom((string) $atomResponse['data'], $owner, $repo)
@@ -320,7 +320,7 @@ if ($path === "/api/v1/update" || $path === "/api/v1/update/") {
             $assetsUrl = sprintf('https://github.com/%s/%s/releases/expanded_assets/%s', rawurlencode($owner), rawurlencode($repo), rawurlencode((string) $release['tag_name']));
             $assetsResponse = HttpClient::request($assetsUrl, null, [
                 'Accept' => 'text/html',
-                'User-Agent' => 'qushuiyin-web-updater/1.1.8 (+https://github.com/yuchen0x1/Short-Video-Analysis)',
+                'User-Agent' => 'qushuiyin-web-updater/1.1.11 (+https://github.com/yuchen0x1/Short-Video-Analysis)',
             ], 1, $respHeaders, 8);
             if ($assetsResponse['success']) {
                 $release['assets'] = parseGithubExpandedAssets((string) $assetsResponse['data'], $owner, $repo, (string) $release['tag_name']);
@@ -382,7 +382,7 @@ if ($path === "/api/v1/platforms" || $path === "/api/v1/platforms/") {
     if (Config::get("rate_limit.enabled", true)) {
         $rateLimitResult = RateLimiter::check($ip);
         if (!$rateLimitResult["allowed"]) {
-            Response::error("请求过于频繁，请稍后再试", 429);
+            Response::rateLimited("请求过于频繁，请稍后再试", (int) $rateLimitResult['reset_time']);
         }
     }
     $parser = new VideoParser();
@@ -395,7 +395,7 @@ if ($path === "/api/v1/parse" || $path === "/api/v1/parse/") {
     if (Config::get("rate_limit.enabled", true)) {
         $rateLimitResult = RateLimiter::check($ip);
         if (!$rateLimitResult["allowed"]) {
-            Response::error("请求过于频繁，请稍后再试", 429);
+            Response::rateLimited("请求过于频繁，请稍后再试", (int) $rateLimitResult['reset_time']);
         }
     }
 
@@ -460,7 +460,7 @@ if ($path === "/api/v1/profile" || $path === "/api/v1/profile/") {
     if (Config::get("rate_limit.enabled", true)) {
         $rateLimitResult = RateLimiter::check($ip);
         if (!$rateLimitResult["allowed"]) {
-            Response::error("请求过于频繁，请稍后再试", 429);
+            Response::rateLimited("请求过于频繁，请稍后再试", (int) $rateLimitResult['reset_time']);
         }
     }
 
@@ -517,7 +517,7 @@ if ($path === "/api/v1/collection" || $path === "/api/v1/collection/") {
     if (Config::get("rate_limit.enabled", true)) {
         $rateLimitResult = RateLimiter::check($ip);
         if (!$rateLimitResult["allowed"]) {
-            Response::error("请求过于频繁，请稍后再试", 429);
+            Response::rateLimited("请求过于频繁，请稍后再试", (int) $rateLimitResult['reset_time']);
         }
     }
 
@@ -574,7 +574,7 @@ if ($path === "/api/v1/live" || $path === "/api/v1/live/") {
     if (Config::get("rate_limit.enabled", true)) {
         $rateLimitResult = RateLimiter::check($ip);
         if (!$rateLimitResult["allowed"]) {
-            Response::error("请求过于频繁，请稍后再试", 429);
+            Response::rateLimited("请求过于频繁，请稍后再试", (int) $rateLimitResult['reset_time']);
         }
     }
 
@@ -615,7 +615,7 @@ if ($path === "/api/v1/hot" || $path === "/api/v1/hot/") {
     if (Config::get("rate_limit.enabled", true)) {
         $rateLimitResult = RateLimiter::check($ip);
         if (!$rateLimitResult["allowed"]) {
-            Response::error("请求过于频繁，请稍后再试", 429);
+            Response::rateLimited("请求过于频繁，请稍后再试", (int) $rateLimitResult['reset_time']);
         }
     }
 
@@ -642,7 +642,7 @@ if ($path === "/api/v1/search" || $path === "/api/v1/search/") {
     if (Config::get("rate_limit.enabled", true)) {
         $rateLimitResult = RateLimiter::check($ip);
         if (!$rateLimitResult["allowed"]) {
-            Response::error("请求过于频繁，请稍后再试", 429);
+            Response::rateLimited("请求过于频繁，请稍后再试", (int) $rateLimitResult['reset_time']);
         }
     }
 
@@ -674,7 +674,7 @@ if ($path === "/api/v1/comments" || $path === "/api/v1/comments/") {
     if (Config::get("rate_limit.enabled", true)) {
         $rateLimitResult = RateLimiter::check($ip);
         if (!$rateLimitResult["allowed"]) {
-            Response::error("请求过于频繁，请稍后再试", 429);
+            Response::rateLimited("请求过于频繁，请稍后再试", (int) $rateLimitResult['reset_time']);
         }
     }
 

@@ -88,6 +88,16 @@ class Response
     }
 
     /**
+     * 429 响应：告诉客户端何时可以再次尝试。
+     */
+    public static function rateLimited(string $message, int $resetTime): void
+    {
+        $retryAfter = max(1, $resetTime - time());
+        header('Retry-After: ' . $retryAfter);
+        self::error($message, 429);
+    }
+
+    /**
      * 验证错误响应
      *
      * @param array $errors 验证错误数组，格式为 ['field' => 'message']

@@ -31,6 +31,7 @@ header('X-Content-Type-Options: nosniff');
 header('X-Frame-Options: DENY');
 header('Referrer-Policy: no-referrer');
 header('Permissions-Policy: camera=(), microphone=(), geolocation=()');
+header("Content-Security-Policy: default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; img-src 'self' data: blob: https:; media-src 'self' blob: https:; connect-src 'self' https:; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; form-action 'self'; worker-src 'self' blob:");
 // API 响应默认禁止客户端缓存（解析结果可能变化）
 header('Cache-Control: no-cache, private');
 
@@ -63,7 +64,7 @@ if ($method === 'GET' && ($_GET['action'] ?? '') === 'media') {
     if (Config::get('rate_limit.enabled', true)) {
         $mediaLimitResult = RateLimiter::check($ip, Config::get('rate_limit.media_max_requests', 120));
         if (!$mediaLimitResult['allowed']) {
-            Response::error('媒体请求过于频繁，请稍后再试', 429);
+            Response::rateLimited('媒体请求过于频繁，请稍后再试', (int) $mediaLimitResult['reset_time']);
         }
     }
 
@@ -93,7 +94,7 @@ if (Config::get('rate_limit.enabled', true)) {
     $rateLimitResult = RateLimiter::check($ip);
 
     if (!$rateLimitResult['allowed']) {
-        Response::error('请求过于频繁，请稍后再试', 429);
+        Response::rateLimited('请求过于频繁，请稍后再试', (int) $rateLimitResult['reset_time']);
     }
 }
 

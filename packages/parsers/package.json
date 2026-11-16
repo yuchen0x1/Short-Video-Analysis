@@ -1,12 +1,13 @@
 {
   "name": "@qushuiyin/parsers",
-  "version": "1.1.10",
+  "version": "1.1.11",
   "private": true,
   "description": "电脑版短视频无水印解析器（通过 Electron / Node 传输层访问平台）",
   "type": "module",
   "main": "src/index.js",
   "scripts": {
     "test": "node test/contract.mjs",
+    "test:cache": "node --test test/cache.mjs",
     "test:live": "node test/platform-audit.mjs --live"
   },
   "exports": {

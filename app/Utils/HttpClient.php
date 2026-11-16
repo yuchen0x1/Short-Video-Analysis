@@ -100,8 +100,10 @@ class HttpClient
                 ];
             }
             
-            // 判断是否需要重试（仅对网络错误或5xx错误重试）
-            $shouldRetry = ($response === false || $httpCode === 0) || ($httpCode >= 500 && $httpCode < 600);
+            // 只对无请求体的 GET 自动重试。POST 可能触发上游副作用，
+            // 在没有幂等键的情况下重发会制造重复请求或重复采集。
+            $shouldRetry = $data === null
+                && (($response === false || $httpCode === 0) || ($httpCode >= 500 && $httpCode < 600));
             
             if (!$shouldRetry || $attempt >= $maxRetries) {
                 $lastError = $error ?: ($httpCode > 0 ? "HTTP $httpCode" : '网络请求失败');

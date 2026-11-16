@@ -83,19 +83,19 @@ final class DiscoveryBehaviorTest extends TestCase
 
         $this->assertStringContainsString('#EXTM3U', $out);
         $this->assertStringContainsString(
-            '/index.php?action=media&url=' . rawurlencode('https://cdn.example.com/live/360p/index.m3u8'),
+            '?action=media&url=' . rawurlencode('https://cdn.example.com/live/360p/index.m3u8'),
             $out
         );
         $this->assertStringContainsString(
-            'URI="/index.php?action=media&url=' . rawurlencode('https://cdn.example.com/live/key.key') . '"',
+            'URI="?action=media&url=' . rawurlencode('https://cdn.example.com/live/key.key') . '"',
             $out
         );
         $this->assertStringContainsString(
-            '/index.php?action=media&url=' . rawurlencode('https://cdn.example.com/live/seg-1.ts'),
+            '?action=media&url=' . rawurlencode('https://cdn.example.com/live/seg-1.ts'),
             $out
         );
         $this->assertStringContainsString(
-            '/index.php?action=media&url=' . rawurlencode('https://other.cdn.example.com/abs.ts'),
+            '?action=media&url=' . rawurlencode('https://other.cdn.example.com/abs.ts'),
             $out
         );
         // IV 等非 URI 属性保持原样

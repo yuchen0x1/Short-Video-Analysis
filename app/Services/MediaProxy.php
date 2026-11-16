@@ -257,7 +257,9 @@ class MediaProxy
             $uri = $resolved !== false ? $resolved : $uri;
         }
 
-        return '/index.php?action=media&url=' . rawurlencode($uri);
+        // Query-only 相对地址会继承当前部署目录：/subdir/index.php?action=media
+        // 能在根目录和反向代理子路径下都正确回到本代理入口。
+        return '?action=media&url=' . rawurlencode($uri);
     }
 
     private static function handleUpstreamHeader(string $line, array &$state, bool $download, string $filename): void

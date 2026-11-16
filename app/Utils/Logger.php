@@ -9,8 +9,6 @@ namespace App\Utils;
  */
 class Logger
 {
-    private const LOG_FILE = __DIR__ . '/../../storage/logs/app.log';
-
     /** 单个日志文件上限，超过后轮转为 app.log.Ymd_His */
     private const MAX_LOG_BYTES = 5242880;
 
@@ -21,10 +19,16 @@ class Logger
      */
     private static function ensureLogDir(): void
     {
-        $logDir = dirname(self::LOG_FILE);
+        $logDir = dirname(self::logFile());
         if (!is_dir($logDir)) {
             mkdir($logDir, 0755, true);
         }
+    }
+
+    private static function logFile(): string
+    {
+        $configured = trim((string) Config::get('logging.file', ''));
+        return $configured !== '' ? $configured : __DIR__ . '/../../storage/logs/app.log';
     }
 
     /**
@@ -41,14 +45,15 @@ class Logger
      */
     private static function rotateIfNeeded(): void
     {
-        if (!is_file(self::LOG_FILE) || (int) @filesize(self::LOG_FILE) < self::MAX_LOG_BYTES) {
+        $logFile = self::logFile();
+        if (!is_file($logFile) || (int) @filesize($logFile) < self::MAX_LOG_BYTES) {
             return;
         }
 
-        @rename(self::LOG_FILE, self::LOG_FILE . '.' . date('Ymd_His'));
+        @rename($logFile, $logFile . '.' . date('Ymd_His'));
 
         $maxFiles = max(1, (int) Config::get('logging.max_files', 30));
-        $rotated = glob(self::LOG_FILE . '.*');
+        $rotated = glob($logFile . '.*');
         if (is_array($rotated) && count($rotated) > $maxFiles) {
             sort($rotated);
             foreach (array_slice($rotated, 0, count($rotated) - $maxFiles) as $oldest) {
@@ -76,7 +81,7 @@ class Logger
         $contextStr = !empty($context) ? ' | ' . json_encode($context, JSON_UNESCAPED_UNICODE) : '';
         $logMessage = date('Y-m-d H:i:s') . " [{$level}] {$message}{$contextStr}" . PHP_EOL;
 
-        @file_put_contents(self::LOG_FILE, $logMessage, FILE_APPEND | LOCK_EX);
+        @file_put_contents(self::logFile(), $logMessage, FILE_APPEND | LOCK_EX);
     }
 
     /**

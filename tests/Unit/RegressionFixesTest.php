@@ -84,6 +84,13 @@ final class RegressionFixesTest extends TestCase
         }
     }
 
+    public function testHttpClientDoesNotRetryPostRequestsAutomatically(): void
+    {
+        $source = (string) file_get_contents($this->root . '/app/Utils/HttpClient.php');
+        $this->assertStringContainsString('$data === null', $source);
+        $this->assertStringContainsString('只对无请求体的 GET 自动重试', $source);
+    }
+
     public function testParsersUseSafeArrayAccess(): void
     {
         $weibo = (string) file_get_contents($this->root . '/app/Parsers/WeiboParser.php');

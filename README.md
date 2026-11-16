@@ -8,7 +8,7 @@
 
 覆盖 12 个主流短视频平台，一次解析视频、图集、封面与作者信息，仅提供 Windows 电脑版与 PHP 网页版；HTTP API 属于网页版服务。
 
-[![Version](https://img.shields.io/badge/版本-v1.1.10-22d3ee)](https://github.com/yuchen0x1/Short-Video-Analysis/releases/latest) [![Platforms](https://img.shields.io/badge/平台-12个-8b5cf6)](#覆盖平台) [![PHP](https://img.shields.io/badge/PHP-8.1%2B-777bb4)](#技术选型与环境要求) [![License](https://img.shields.io/badge/License-AGPL--3.0--only-9cf)](LICENSE)
+[![Version](https://img.shields.io/badge/版本-v1.1.11-22d3ee)](https://github.com/yuchen0x1/Short-Video-Analysis/releases/latest) [![Platforms](https://img.shields.io/badge/平台-12个-8b5cf6)](#覆盖平台) [![PHP](https://img.shields.io/badge/PHP-8.1%2B-777bb4)](#技术选型与环境要求) [![License](https://img.shields.io/badge/License-AGPL--3.0--only-9cf)](LICENSE)
 
 ![网页版工作台](assets/screenshots/web-home.png)
 
@@ -18,16 +18,22 @@
 
 ---
 
+## 当前工作区升级审计
+
+2026-11-16 的 v1.1.11 发布审计已完成：本轮研究 15 个开源项目，建立 36 项升级路线，并实施 9 项安全、可靠性、缓存、HLS 子路径和可访问性改进。审计与路线图见 [PROJECT_AUDIT.md](PROJECT_AUDIT.md)、[COMPETITOR_ANALYSIS.md](COMPETITOR_ANALYSIS.md)、[UPGRADE_ROADMAP.md](UPGRADE_ROADMAP.md) 和 [UPGRADE_REPORT.md](UPGRADE_REPORT.md)。
+
+---
+
 ## 最新更新
 
-### v1.1.10 · 2026-11-13
+### v1.1.11 · 2026-11-16
 
-- 产品统一为 Windows 电脑版与 PHP 网页版，手机浏览器与 PWA 继续可用；独立移动客户端退出维护范围。
-- 电脑版安装包包含完整历史更新日志，Windows 安装版与便携版继续提供 GitHub 自动更新文件和校验清单。
-- 网页发现页失败重试不再跳页，重复请求与迟到结果不会破坏当前列表。
-- PHP 抖音搜索兼容两种结果结构，合法空列表不再误报失败；网页更新不再推荐移动安装包。
+- GET 请求继续支持有限重试，POST 请求不再自动重发，降低重复采集风险。
+- 网页接口限流响应带有 `Retry-After`，HLS 播放列表在反向代理子路径下继续使用当前部署入口。
+- Windows 客户端加入 CSP、IPC 来源校验和生产文件导航限制；网页端补充加载、结果和错误状态的可访问性标记。
+- 解析缓存有 TTL、LRU 和容量上限，日志路径遵循配置；Windows 安装版、便携版和自动更新清单随 GitHub Release 生成。
 
-[完整发布历史](docs/releases/release-notes.md) · [产品范围](docs/PRODUCT_SCOPE.md)
+[下载 v1.1.11](https://github.com/yuchen0x1/Short-Video-Analysis/releases/tag/v1.1.11) · [完整发布历史](docs/releases/release-notes.md) · [产品范围](docs/PRODUCT_SCOPE.md)
 
 ## 推广介绍图
 
