@@ -1,5 +1,6 @@
 import './styles.css';
 import * as parsers from '@parsers';
+import { applyLocale, readLocaleSetting, resolveLocale, t, writeLocaleSetting } from './i18n.js';
 
 const HISTORY_STORAGE = 'qushuiyin-app-history-v1';
 const THEME_STORAGE = 'qushuiyin-app-theme-v1';
@@ -7,6 +8,10 @@ const WEIBO_COOKIE_STORAGE = 'qushuiyin-app-weibo-cookie-v1';
 const URL_PATTERN = /https?:\/\/[^\s"'<>，。；：！？【】（）《》]+/i;
 
 const shell = window.appShell || {};
+const localeState = {
+  setting: readLocaleSetting(),
+  locale: resolveLocale(readLocaleSetting(), typeof navigator === 'undefined' ? [] : navigator.languages || [navigator.language]),
+};
 
 // 本地解析：传输层经 IPC 走主进程 net.fetch（无 CORS），使用独立的共享 JS 解析器包
 const ipcTransport = {
@@ -51,20 +56,21 @@ app.innerHTML = `
         </div>
       </div>
       <div class="header-actions">
-        <span id="service-state" class="service-state"><i></i><span>检查服务</span></span>
-        <button id="theme-button" class="icon-button" type="button" title="切换主题" aria-label="切换主题">◐</button>
+        <span id="service-state" class="service-state"><i></i><span data-i18n="service">检查服务</span></span>
+        <label class="locale-control"><span class="sr-only" data-i18n="language">语言 / Language</span><select id="locale-select" aria-label="语言 / Language"><option value="auto">自动 / Auto</option><option value="zh-CN">简体中文</option><option value="en-US">English</option></select></label>
+        <button id="theme-button" class="icon-button" type="button" data-i18n-title="theme">◐</button>
       </div>
     </header>
 
     <div class="app-body">
       <nav class="side-nav" aria-label="主导航">
-        <div class="side-nav-label">工作区</div>
-        <button class="nav-button active" type="button" data-view="single"><span class="nav-name">解析</span><small>01</small></button>
-        <button class="nav-button" type="button" data-view="profile"><span class="nav-name">主页</span><small>02</small></button>
-        <button class="nav-button" type="button" data-view="discover"><span class="nav-name">发现</span><small>03</small></button>
-        <button class="nav-button" type="button" data-view="history"><span class="nav-name">记录</span><small>04</small></button>
-        <button class="nav-button" type="button" data-view="about"><span class="nav-name">关于</span><small>05</small></button>
-        <div class="side-nav-note"><span>无水印</span><strong>把分享链接变成可用媒体</strong></div>
+        <div class="side-nav-label" data-i18n="workspace">工作区</div>
+        <button class="nav-button active" type="button" data-view="single"><span class="nav-name" data-i18n="parse">解析</span><small>01</small></button>
+        <button class="nav-button" type="button" data-view="profile"><span class="nav-name" data-i18n="profile">主页</span><small>02</small></button>
+        <button class="nav-button" type="button" data-view="discover"><span class="nav-name" data-i18n="discover">发现</span><small>03</small></button>
+        <button class="nav-button" type="button" data-view="history"><span class="nav-name" data-i18n="history">记录</span><small>04</small></button>
+        <button class="nav-button" type="button" data-view="about"><span class="nav-name" data-i18n="about">关于</span><small>05</small></button>
+        <div class="side-nav-note"><span data-i18n="noWatermark">无水印</span><strong data-i18n="sideNote">把分享链接变成可用媒体</strong></div>
       </nav>
 
       <main class="content-column">
@@ -72,25 +78,25 @@ app.innerHTML = `
           <section class="tool-panel">
             <div class="panel-heading">
               <div class="panel-title">
-                <span class="panel-kicker">解析输入</span>
-                <h2>解析分享链接</h2>
-                <p class="panel-note">粘贴分享文案，自动提取真正的链接和无水印媒体。</p>
+                <span class="panel-kicker" data-i18n="inputKicker">解析输入</span>
+                <h2 data-i18n="inputTitle">解析分享链接</h2>
+                <p class="panel-note" data-i18n="inputNote">粘贴分享文案，自动提取真正的链接和无水印媒体。</p>
               </div>
               <div class="segmented" role="group" aria-label="解析模式">
-                <button class="segment active" type="button" data-mode="single">单条</button>
-                <button class="segment" type="button" data-mode="profile">主页</button>
-                <button class="segment" type="button" data-mode="collection">合集</button>
-                <button class="segment" type="button" data-mode="live">直播</button>
+                <button class="segment active" type="button" data-mode="single" data-i18n="single">单条</button>
+                <button class="segment" type="button" data-mode="profile" data-i18n="profile">主页</button>
+                <button class="segment" type="button" data-mode="collection" data-i18n="collection">合集</button>
+                <button class="segment" type="button" data-mode="live" data-i18n="live">直播</button>
               </div>
             </div>
             <div class="input-row">
-              <input id="link-input" type="text" autocomplete="off" spellcheck="false" placeholder="粘贴视频链接或整段分享文案" />
-              <button id="paste-input" class="secondary-button" type="button" title="从剪贴板粘贴">粘贴</button>
-              <button id="clear-input" class="secondary-button" type="button">清除</button>
-              <button id="parse-button" class="primary-button" type="button">开始解析</button>
+              <input id="link-input" type="text" autocomplete="off" spellcheck="false" data-i18n-placeholder="placeholder" placeholder="粘贴视频链接或整段分享文案" />
+              <button id="paste-input" class="secondary-button" type="button" data-i18n="paste" title="从剪贴板粘贴">粘贴</button>
+              <button id="clear-input" class="secondary-button" type="button" data-i18n="clear">清除</button>
+              <button id="parse-button" class="primary-button" type="button" data-i18n="start">开始解析</button>
             </div>
-            <p id="input-hint" class="field-hint">粘贴时会自动提取真正的链接。</p>
-            <div class="input-context"><span><i></i>本地优先解析</span><span><i></i>支持视频与图集</span><span><i></i>无后台上传</span></div>
+            <p id="input-hint" class="field-hint" data-i18n="inputHint">粘贴时会自动提取真正的链接。</p>
+            <div class="input-context"><span><i></i><span data-i18n="local">本地优先解析</span></span><span><i></i><span data-i18n="videoImages">支持视频与图集</span></span><span><i></i><span data-i18n="noUpload">无后台上传</span></span></div>
             <div class="quick-platforms" aria-label="支持平台"><span>抖音</span><span>快手</span><span>B站</span><span>小红书</span><span>微博</span><span>更多平台</span></div>
           </section>
 
@@ -98,8 +104,8 @@ app.innerHTML = `
             <div class="workspace-empty">
               <span class="workspace-empty-mark" aria-hidden="true">→</span>
               <div>
-                <strong>等待链接</strong>
-                <span>粘贴分享链接，解析结果会显示在这里。</span>
+                <strong data-i18n="waiting">等待链接</strong>
+                <span data-i18n="waitingNote">粘贴分享链接，解析结果会显示在这里。</span>
               </div>
             </div>
           </section>
@@ -183,6 +189,7 @@ app.innerHTML = `
 
 const $ = (selector, root = document) => root.querySelector(selector);
 const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
+const localeSelect = $('#locale-select');
 const linkInput = $('#link-input');
 const parseButton = $('#parse-button');
 const pasteInputButton = $('#paste-input');
@@ -192,6 +199,19 @@ const singleResult = $('#single-result');
 const profilePanel = $('#profile-panel');
 const historyPanel = $('#history-panel');
 const toast = $('#toast');
+
+function applyAppLocale() {
+  document.documentElement.lang = localeState.locale;
+  applyLocale(app, localeState.locale);
+  if (localeSelect) localeSelect.value = localeState.setting;
+  setMode(state.mode);
+}
+
+localeSelect?.addEventListener('change', (event) => {
+  localeState.setting = writeLocaleSetting(event.target.value);
+  localeState.locale = resolveLocale(localeState.setting, typeof navigator === 'undefined' ? [] : navigator.languages || [navigator.language]);
+  applyAppLocale();
+});
 
 function loadHistory() {
   try {
@@ -930,8 +950,8 @@ function isLiveStreamUrl(url) {
 function setMode(mode) {
   state.mode = mode;
   $$('.segment').forEach((button) => button.classList.toggle('active', button.dataset.mode === mode));
-  inputHint.textContent = mode === 'profile' ? '只在点击下一页时请求下一页，上一页从缓存恢复。' : mode === 'collection' ? '粘贴抖音合集链接，按页整理合集作品。' : mode === 'live' ? '粘贴抖音直播或B站直播间链接，获取 flv/hls 拉流地址。' : '粘贴时会自动提取真正的链接。';
-  parseButton.textContent = mode === 'profile' ? '解析主页' : mode === 'collection' ? '解析合集' : mode === 'live' ? '解析直播间' : '开始解析';
+  inputHint.textContent = mode === 'profile' ? (localeState.locale === 'en-US' ? 'Request the next page only when you click next; previous pages use the cache.' : '只在点击下一页时请求下一页，上一页从缓存恢复。') : mode === 'collection' ? (localeState.locale === 'en-US' ? 'Paste a Douyin collection link and process its items page by page.' : '粘贴抖音合集链接，按页整理合集作品。') : mode === 'live' ? (localeState.locale === 'en-US' ? 'Paste a Douyin or Bilibili live-room link to get an flv/hls stream.' : '粘贴抖音直播或B站直播间链接，获取 flv/hls 拉流地址。') : t(localeState.locale, 'inputHint');
+  parseButton.textContent = mode === 'profile' ? (localeState.locale === 'en-US' ? 'Parse profile' : '解析主页') : mode === 'collection' ? (localeState.locale === 'en-US' ? 'Parse collection' : '解析合集') : mode === 'live' ? (localeState.locale === 'en-US' ? 'Parse live room' : '解析直播间') : t(localeState.locale, 'start');
   if (mode === 'profile' || mode === 'collection') setView('profile'); else setView('single');
 }
 
@@ -982,7 +1002,8 @@ function applyTheme() {
   localStorage.setItem(THEME_STORAGE, state.theme);
 }
 
-$('#platform-label').textContent = shell.platform === 'desktop' ? '电脑版' : 'Web 客户端';
+$('#platform-label').textContent = shell.platform === 'desktop' ? t(localeState.locale, 'desktop') : t(localeState.locale, 'web');
+applyAppLocale();
 applyTheme();
 renderHistory();
 checkHealth();
