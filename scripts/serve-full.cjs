@@ -1,4 +1,5 @@
 const { spawn } = require('node:child_process');
+const { createServer } = require('node:net');
 const path = require('node:path');
 
 const cwd = path.resolve(__dirname, '..');
@@ -31,6 +32,23 @@ function start(name, command, args) {
 process.once('SIGINT', () => stop(130));
 process.once('SIGTERM', () => stop(143));
 
-const port = process.env.APP_PORT || '18180';
-start('a_bogus', process.execPath, ['scripts/a_bogus_server.js']);
-start('PHP', 'php', ['-S', `127.0.0.1:${port}`, '-t', 'public', 'public/router.php']);
+const port = Number(process.env.APP_PORT || '18180');
+const signingPort = Number.parseInt(process.env.A_BOGUS_PORT || '9876', 10);
+if (!Number.isInteger(port) || port < 1 || port > 65535 || port === signingPort) {
+  console.error('APP_PORT must be a valid port different from A_BOGUS_PORT.');
+  process.exitCode = 1;
+} else {
+  // Windows PHP may report a successful start even when the HTTP port is in use.
+  const probe = createServer();
+  probe.once('error', (error) => {
+    console.error(`PHP port ${port}: ${error.message}`);
+    stop(1);
+  });
+  probe.listen(port, '127.0.0.1', () => {
+    probe.close(() => {
+      if (stopping) return;
+      start('a_bogus', process.execPath, ['scripts/a_bogus_server.js']);
+      start('PHP', 'php', ['-S', `127.0.0.1:${port}`, '-t', 'public', 'public/router.php']);
+    });
+  });
+}
