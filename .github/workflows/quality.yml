@@ -3,107 +3,105 @@ name: quality
 on:
   push:
     branches: [main]
-    tags: ['v*']
   pull_request:
     branches: [main]
-
-concurrency:
-  group: quality-${{ github.ref }}
-  cancel-in-progress: true
+  workflow_dispatch:
+  workflow_call:
 
 permissions:
   contents: read
+  pull-requests: read
 
 jobs:
   php:
-    name: PHP lint + PHPUnit + smoke
+    name: PHP lint, tests and smoke
     runs-on: ubuntu-latest
+    timeout-minutes: 12
+    strategy:
+      fail-fast: false
+      matrix:
+        php: ['8.1', '8.3']
     steps:
-      - uses: actions/checkout@v4
-
-      - name: Setup PHP
-        uses: shivammathur/setup-php@v2
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
-          php-version: '8.3'
+          persist-credentials: false
+      - uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # v2
+        with:
+          php-version: ${{ matrix.php }}
           extensions: curl, json, openssl, mbstring, dom, zip
           tools: composer:v2
           coverage: none
+      - run: composer validate --no-check-publish
+      - run: composer install --no-interaction --prefer-dist --no-progress
+      - run: composer lint
+      - run: composer test
+      - run: composer smoke
+      - run: composer audit --locked --no-dev
 
-      - name: Cache Composer packages
-        uses: actions/cache@v4
-        with:
-          path: ~/.composer/cache
-          key: composer-${{ hashFiles('composer.lock') }}
-          restore-keys: composer-
-
-      - name: Install dependencies
-        run: composer install --no-interaction --prefer-dist --no-progress
-
-      - name: Lint
-        run: composer lint
-
-      - name: Unit tests
-        run: composer test
-
-      - name: Smoke checks
-        run: composer smoke
-
-  js-contracts:
-    name: JS contract tests
+  js:
+    name: JS contracts and desktop renderer
     runs-on: ubuntu-latest
+    timeout-minutes: 12
     steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
-          node-version: '22'
-
-      - name: parsers contract
-        working-directory: packages/parsers
-        run: npm test
-
-      - name: parsers cache behavior
-        working-directory: packages/parsers
-        run: npm run test:cache
-
-      - name: a_bogus sidecar
-        run: node --test scripts/a_bogus_server.test.mjs
-
-      - name: Web workbench regression tests
-        run: node --test tests/workbench.test.cjs
-
-  clients:
-    name: Desktop build
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-node@v4
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
         with:
           node-version: '22'
           cache: npm
           cache-dependency-path: apps/app-shell/package-lock.json
-
-      - name: Install desktop deps
-        working-directory: apps/app-shell
-        run: npm ci
-
-      - name: Build desktop renderer
-        working-directory: apps/app-shell
-        run: npx vite build --base=./
+      - run: npm --prefix packages/parsers test
+      - run: npm --prefix packages/parsers run test:cache
+      - run: node --test tests/*.test.cjs scripts/a_bogus_server.test.mjs
+      - run: npm --prefix apps/app-shell ci
+      - run: npm --prefix apps/app-shell audit --omit=dev --audit-level=high
+      - run: npm --prefix apps/app-shell run build
 
   hygiene:
-    name: Repo hygiene
+    name: Repository hygiene
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          fetch-depth: 2
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
         with:
           node-version: '22'
+      - run: node scripts/check-repository-hygiene.mjs
+      - run: git diff --check HEAD^ HEAD
+      - run: node scripts/check-release-version.mjs "v$(node -p "require('./composer.json').version")"
 
-      - name: Tracked files and secret patterns
-        run: node scripts/check-repository-hygiene.mjs
+  dependency-review:
+    name: Dependency review
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - uses: actions/dependency-review-action@bbc44d14a204704ccc493733616cd1e93a0321ec # v5
+        with:
+          fail-on-severity: high
 
-      - name: Git diff whitespace
-        run: git diff --check
+  required:
+    name: Required quality checks
+    if: always()
+    needs: [php, js, hygiene, dependency-review]
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    env:
+      PHP_RESULT: ${{ needs.php.result }}
+      JS_RESULT: ${{ needs.js.result }}
+      HYGIENE_RESULT: ${{ needs.hygiene.result }}
+      REVIEW_RESULT: ${{ needs.dependency-review.result }}
+      EVENT: ${{ github.event_name }}
+    steps:
+      - run: |
+          test "$PHP_RESULT" = success
+          test "$JS_RESULT" = success
+          test "$HYGIENE_RESULT" = success
+          if [ "$EVENT" = pull_request ]; then test "$REVIEW_RESULT" = success; fi

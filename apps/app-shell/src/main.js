@@ -5,6 +5,9 @@ import { applyLocale, readLocaleSetting, resolveLocale, t, writeLocaleSetting } 
 const HISTORY_STORAGE = 'qushuiyin-app-history-v1';
 const THEME_STORAGE = 'qushuiyin-app-theme-v1';
 const WEIBO_COOKIE_STORAGE = 'qushuiyin-app-weibo-cookie-v1';
+const UPDATE_AUTOCHECK_STORAGE = 'qushuiyin-update-autocheck-v1';
+const UPDATE_DEFERRED_STORAGE = 'qushuiyin-update-deferred-v1';
+const RELEASES_URL = 'https://github.com/yuchen0x1/Short-Video-Analysis/releases';
 const URL_PATTERN = /https?:\/\/[^\s"'<>，。；：！？【】（）《》]+/i;
 
 const shell = window.appShell || {};
@@ -177,6 +180,15 @@ app.innerHTML = `
     </div>
     <footer class="app-footer"><span><span data-i18n="brandName">去水印解析</span> · v${__APP_VERSION__}</span><span id="platform-label">客户端</span></footer>
     <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+    <dialog id="update-dialog" class="about-card update-dialog" aria-labelledby="update-dialog-title">
+      <h2 id="update-dialog-title">去水印解析有新版本</h2>
+      <p id="update-dialog-details" class="panel-note"></p>
+      <div class="about-actions">
+        <button id="update-dialog-action" class="primary-button" type="button">查看并下载</button>
+        <a class="secondary-button" href="${RELEASES_URL}/latest" id="update-dialog-release" target="_blank" rel="noopener">查看详情</a>
+        <button id="update-dialog-later" class="secondary-button" type="button">稍后</button>
+      </div>
+    </dialog>
   </div>
 `;
 
@@ -767,14 +779,56 @@ function checkHealth() {
 
 let updateState = { status: 'idle' };
 
+function openUpdateRelease() {
+  const tag = /^\d+\.\d+\.\d+$/.test(updateState.version) ? 'tag/v' + updateState.version : 'latest';
+  shell.openExternal?.(`${RELEASES_URL}/${tag}`);
+}
+
+function deferUpdate() {
+  if (updateState.version) localStorage.setItem(UPDATE_DEFERRED_STORAGE, updateState.version);
+  $('#update-dialog').close();
+}
+
+$('#update-dialog-later').addEventListener('click', deferUpdate);
+$('#update-dialog').addEventListener('cancel', deferUpdate);
+$('#update-dialog-action').addEventListener('click', () => {
+  $('#update-dialog').close();
+  if (updateState.canDownload) {
+    setView('about');
+    shell.downloadUpdate?.();
+  } else {
+    openUpdateRelease();
+  }
+});
+
 function setUpdateStatus(payload) {
   if (payload && payload.status) updateState = payload;
+  const s = updateState.status;
+  if (s === 'available' && payload && localStorage.getItem(UPDATE_DEFERRED_STORAGE) !== updateState.version) {
+    const releaseDate = new Date(updateState.releaseDate);
+    const date = Number.isNaN(releaseDate.getTime()) ? '' : releaseDate.toLocaleDateString(localeState.locale);
+    const size = updateState.size ? `${(updateState.size / 1024 / 1024).toFixed(1)} MB` : '';
+    $('#update-dialog-details').textContent = [
+      `v${__APP_VERSION__} → v${updateState.version}`, date, size, updateState.releaseNotes,
+    ].filter(Boolean).join('\n');
+    $('#update-dialog-action').textContent = updateState.canDownload ? '立即下载' : '前往 GitHub 下载';
+    if (/^\d+\.\d+\.\d+$/.test(updateState.version)) {
+      $('#update-dialog-release').href = `${RELEASES_URL}/tag/v${updateState.version}`;
+    }
+    const updateDialog = $('#update-dialog');
+    if (!updateDialog.open) updateDialog.showModal();
+  }
   const el = $('#update-status');
   if (!el) return;
   const install = $('#update-install');
-  const s = updateState.status;
+  const download = $('#update-download');
+  const check = $('#check-update');
+  install.hidden = s !== 'downloaded';
+  download.hidden = s !== 'available';
+  download.textContent = updateState.canDownload ? '立即下载' : '前往 GitHub 下载';
+  check.disabled = ['checking', 'downloading', 'downloaded'].includes(s);
   if (s === 'checking') el.textContent = '正在检查更新…';
-  else if (s === 'available') el.textContent = `发现新版本 v${updateState.version}，正在下载…`;
+  else if (s === 'available') el.textContent = `发现新版本 v${updateState.version}`;
   else if (s === 'downloading') {
     const speed = formatTransferRate(updateState.bytesPerSecond);
     const remaining = updateState.total > 0 && updateState.bytesPerSecond > 0
@@ -782,11 +836,11 @@ function setUpdateStatus(payload) {
       : '';
     el.textContent = `正在下载更新 ${updateState.percent || 0}%${speed ? ` · ${speed}` : ''}${remaining}`;
   }
-  else if (s === 'downloaded') { el.textContent = `新版本 v${updateState.version} 已就绪`; if (install) install.hidden = false; }
+  else if (s === 'downloaded') el.textContent = `新版本 v${updateState.version} 已就绪`;
   else if (s === 'none') el.textContent = '当前已是最新版本。';
-  else if (s === 'dev') el.textContent = '正常更新中。';
+  else if (s === 'dev') el.textContent = '开发构建可通过正式发布页查看版本。';
   else if (s === 'error') el.textContent = updateState.message || '检查更新失败。';
-  else el.textContent = '正常更新中。';
+  else el.textContent = '尚未检查更新。';
 }
 
 function formatTransferRate(value) {
@@ -855,7 +909,9 @@ async function renderAbout() {
         </div>
         <button id="check-update" class="primary-button" type="button">检查更新</button>
       </div>
-      <p id="update-status" class="update-status">正常更新中。</p>
+      <p id="update-status" class="update-status" role="status">尚未检查更新。</p>
+      <label class="panel-note"><input id="check-update-on-start" type="checkbox"> 启动时检查更新</label>
+      <button id="update-download" class="secondary-button" type="button" hidden>前往 GitHub 下载</button>
       <button id="update-install" class="secondary-button" type="button" hidden>立即重启安装</button>
     </div>
     <div class="about-card">
@@ -886,8 +942,18 @@ async function renderAbout() {
   const logEl = $('#about-changelog');
   if (logEl) logEl.innerHTML = renderChangelogMarkdown(changelog);
   const bufferedUpdate = await (shell.getUpdateStatus ? shell.getUpdateStatus() : null);
-  if (bufferedUpdate?.status && bufferedUpdate.status !== 'idle') setUpdateStatus(bufferedUpdate);
-  $('#check-update')?.addEventListener('click', () => { setUpdateStatus({ status: 'checking' }); shell.checkForUpdates?.(); });
+  if (bufferedUpdate?.status && bufferedUpdate.status !== 'idle') {
+    updateState = bufferedUpdate;
+    setUpdateStatus();
+  }
+  const autoCheck = $('#check-update-on-start');
+  autoCheck.checked = localStorage.getItem(UPDATE_AUTOCHECK_STORAGE) !== 'off';
+  autoCheck.addEventListener('change', () => localStorage.setItem(UPDATE_AUTOCHECK_STORAGE, autoCheck.checked ? 'on' : 'off'));
+  $('#check-update')?.addEventListener('click', () => shell.checkForUpdates?.());
+  $('#update-download')?.addEventListener('click', () => {
+    if (updateState.canDownload) shell.downloadUpdate?.();
+    else openUpdateRelease();
+  });
   $('#update-install')?.addEventListener('click', () => shell.quitAndInstall?.());
   const refreshWeiboLoginStatus = async () => {
     const loginStatus = $('#about-weibo-login-status');
@@ -995,6 +1061,29 @@ clearInputButton.addEventListener('click', () => { linkInput.value = ''; linkInp
 linkInput.addEventListener('paste', (event) => { const value = event.clipboardData?.getData('text') || ''; if (value) { event.preventDefault(); linkInput.value = cleanUrl(value); } });
 linkInput.addEventListener('input', () => { const value = cleanUrl(linkInput.value); if (/^https?:\/\//i.test(value) && value !== linkInput.value) linkInput.value = value; });
 linkInput.addEventListener('keydown', (event) => { if (event.key === 'Enter') parseButton.click(); });
+document.addEventListener('keydown', (event) => {
+  if (!event.ctrlKey || event.altKey || event.key.toLowerCase() !== 'l' || $('#update-dialog').open) return;
+  event.preventDefault();
+  if (parsePanel.hidden) setMode('single');
+  linkInput.focus();
+  linkInput.select();
+});
+parsePanel.addEventListener('dragover', (event) => event.preventDefault());
+parsePanel.addEventListener('drop', async (event) => {
+  event.preventDefault();
+  const transfer = event.dataTransfer;
+  if (!transfer) return;
+  const file = transfer.files[0];
+  let text = transfer.getData('text/uri-list') || transfer.getData('text/plain');
+  if (file) {
+    if (!/\.txt$/i.test(file.name) || file.size > 64 * 1024) return notify('请拖入链接或不超过 64 KiB 的文本文件');
+    try { text = await file.text(); } catch { return notify('无法读取文本文件'); }
+  }
+  const url = cleanUrl(text);
+  if (!safeHttpUrl(url)) return notify(t(localeState.locale, 'invalidLink'));
+  linkInput.value = url;
+  linkInput.focus();
+});
 document.addEventListener('click', async (event) => {
   const copy = event.target.closest('[data-copy-url]');
   const open = event.target.closest('[data-open-url]');
@@ -1028,3 +1117,4 @@ applyAppLocale();
 applyTheme();
 renderHistory();
 shell.onUpdateStatus?.(setUpdateStatus);
+if (localStorage.getItem(UPDATE_AUTOCHECK_STORAGE) !== 'off') shell.checkForUpdates?.();

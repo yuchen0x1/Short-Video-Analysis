@@ -27,6 +27,8 @@ for (const client of ['app-shell']) {
 }
 const api = fs.readFileSync(path.join(root, 'public/openapi.yaml'), 'utf8');
 sources.push(['public/openapi.yaml', api.match(/^  version:\s*(\S+)/m)?.[1] || '']);
+const worker = fs.readFileSync(path.join(root, 'public/service-worker.js'), 'utf8');
+sources.push(['public/service-worker.js', worker.match(/qushuiyin-shell-v(\d+\.\d+\.\d+)/)?.[1] || '']);
 
 const mismatches = sources.filter(([, value]) => String(value) !== version);
 if (mismatches.length) {

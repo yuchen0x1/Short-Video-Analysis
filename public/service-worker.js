@@ -1,15 +1,17 @@
 // 缓存名带版本：发布新版本时改这里即可让旧缓存整体失效，避免新旧外壳混用。
-const CACHE_NAME = 'qushuiyin-shell-v1.1.13';
-const SHELL_ASSETS = ['./workbench.js', './manifest.webmanifest', './icon.svg', './icon-192.png', './icon-512.png'];
+const CACHE_NAME = 'qushuiyin-shell-v1.2.0';
+const SHELL_ASSETS = ['./workbench.js', './web-update-preference.js', './manifest.webmanifest', './icon.svg', './icon-192.png', './icon-512.png'];
 // 离线兜底入口：/ 与 /index.php 都映射到同一份导航缓存
 const NAV_FALLBACK_KEY = './';
 
 self.addEventListener('install', event => {
   event.waitUntil(
-    caches.open(CACHE_NAME)
-      .then(cache => cache.addAll(SHELL_ASSETS).catch(() => null))
-      .then(() => self.skipWaiting())
+    caches.open(CACHE_NAME).then(cache => cache.addAll(SHELL_ASSETS))
   );
+});
+
+self.addEventListener('message', event => {
+  if (event.data?.type === 'ACTIVATE_UPDATE') event.waitUntil(self.skipWaiting());
 });
 
 self.addEventListener('activate', event => {
@@ -34,31 +36,19 @@ self.addEventListener('fetch', event => {
           // 只缓存成功响应，错误页不应成为离线外壳
           if (response.ok) {
             const copy = response.clone();
-            caches.open(CACHE_NAME).then(cache => cache.put(NAV_FALLBACK_KEY, copy)).catch(() => null);
+            event.waitUntil(caches.open(CACHE_NAME).then(cache => cache.put(NAV_FALLBACK_KEY, copy)).catch(() => null));
           }
           return response;
         })
-        .catch(() => caches.match(NAV_FALLBACK_KEY).then(cached => cached || caches.match(request)))
+        .catch(async () => {
+          const cache = await caches.open(CACHE_NAME);
+          return await cache.match(NAV_FALLBACK_KEY) || Response.error();
+        })
     );
     return;
   }
 
-  // 静态资源使用 stale-while-revalidate：先给缓存保证秒开，后台回源更新。
-  // 网页版资源未做内容哈希，纯 cache-first 会让旧样式/脚本长期驻留。
-  if (['style', 'script', 'manifest', 'image', 'font'].includes(request.destination)) {
-    event.respondWith(
-      caches.match(request).then(cached => {
-        const network = fetch(request)
-          .then(response => {
-            if (response.ok) {
-              const copy = response.clone();
-              caches.open(CACHE_NAME).then(cache => cache.put(request, copy)).catch(() => null);
-            }
-            return response;
-          })
-          .catch(() => cached);
-        return cached || network;
-      })
-    );
+  if (SHELL_ASSETS.some(asset => new URL(asset, self.registration.scope).href === url.href)) {
+    event.respondWith(caches.open(CACHE_NAME).then(async cache => await cache.match(request) || fetch(request)));
   }
 });

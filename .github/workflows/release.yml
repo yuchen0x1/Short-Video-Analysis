@@ -2,82 +2,122 @@ name: release
 
 on:
   push:
-    tags:
-      - 'v*.*.*'
+    tags: ['v*.*.*']
+  workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
+  pull-requests: read
 
 concurrency:
   group: release-${{ github.ref }}
   cancel-in-progress: false
 
 jobs:
-  windows:
-    name: Build and publish Windows release
+  quality:
+    uses: ./.github/workflows/quality.yml
+
+  build:
+    name: Package and smoke-test Windows and PHP
+    needs: quality
     runs-on: windows-latest
+    timeout-minutes: 30
     env:
-      RELEASE_TAG: ${{ github.ref_name }}
-      GITHUB_OWNER: yuchen0x1
-      GITHUB_REPO: Short-Video-Analysis
       CSC_IDENTITY_AUTO_DISCOVERY: 'false'
     steps:
-      - name: Checkout tag
-        uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
-          ref: ${{ github.ref }}
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
         with:
           node-version: '22'
           cache: npm
           cache-dependency-path: apps/app-shell/package-lock.json
-
-      - name: Validate release version
-        run: node scripts/check-release-version.mjs
-
-      - name: Install desktop dependencies
-        working-directory: apps/app-shell
-        run: npm ci
-
-      - name: Build Windows installers
-        working-directory: apps/app-shell
-        run: npm run dist:win
-
-      - name: Prepare release notes
-        run: node scripts/prepare-release-notes.mjs $env:RELEASE_TAG .evolution/release-notes.md
-
-      - name: Generate checksum manifest
-        run: node scripts/generate-release-manifest.mjs apps/app-shell/release $env:RELEASE_TAG
-
-      - name: Create draft GitHub Release
-        shell: pwsh
-        env:
-          GH_TOKEN: ${{ github.token }}
+      - name: Validate version and release commit
         run: |
-          gh release view "$env:RELEASE_TAG" --json isDraft 2>$null
-          if ($LASTEXITCODE -eq 0) {
-            $release = gh release view "$env:RELEASE_TAG" --json isDraft | ConvertFrom-Json
-            if (-not $release.isDraft) { throw '该版本已发布，禁止重跑覆盖正式资产' }
-            gh release edit "$env:RELEASE_TAG" --notes-file .evolution/release-notes.md
-          } else {
-            gh release create "$env:RELEASE_TAG" --draft --verify-tag --title "$env:RELEASE_TAG" --notes-file .evolution/release-notes.md
+          $tag = if ($env:GITHUB_REF_TYPE -eq 'tag') { $env:GITHUB_REF_NAME } else { 'v' + (Get-Content composer.json -Raw | ConvertFrom-Json).version }
+          node scripts/check-release-version.mjs $tag
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          if ($env:GITHUB_REF_TYPE -eq 'tag') {
+            git merge-base --is-ancestor HEAD origin/main
+            if ($LASTEXITCODE) { throw 'Release tag must point to a commit on main' }
           }
-
-      - name: Upload release assets
-        shell: pwsh
-        env:
-          GH_TOKEN: ${{ github.token }}
+          "RELEASE_TAG=$tag" >> $env:GITHUB_ENV
+          "RELEASE_VERSION=$($tag.Substring(1))" >> $env:GITHUB_ENV
+      - run: npm --prefix apps/app-shell ci
+      - run: npm --prefix apps/app-shell run dist:win
+      - name: Packaged Windows runtime smoke test
+        run: node scripts/smoke-desktop.mjs apps/app-shell/release/win-unpacked/去水印解析.exe $env:RELEASE_VERSION
+      - name: Package PHP source and verify assets
         run: |
-          $assets = Get-ChildItem apps/app-shell/release -File |
-            Where-Object { $_.Name -ne 'builder-debug.yml' -and ($_.Name -match '\.(exe|yml|blockmap)$' -or $_.Name -in @('SHA256SUMS.txt', 'update-manifest.json')) } |
-            ForEach-Object { $_.FullName }
-          if (-not $assets) { throw '没有可上传的发布资产' }
-          gh release upload "$env:RELEASE_TAG" @assets --clobber
+          $out = 'apps/app-shell/release'
+          $web = "$out/short-video-analysis-web-$env:RELEASE_VERSION.zip"
+          git archive --format zip --output $web "--prefix=short-video-analysis-$env:RELEASE_VERSION/" HEAD app config public storage/certs scripts/a_bogus.js scripts/a_bogus_server.js scripts/serve-full.cjs .dockerignore .env.example composer.json composer.lock Dockerfile docker-compose.yml docker-entrypoint.sh start.bat start.sh bin tests/Unit phpunit.xml LICENSE OPEN_SOURCE_NOTICES.md
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          $extract = Join-Path $env:RUNNER_TEMP 'web-release-smoke'
+          Expand-Archive -LiteralPath $web -DestinationPath $extract
+          $root = Join-Path $extract "short-video-analysis-$env:RELEASE_VERSION"
+          foreach ($file in @('public/index.php','public/service-worker.js','public/web-update-preference.js','composer.lock','scripts/serve-full.cjs','Dockerfile','LICENSE')) {
+            if (-not (Test-Path -LiteralPath (Join-Path $root $file) -PathType Leaf)) { throw "Missing PHP distribution file: $file" }
+          }
+          node scripts/generate-release-manifest.mjs $out $env:RELEASE_TAG
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          node scripts/verify-release-artifacts.mjs $out $env:RELEASE_TAG
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: release-assets
+          if-no-files-found: error
+          compression-level: 0
+          path: |
+            apps/app-shell/release/*.exe
+            apps/app-shell/release/*.blockmap
+            apps/app-shell/release/latest.yml
+            apps/app-shell/release/*.zip
+            apps/app-shell/release/SHA256SUMS.txt
+            apps/app-shell/release/update-manifest.json
 
-      - name: Publish release
-        shell: pwsh
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: gh release edit "$env:RELEASE_TAG" --draft=false --latest
+  publish:
+    name: Verify and publish
+    needs: build
+    if: github.ref_type == 'tag'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: github-release
+    permissions:
+      contents: write
+    env:
+      RELEASE_TAG: ${{ github.ref_name }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
+        with:
+          node-version: '22'
+          package-manager-cache: false
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
+        with:
+          name: release-assets
+          path: release-assets
+      - name: Verify staged files
+        run: |
+          node scripts/prepare-release-notes.mjs "$RELEASE_TAG" "$RUNNER_TEMP/release-notes.md"
+          node scripts/verify-release-artifacts.mjs release-assets "$RELEASE_TAG"
+      - name: Upload verified assets to draft
+        run: |
+          if release="$(gh release view "$RELEASE_TAG" --json isDraft --jq .isDraft)"; then
+            test "$release" = true
+            gh release edit "$RELEASE_TAG" --notes-file "$RUNNER_TEMP/release-notes.md"
+          else
+            gh release create "$RELEASE_TAG" --draft --verify-tag --title "$RELEASE_TAG" --notes-file "$RUNNER_TEMP/release-notes.md"
+          fi
+          gh release upload "$RELEASE_TAG" release-assets/* --clobber
+          gh api "repos/$GITHUB_REPOSITORY/releases/tags/$RELEASE_TAG" > "$RUNNER_TEMP/draft.json"
+          node scripts/verify-release-artifacts.mjs release-assets "$RELEASE_TAG" "$RUNNER_TEMP/draft.json"
+      - name: Publish and confirm public metadata
+        run: |
+          gh release edit "$RELEASE_TAG" --draft=false --latest
+          gh api "repos/$GITHUB_REPOSITORY/releases/latest" > "$RUNNER_TEMP/published.json"
+          node scripts/verify-release-artifacts.mjs release-assets "$RELEASE_TAG" "$RUNNER_TEMP/published.json"

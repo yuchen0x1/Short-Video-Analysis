@@ -41,6 +41,7 @@ contextBridge.exposeInMainWorld('appShell', {
   getUpdateStatus: () => ipcRenderer.invoke('app.update.status'),
   getChangelog: () => ipcRenderer.invoke('app.changelog'),
   checkForUpdates: () => ipcRenderer.send('app.update.check'),
+  downloadUpdate: () => ipcRenderer.send('app.update.download'),
   quitAndInstall: () => ipcRenderer.send('app.update.install'),
   onUpdateStatus: (callback) => {
     const listener = (_event, payload) => callback(payload);

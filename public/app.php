@@ -18,6 +18,7 @@ $webAppVersion = class_exists(\Composer\InstalledVersions::class)
 <title>去水印解析 · 短视频工具</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%231b4a49'/%3E%3Cpath d='M9 9h6v6H9zM17 17h6v6h-6zM17 9h6v6h-6zM9 17h6v6H9z' fill='%23f5c85d'/%3E%3C/svg%3E">
 <script src="workbench.js"></script>
+<script src="web-update-preference.js"></script>
 <script>
 // 首屏前确定主题，避免深色用户先看到浅色闪烁；只读取不写入，持久化交给显式切换。
 (function(){try{var saved=localStorage.getItem('watermark-parse-theme-v2');var dark=saved==='dark'||(saved!=='light'&&(!window.matchMedia||!window.matchMedia('(prefers-color-scheme: light)').matches));if(dark)document.documentElement.classList.add('dark')}catch(e){document.documentElement.classList.add('dark')}})();
@@ -1169,6 +1170,14 @@ a { color: inherit; }
   gap: 8px;
   flex-wrap: wrap;
 }
+.update-auto-check {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
+  color: var(--muted);
+  font-size: 12px;
+}
 
 /* 批量任务与主页列表 */
 .section-heading {
@@ -1373,9 +1382,10 @@ const WEB_APP_VERSION=<?= json_encode($webAppVersion, JSON_UNESCAPED_UNICODE|JSO
   const card=document.createElement('section');
   card.className='panel side-panel update-card';
   card.setAttribute('aria-label','在线更新');
-  card.innerHTML='<div class="side-heading"><div><h2>在线更新</h2><p id="web-update-detail">正在检查最新版本…</p></div></div><div class="update-actions"><button id="web-update-check" class="btn btn-teal" type="button">检查更新</button><button id="web-update-refresh" class="btn" type="button" hidden>刷新网站</button><a id="web-update-download" class="btn btn-primary" href="#" target="_blank" rel="noopener" hidden>查看最新发布</a></div>';
+  card.innerHTML='<div class="side-heading"><div><h2>在线更新</h2><p id="web-update-detail">正在检查最新版本…</p></div></div><div class="update-actions"><button id="web-update-check" class="btn btn-teal" type="button">检查更新</button><button id="web-update-refresh" class="btn" type="button" hidden>应用页面更新</button><a id="web-update-download" class="btn btn-primary" href="#" target="_blank" rel="noopener" hidden>查看最新发布</a></div><label class="update-auto-check"><input id="web-update-autocheck" type="checkbox" checked> 启动时检查更新</label><p id="web-shell-status" role="status"></p>';
   sidebar.insertBefore(card,sidebar.children[1]||null);
-  const detail=document.querySelector('#web-update-detail'),check=document.querySelector('#web-update-check'),refresh=document.querySelector('#web-update-refresh'),release=document.querySelector('#web-update-download');
+  const detail=document.querySelector('#web-update-detail'),check=document.querySelector('#web-update-check'),release=document.querySelector('#web-update-download'),autoCheck=document.querySelector('#web-update-autocheck');
+  if(autoCheck){autoCheck.checked=window.WebUpdatePreference?.isEnabled?.()!==false;autoCheck.addEventListener('change',()=>window.WebUpdatePreference?.setEnabled?.(autoCheck.checked));}
   function status(text,kind){if(detail)detail.textContent=text;if(headerStatus){headerStatus.classList.toggle('is-ready',kind==='ready');headerStatus.classList.toggle('is-error',kind==='error');const label=headerStatus.querySelector('span');if(label)label.textContent=text}};
   async function checkUpdate(){
     check.disabled=true;status('正在检查最新版本…','checking');
@@ -1386,18 +1396,21 @@ const WEB_APP_VERSION=<?= json_encode($webAppVersion, JSON_UNESCAPED_UNICODE|JSO
       if(data.update_available){
         status(`发现新版本 v${data.latest_version}`,'ready');
         detail.textContent=`当前 v${data.current_version} · 最新 v${data.latest_version}`;
-        refresh.hidden=false;release.hidden=false;release.href=data.release_url;
+        release.hidden=false;release.href=data.release_url;
       }else{
         status(`已是最新 v${data.latest_version}`,'ready');
         detail.textContent=`网站版本 v${WEB_APP_VERSION} 已是最新`;
-        refresh.hidden=true;release.hidden=true;
+        release.hidden=true;
       }
     }catch(error){status(error.message||'版本检查失败','error');detail.textContent='无法连接版本服务，请稍后重试';}
     finally{check.disabled=false;}
   }
   check.addEventListener('click',checkUpdate);
-  refresh.addEventListener('click',()=>{const url=new URL(window.location.href);url.searchParams.set('update',Date.now());window.location.replace(url.href)});
-  checkUpdate();
+  if(autoCheck?.checked===false){
+    status('启动时检查更新已关闭','ready');
+    detail.textContent='点击“检查更新”手动获取版本';
+  }
+  if(autoCheck?.checked!==false)checkUpdate();
 })();
 </script>
 <script>
@@ -2183,7 +2196,48 @@ themeToggle.addEventListener('click',()=>applyTheme(document.documentElement.cla
 // 未手动指定主题时，跟随系统明暗切换
 const systemThemeQuery=window.matchMedia?window.matchMedia('(prefers-color-scheme: light)'):null;
 if(systemThemeQuery&&systemThemeQuery.addEventListener)systemThemeQuery.addEventListener('change',e=>{if(!localStorage.getItem('watermark-parse-theme-v2'))applyTheme(e.matches?'light':'dark',false)});
-if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('service-worker.js').catch(()=>{}))}
+if('serviceWorker' in navigator){
+  const updateButton=$('#web-update-refresh'),updateStatus=$('#web-shell-status');
+  const draftKey='qushuiyin-page-update-draft';
+  let applyRequested=false;
+  try{
+    const draft=JSON.parse(sessionStorage.getItem(draftKey)||'null');
+    if(draft){
+      sessionStorage.removeItem(draftKey);
+      input.value=String(draft.single||'');
+      batchInput.value=String(draft.batch||'');
+      if(['single','batch','profile','collection','live'].includes(draft.mode))setMode(draft.mode);
+    }
+  }catch{}
+  navigator.serviceWorker.addEventListener('controllerchange',()=>{
+    if(applyRequested)location.reload();
+  });
+  window.addEventListener('load',async()=>{
+    try{
+      const registration=await navigator.serviceWorker.register('service-worker.js');
+      const notice=()=>{
+        updateButton.hidden=!registration.waiting;
+        if(registration.waiting)updateStatus.textContent='新版页面已就绪，可在处理结束后刷新。';
+      };
+      const watch=worker=>worker?.addEventListener('statechange',notice);
+      registration.addEventListener('updatefound',()=>watch(registration.installing));
+      watch(registration.installing);
+      notice();
+      updateButton.addEventListener('click',()=>{
+        if(!registration.waiting)return;
+        if(batchRunning||!loading.hidden){
+          updateStatus.textContent='请等本次解析结束再应用更新。';
+          return;
+        }
+        try{sessionStorage.setItem(draftKey,JSON.stringify({single:input.value,batch:batchInput.value,mode:state.mode}))}
+        catch{updateStatus.textContent='无法暂存链接，请先复制后重试。';return}
+        applyRequested=true;
+        updateButton.disabled=true;
+        registration.waiting.postMessage({type:'ACTIVATE_UPDATE'});
+      });
+    }catch{}
+  });
+}
 favoritesList?.addEventListener('click',async e=>{const card=e.target.closest('.history-entry'),a=e.target.closest('[data-favaction]');if(!card||!a)return;const item=loadFavorites()[Number(card.dataset.index)];if(!item)return;const action=a.dataset.favaction;if(action==='reparse'){setMode('single');input.value=item.rawUrl;await parseUrlIntoResult(item.rawUrl)}if(action==='copy'){await copyText(item.rawUrl);a.innerHTML='✓';setTimeout(()=>a.innerHTML=COPY_ICON,1000)}if(action==='unfav'){toggleFavorite(item);renderFavorites()}});
 $('#library-search').addEventListener('input',()=>{renderHistory();renderFavorites()});
 $('#library-backup').addEventListener('click',()=>{try{

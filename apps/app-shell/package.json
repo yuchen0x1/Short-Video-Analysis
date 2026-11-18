@@ -1,6 +1,6 @@
 {
   "name": "qushuiyin-desktop-client",
-  "version": "1.1.13",
+  "version": "1.2.0",
   "private": true,
   "main": "electron/main.cjs",
   "description": "去水印解析电脑版客户端",
@@ -35,6 +35,13 @@
       }
     ],
     "generateUpdatesFilesForAllChannels": true,
+    "electronFuses": {
+      "runAsNode": false,
+      "enableNodeOptionsEnvironmentVariable": false,
+      "enableNodeCliInspectArguments": false,
+      "enableEmbeddedAsarIntegrityValidation": true,
+      "onlyLoadAppFromAsar": true
+    },
     "electronLanguages": [
       "zh-CN",
       "zh-TW",
@@ -49,7 +56,8 @@
       "dist/**/*",
       "build/icon.png",
       "electron/**/*",
-      "package.json"
+      "package.json",
+      "!**/*.map"
     ],
     "extraResources": [
       {
