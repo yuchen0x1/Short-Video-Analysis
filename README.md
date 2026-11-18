@@ -8,7 +8,7 @@
 
 覆盖 12 个主流短视频平台，一次解析视频、图集、封面与作者信息，仅提供 Windows 电脑版与 PHP 网页版；HTTP API 属于网页版服务。
 
-[![Version](https://img.shields.io/badge/版本-v1.1.11-22d3ee)](https://github.com/yuchen0x1/Short-Video-Analysis/releases/latest) [![Platforms](https://img.shields.io/badge/平台-12个-8b5cf6)](#覆盖平台) [![PHP](https://img.shields.io/badge/PHP-8.1%2B-777bb4)](#技术选型与环境要求) [![License](https://img.shields.io/badge/License-AGPL--3.0--only-9cf)](LICENSE)
+[![Version](https://img.shields.io/github/v/release/yuchen0x1/Short-Video-Analysis?display_name=tag&sort=date)](https://github.com/yuchen0x1/Short-Video-Analysis/releases/latest) [![Platforms](https://img.shields.io/badge/平台-12个-8b5cf6)](#覆盖平台) [![PHP](https://img.shields.io/badge/PHP-8.1%2B-777bb4)](#技术选型与环境要求) [![License](https://img.shields.io/badge/License-AGPL--3.0--only-9cf)](LICENSE)
 
 ![网页版工作台](assets/screenshots/web-home.png)
 
@@ -26,19 +26,19 @@
 
 ## 最新更新
 
-### v1.1.12 · 2026-11-17
+<!-- github-release:start -->
 
-- 网页和 Windows 壳层支持按浏览器或系统语言自动选择中文/English，也可手动切换并保存。
-- 导航、解析输入、按钮和错误状态即时更新；视频与平台返回内容保持原样。
+**[v1.1.12](https://github.com/yuchen0x1/Short-Video-Analysis/releases/tag/v1.1.12)** · 2026-11-17
 
-### v1.1.11 · 2026-11-16
+本版为网页和 Windows Electron 壳层加入自动语言检测、手动中文/English 切换和持久化设置。导航、解析输入、按钮和错误状态即时更新；视频、作者、封面和平台返回数据保持原样。共享解析器包和 PHP 网页解析逻辑未在本版重写。
 
-- GET 请求继续支持有限重试，POST 请求不再自动重发，降低重复采集风险。
-- 网页接口限流响应带有 `Retry-After`，HLS 播放列表在反向代理子路径下继续使用当前部署入口。
-- Windows 客户端加入 CSP、IPC 来源校验和生产文件导航限制；网页端补充加载、结果和错误状态的可访问性标记。
-- 解析缓存有 TTL、LRU 和容量上限，日志路径遵循配置；Windows 安装版、便携版和自动更新清单随 GitHub Release 生成。
+[全部发行记录](https://github.com/yuchen0x1/Short-Video-Analysis/releases)
 
-[下载 v1.1.11](https://github.com/yuchen0x1/Short-Video-Analysis/releases/tag/v1.1.11) · [完整发布历史](docs/releases/release-notes.md) · [产品范围](docs/PRODUCT_SCOPE.md)
+<!-- github-release:end -->
+
+[完整更新日志](docs/releases/release-notes.md)
+
+[产品范围](docs/PRODUCT_SCOPE.md)
 
 ## 推广介绍图
 
