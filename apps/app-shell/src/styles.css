@@ -331,6 +331,14 @@ html[data-theme="light"] .brand-name {
   display: none;
 }
 
+.parse-input-panel:not([hidden]) {
+  margin-bottom: 18px;
+}
+
+.parse-input-panel:not([hidden]) ~ .view {
+  min-height: 0;
+}
+
 .page-intro.compact-intro {
   margin-bottom: 2px;
 }

@@ -13,7 +13,7 @@ const localeState = {
   locale: resolveLocale(readLocaleSetting(), typeof navigator === 'undefined' ? [] : navigator.languages || [navigator.language]),
 };
 
-// 本地解析：传输层经 IPC 走主进程 net.fetch（无 CORS），使用独立的共享 JS 解析器包
+// 本地解析：传输层经 IPC 走主进程，使用独立的共享 JS 解析器包
 const ipcTransport = {
   async request({ url, method, headers, body, timeoutMs = 15000, credentialMode }) {
     const request = credentialMode === 'weibo-session' && shell.weiboRequest
@@ -35,7 +35,7 @@ const state = {
   theme: localStorage.getItem(THEME_STORAGE) || 'dark',
   view: 'single',
   mode: 'single',
-  busy: false,
+  busy: null,
   profile: null,
   history: loadHistory(),
   activeMediaRefresh: false,
@@ -51,7 +51,7 @@ app.innerHTML = `
       <div class="brand-lockup">
         <span class="brand-mark" aria-hidden="true">去</span>
         <div class="brand-text">
-          <span class="brand-name">去水印解析</span>
+          <span class="brand-name" data-i18n="brandName">去水印解析</span>
           <span class="brand-sub">DESKTOP WORKSPACE · v${__APP_VERSION__}</span>
         </div>
       </div>
@@ -74,32 +74,32 @@ app.innerHTML = `
       </nav>
 
       <main class="content-column">
-        <section class="view active" data-view-panel="single">
-          <section class="tool-panel">
-            <div class="panel-heading">
-              <div class="panel-title">
-                <span class="panel-kicker" data-i18n="inputKicker">解析输入</span>
-                <h2 data-i18n="inputTitle">解析分享链接</h2>
-                <p class="panel-note" data-i18n="inputNote">粘贴分享文案，自动提取真正的链接和无水印媒体。</p>
-              </div>
-              <div class="segmented" role="group" aria-label="解析模式">
-                <button class="segment active" type="button" data-mode="single" data-i18n="single">单条</button>
-                <button class="segment" type="button" data-mode="profile" data-i18n="profile">主页</button>
-                <button class="segment" type="button" data-mode="collection" data-i18n="collection">合集</button>
-                <button class="segment" type="button" data-mode="live" data-i18n="live">直播</button>
-              </div>
+        <section id="parse-panel" class="tool-panel parse-input-panel">
+          <div class="panel-heading">
+            <div class="panel-title">
+              <span class="panel-kicker" data-i18n="inputKicker">解析输入</span>
+              <h2 data-i18n="inputTitle">解析分享链接</h2>
+              <p class="panel-note" data-i18n="inputNote">粘贴分享文案，自动提取真正的链接和无水印媒体。</p>
             </div>
-            <div class="input-row">
-              <input id="link-input" type="text" autocomplete="off" spellcheck="false" data-i18n-placeholder="placeholder" placeholder="粘贴视频链接或整段分享文案" />
-              <button id="paste-input" class="secondary-button" type="button" data-i18n="paste" title="从剪贴板粘贴">粘贴</button>
-              <button id="clear-input" class="secondary-button" type="button" data-i18n="clear">清除</button>
-              <button id="parse-button" class="primary-button" type="button" data-i18n="start">开始解析</button>
+            <div class="segmented" role="group" aria-label="解析模式">
+              <button class="segment active" type="button" data-mode="single" data-i18n="single">单条</button>
+              <button class="segment" type="button" data-mode="profile" data-i18n="profile">主页</button>
+              <button class="segment" type="button" data-mode="collection" data-i18n="collection">合集</button>
+              <button class="segment" type="button" data-mode="live" data-i18n="live">直播</button>
             </div>
-            <p id="input-hint" class="field-hint" data-i18n="inputHint">粘贴时会自动提取真正的链接。</p>
-            <div class="input-context"><span><i></i><span data-i18n="local">本地优先解析</span></span><span><i></i><span data-i18n="videoImages">支持视频与图集</span></span><span><i></i><span data-i18n="noUpload">无后台上传</span></span></div>
-            <div class="quick-platforms" aria-label="支持平台"><span>抖音</span><span>快手</span><span>B站</span><span>小红书</span><span>微博</span><span>更多平台</span></div>
-          </section>
+          </div>
+          <div class="input-row">
+            <input id="link-input" type="text" autocomplete="off" spellcheck="false" data-i18n-placeholder="placeholder" placeholder="粘贴视频链接或整段分享文案" />
+            <button id="paste-input" class="secondary-button" type="button" data-i18n="paste" title="从剪贴板粘贴">粘贴</button>
+            <button id="clear-input" class="secondary-button" type="button" data-i18n="clear">清除</button>
+            <button id="parse-button" class="primary-button" type="button">开始解析</button>
+          </div>
+          <p id="input-hint" class="field-hint">粘贴时会自动提取真正的链接。</p>
+          <div class="input-context"><span><i></i><span data-i18n="local">本地优先解析</span></span><span><i></i><span data-i18n="videoImages">支持视频与图集</span></span><span><i></i><span data-i18n="noUpload">无后台上传</span></span></div>
+          <div class="quick-platforms" aria-label="支持平台"><span>抖音</span><span>快手</span><span>B站</span><span>小红书</span><span>微博</span><span>更多平台</span></div>
+        </section>
 
+        <section class="view active" data-view-panel="single">
           <section id="single-result" class="result-panel">
             <div class="workspace-empty">
               <span class="workspace-empty-mark" aria-hidden="true">→</span>
@@ -113,18 +113,11 @@ app.innerHTML = `
 
         <section class="view" data-view-panel="profile" hidden>
           <div class="page-intro compact-intro">
-            <span class="eyebrow">主页解析</span>
-            <h1>公开主页，按页整理。</h1>
+            <span class="eyebrow">作品列表</span>
+            <h1>按页整理公开作品。</h1>
             <p>只在点击下一页时请求新内容，返回上一页直接恢复缓存。</p>
           </div>
-          <section id="profile-panel" class="result-panel profile-panel">
-            <div class="workspace-empty">
-              <div>
-                <strong>尚未加载主页</strong>
-                <span>切换到“主页”模式并粘贴链接后，作品会显示在这里。</span>
-              </div>
-            </div>
-          </section>
+          <section id="profile-panel" class="result-panel profile-panel"></section>
         </section>
 
         <section class="view" data-view-panel="discover" hidden>
@@ -182,7 +175,7 @@ app.innerHTML = `
 
       </main>
     </div>
-    <footer class="app-footer"><span>去水印解析 App · v${__APP_VERSION__}</span><span id="platform-label">客户端</span></footer>
+    <footer class="app-footer"><span><span data-i18n="brandName">去水印解析</span> · v${__APP_VERSION__}</span><span id="platform-label">客户端</span></footer>
     <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
   </div>
 `;
@@ -190,6 +183,7 @@ app.innerHTML = `
 const $ = (selector, root = document) => root.querySelector(selector);
 const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
 const localeSelect = $('#locale-select');
+const parsePanel = $('#parse-panel');
 const linkInput = $('#link-input');
 const parseButton = $('#parse-button');
 const pasteInputButton = $('#paste-input');
@@ -202,9 +196,13 @@ const toast = $('#toast');
 
 function applyAppLocale() {
   document.documentElement.lang = localeState.locale;
+  document.title = t(localeState.locale, 'brandName');
   applyLocale(app, localeState.locale);
-  if (localeSelect) localeSelect.value = localeState.setting;
-  setMode(state.mode);
+  localeSelect.value = localeState.setting;
+  $('#platform-label').textContent = t(localeState.locale, shell.platform === 'desktop' ? 'desktop' : 'web');
+  syncParseControls();
+  if (state.view === 'profile') renderProfile();
+  checkHealth();
 }
 
 localeSelect?.addEventListener('change', (event) => {
@@ -279,10 +277,9 @@ function notify(message) {
   notify.timer = setTimeout(() => { toast.hidden = true; }, 2400);
 }
 
-function setBusy(on, message = '正在解析…') {
-  state.busy = on;
-  parseButton.disabled = on;
-  parseButton.textContent = on ? message : state.mode === 'profile' ? '解析主页' : state.mode === 'collection' ? '解析合集' : state.mode === 'live' ? '解析直播间' : '开始解析';
+function setBusy(on, message = 'parsing', page = 1) {
+  state.busy = on ? { message, page } : null;
+  syncParseControls();
 }
 
 function setServiceState(label, status = 'ok') {
@@ -328,7 +325,7 @@ function platformName(url) {
 
 async function parseSingle() {
   const url = cleanUrl(linkInput.value);
-  if (!/^https?:\/\//i.test(url)) return notify('请先粘贴有效链接');
+  if (!/^https?:\/\//i.test(url)) return notify(t(localeState.locale, 'invalidLink'));
   // 直播间链接自动切换到直播解析
   if (isLiveStreamUrl(url)) {
     setMode('live');
@@ -348,9 +345,9 @@ async function parseSingle() {
   try {
     const data = await parsers.parse(url);
     renderSingleResult(data, url);
-    notify('解析完成');
+    notify(t(localeState.locale, 'parsed'));
   } catch (error) {
-    notify(error.message || '解析失败');
+    notify(error.message || t(localeState.locale, 'parseFailed'));
   } finally {
     setBusy(false);
   }
@@ -362,7 +359,11 @@ function profileItemId(item, index, pageIndex) {
 
 function renderProfile() {
   const profile = state.profile;
-  if (!profile) return;
+  if (profile?.kind !== state.mode) {
+    const emptyLabel = t(localeState.locale, state.mode === 'collection' ? 'collectionEmpty' : 'profileEmpty');
+    profilePanel.innerHTML = `<div class="workspace-empty"><strong>${escapeHtml(emptyLabel)}</strong></div>`;
+    return;
+  }
   const page = profile.pages[profile.current];
   const items = page?.items || [];
   const isCollection = profile.kind === 'collection';
@@ -387,9 +388,9 @@ function profileItemHtml(item, index, pageIndex) {
 }
 
 async function parseProfile(url = cleanUrl(linkInput.value)) {
-  if (!/^https?:\/\//i.test(url)) return notify('请输入有效的主页链接');
+  if (!/^https?:\/\//i.test(url)) return notify(t(localeState.locale, 'invalidLink'));
   linkInput.value = url;
-  setBusy(true, '读取第 1 页…');
+  setBusy(true, 'readingPage');
   try {
     const data = await parsers.parseProfile(url, 0);
     state.profile = { url, pages: [data], current: 0, selected: new Set(), kind: 'profile' };
@@ -403,9 +404,9 @@ async function parseProfile(url = cleanUrl(linkInput.value)) {
 }
 
 async function parseCollection(url = cleanUrl(linkInput.value)) {
-  if (!/^https?:\/\//i.test(url)) return notify('请输入有效的合集链接');
+  if (!/^https?:\/\//i.test(url)) return notify(t(localeState.locale, 'invalidLink'));
   linkInput.value = url;
-  setBusy(true, '读取第 1 页…');
+  setBusy(true, 'readingPage');
   try {
     const data = await parsers.parseCollection(url, 0);
     state.profile = { url, pages: [data], current: 0, selected: new Set(), kind: 'collection' };
@@ -432,9 +433,9 @@ function renderLive(data, rawUrl) {
 }
 
 async function parseLive(url = cleanUrl(linkInput.value)) {
-  if (!/^https?:\/\//i.test(url)) return notify('请输入有效的直播间链接');
+  if (!/^https?:\/\//i.test(url)) return notify(t(localeState.locale, 'invalidLink'));
   linkInput.value = url;
-  setBusy(true, '解析直播间…');
+  setBusy(true);
   try {
     const data = await parsers.parseLive(url);
     renderLive(data, url);
@@ -454,8 +455,8 @@ async function requestListPage(profile, page) {
 
 async function loadAllProfilePages() {
   const profile = state.profile;
-  if (!profile) return;
-  setBusy(true, '加载全部…');
+  if (!profile || state.busy) return;
+  setBusy(true, 'loadingAll');
   try {
     while (profile.pages[profile.pages.length - 1]?.has_more) {
       const last = profile.pages[profile.pages.length - 1];
@@ -476,14 +477,14 @@ async function loadAllProfilePages() {
 async function loadNextProfilePage() {
   const profile = state.profile;
   const page = profile?.pages[profile.current];
-  if (!profile || !page?.has_more) return;
+  if (!profile || !page?.has_more || state.busy) return;
   const next = profile.current + 1;
   if (profile.pages[next]) {
     profile.current = next;
     renderProfile();
     return;
   }
-  setBusy(true, `读取第 ${next + 1} 页…`);
+  setBusy(true, 'readingPage', next + 1);
   try {
     profile.pages[next] = await requestListPage(profile, page);
     profile.current = next;
@@ -752,15 +753,15 @@ document.addEventListener('click', (event) => {
 function renderHistory() {
   historyPanel.innerHTML = state.history.length ? `<div class="panel-heading"><div><span class="panel-kicker">本地记录</span><h2>最近处理</h2></div><button id="clear-history" class="secondary-button compact" type="button">清空记录</button></div><div class="history-list">${state.history.map((item, index) => `<article class="history-item"><div><span class="history-index">${String(index + 1).padStart(2, '0')}</span><div><h3>${escapeHtml(item.title || '未命名内容')}</h3><p>${escapeHtml(item.author || '未知作者')} · ${escapeHtml(item.mediaType === 'image' ? '图集' : '视频')} · ${formatDate(item.time)}</p></div></div><button class="secondary-button compact" type="button" data-history-url="${escapeHtml(item.rawUrl)}">重新解析</button></article>`).join('')}</div>` : '<div class="empty-state">还没有解析记录。</div>';
   $('#clear-history')?.addEventListener('click', () => { state.history = []; saveHistory(); renderHistory(); });
-  $$('[data-history-url]').forEach((button) => button.addEventListener('click', () => { setView('single'); setMode('single'); linkInput.value = button.dataset.historyUrl; parseSingle(); }));
+  $$('[data-history-url]').forEach((button) => button.addEventListener('click', () => { setMode('single'); linkInput.value = button.dataset.historyUrl; parseButton.click(); }));
 }
 
-async function checkHealth() {
+function checkHealth() {
   try {
     const count = parsers.getSupportedPlatforms().length;
-    setServiceState(`本地解析 · ${count} 平台`, 'ok');
+    setServiceState(t(localeState.locale, 'localService').replace('{count}', count), 'ok');
   } catch {
-    setServiceState('解析器未就绪', 'offline');
+    setServiceState(t(localeState.locale, 'serviceOffline'), 'offline');
   }
 }
 
@@ -931,9 +932,10 @@ async function renderAbout() {
 
 function setView(view) {
   state.view = view;
+  parsePanel.hidden = view !== 'single' && view !== 'profile';
   $$('.nav-button').forEach((button) => button.classList.toggle('active', button.dataset.view === view));
   $$('[data-view-panel]').forEach((panel) => { panel.hidden = panel.dataset.viewPanel !== view; panel.classList.toggle('active', panel.dataset.viewPanel === view); });
-  if (view === 'profile' && state.profile) renderProfile();
+  if (view === 'profile') renderProfile();
   if (view === 'discover' && !state.discover.items.length) loadDiscover(true);
   if (view === 'history') renderHistory();
   if (view === 'about') renderAbout();
@@ -947,15 +949,35 @@ function isLiveStreamUrl(url) {
     || host.endsWith('.live.douyin.com') || host.endsWith('.live.bilibili.com') || host.endsWith('.huya.com') || host.endsWith('.douyu.com');
 }
 
+const parseLabels = {
+  single: { button: 'start', hint: 'inputHint' },
+  profile: { button: 'parseProfile', hint: 'profileHint' },
+  collection: { button: 'parseCollection', hint: 'collectionHint' },
+  live: { button: 'parseLive', hint: 'liveHint' },
+};
+
+function syncParseControls() {
+  const { locale } = localeState;
+  const labels = parseLabels[state.mode];
+  inputHint.textContent = t(locale, labels.hint);
+  parseButton.disabled = Boolean(state.busy);
+  parseButton.textContent = state.busy
+    ? t(locale, state.busy.message).replace('{page}', state.busy.page)
+    : t(locale, labels.button);
+}
+
 function setMode(mode) {
   state.mode = mode;
-  $$('.segment').forEach((button) => button.classList.toggle('active', button.dataset.mode === mode));
-  inputHint.textContent = mode === 'profile' ? (localeState.locale === 'en-US' ? 'Request the next page only when you click next; previous pages use the cache.' : '只在点击下一页时请求下一页，上一页从缓存恢复。') : mode === 'collection' ? (localeState.locale === 'en-US' ? 'Paste a Douyin collection link and process its items page by page.' : '粘贴抖音合集链接，按页整理合集作品。') : mode === 'live' ? (localeState.locale === 'en-US' ? 'Paste a Douyin or Bilibili live-room link to get an flv/hls stream.' : '粘贴抖音直播或B站直播间链接，获取 flv/hls 拉流地址。') : t(localeState.locale, 'inputHint');
-  parseButton.textContent = mode === 'profile' ? (localeState.locale === 'en-US' ? 'Parse profile' : '解析主页') : mode === 'collection' ? (localeState.locale === 'en-US' ? 'Parse collection' : '解析合集') : mode === 'live' ? (localeState.locale === 'en-US' ? 'Parse live room' : '解析直播间') : t(localeState.locale, 'start');
+  $$('[data-mode]').forEach((button) => button.classList.toggle('active', button.dataset.mode === mode));
+  syncParseControls();
   if (mode === 'profile' || mode === 'collection') setView('profile'); else setView('single');
 }
 
-$$('[data-view]').forEach((button) => button.addEventListener('click', () => setView(button.dataset.view)));
+$$('[data-view]').forEach((button) => button.addEventListener('click', () => {
+  const view = button.dataset.view;
+  if (view === 'single' || view === 'profile') setMode(view);
+  else setView(view);
+}));
 $$('[data-mode]').forEach((button) => button.addEventListener('click', () => setMode(button.dataset.mode)));
 parseButton.addEventListener('click', () => state.mode === 'profile' ? parseProfile() : state.mode === 'collection' ? parseCollection() : state.mode === 'live' ? parseLive() : parseSingle());
 pasteInputButton?.addEventListener('click', async () => {
@@ -1002,9 +1024,7 @@ function applyTheme() {
   localStorage.setItem(THEME_STORAGE, state.theme);
 }
 
-$('#platform-label').textContent = shell.platform === 'desktop' ? t(localeState.locale, 'desktop') : t(localeState.locale, 'web');
 applyAppLocale();
 applyTheme();
 renderHistory();
-checkHealth();
 shell.onUpdateStatus?.(setUpdateStatus);

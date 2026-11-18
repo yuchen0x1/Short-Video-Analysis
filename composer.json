@@ -2,7 +2,7 @@
     "name": "yuchen0x1/short-video-watermark-remover",
     "description": "一款高效的短视频去水印下载工具。",
     "type": "project",
-    "version": "1.1.12",
+    "version": "1.1.13",
     "license": "AGPL-3.0-only",
     "authors": [
         {
@@ -37,7 +37,10 @@
     },
     "scripts": {
         "serve": "php -S 127.0.0.1:18180 -t public public/router.php",
-        "serve:full": "node scripts/a_bogus_server.js & php -S 127.0.0.1:18180 -t public public/router.php",
+        "serve:full": [
+            "Composer\\Config::disableProcessTimeout",
+            "node scripts/serve-full.cjs"
+        ],
         "lint": "@php bin/lint.php",
         "smoke": "@php bin/smoke.php",
         "cache:clear": "@php -r \"require 'vendor/autoload.php'; echo var_export(\\\\App\\\\Services\\\\ParseCache::clear(), true);\"",

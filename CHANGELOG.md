@@ -4,10 +4,21 @@
 
 日期统一使用北京时间（UTC+8）：公开版本按 GitHub 发布时间，仅有标签的版本按对应提交日期。早期 2.x 记录随 v1.0.0 初始提交归档，原始发布日期未保留，不补造日期。历史条目描述当时变化，当前平台可用性以实际请求为准。
 
-## Unreleased · 2026-11-17
+## v1.1.13 · 2026-11-18
 
-- 应用壳层新增自动语言检测、手动中文/English 切换和本地持久化。
-- 核心导航、解析输入、按钮和错误状态即时更新；视频内容和接口字段保持原样。
+- Windows 电脑版修复主页、合集模式的输入入口，作品列表按当前模式显示。
+- 封面、列表缩略图和图集可通过电脑版的本地媒体代理加载。
+- 电脑版可跟随受支持平台的分享短链接跳转，并修复抖音视频详情请求被客户端拒绝的问题。
+- 切换中文或 English 时保留当前页面，解析完成后按钮继续使用所选语言。
+- Windows 下 `composer serve:full` 同时启动 PHP 网页版与抖音签名服务。
+
+[下载本版](https://github.com/yuchen0x1/Short-Video-Analysis/releases/tag/v1.1.13) · [代码差异](https://github.com/yuchen0x1/Short-Video-Analysis/compare/v1.1.12...v1.1.13)
+
+## v1.1.12 · 2026-11-17
+
+- Windows 电脑版支持自动语言检测、手动中文/English 切换和持久化，核心导航和解析输入随语言更新。
+
+[下载本版](https://github.com/yuchen0x1/Short-Video-Analysis/releases/tag/v1.1.12) · [代码差异](https://github.com/yuchen0x1/Short-Video-Analysis/compare/v1.1.11...v1.1.12)
 
 ## v1.1.11 · 2026-11-16
 

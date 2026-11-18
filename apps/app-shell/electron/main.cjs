@@ -292,7 +292,7 @@ function friendlyUpdateError(error) {
   return raw;
 }
 
-// 本地解析的 HTTP 传输桥：renderer 经 IPC 发起请求，由主进程用 Electron net.fetch
+// 本地解析的 HTTP 传输桥：renderer 经 IPC 发起请求，由主进程用 Electron net.request
 // 执行（无浏览器 CORS 限制），返回状态、响应体、响应头与重定向后的最终地址。
 
 // 渲染进程可请求的平台域名白名单（与 packages/parsers/src/domains.js 保持一致），
@@ -421,53 +421,63 @@ function resolveAllowedRedirect(baseUrl, location, urlValidator) {
   return nextUrl;
 }
 
-function collectResponseHeaders(response) {
-  const headers = {};
-  response.headers.forEach((value, key) => {
-    const lower = key.toLowerCase();
-    headers[lower] = lower === 'set-cookie' && headers[lower] !== undefined
-      ? `${headers[lower]}; ${value}`
-      : value;
-  });
-  if (response.headers.getSetCookie) {
-    try {
-      const list = response.headers.getSetCookie();
-      if (list && list.length) headers['set-cookie'] = list.join('; ');
-    } catch {
-      // 保持默认合并行为。
-    }
-  }
-  return headers;
-}
-
-async function fetchParserResponse({ url, method, headers, body, fetchImpl = net?.fetch }) {
-  if (typeof fetchImpl !== 'function') throw new Error('Electron 网络模块不可用');
-  let currentUrl = String(url || '');
+async function fetchParserResponse({ url, method, headers, body, timeoutMs }) {
+  let currentUrl = url;
   const requestMethod = String(method || 'GET').toUpperCase();
-  const requestBody = requestMethod === 'GET' || requestMethod === 'HEAD' ? undefined : String(body ?? '');
+  const readOnly = requestMethod === 'GET' || requestMethod === 'HEAD';
+  // Chromium 自行生成 Fetch Metadata，手动传入 Sec-Fetch-* 会导致 ERR_INVALID_ARGUMENT。
+  const requestHeaders = Object.fromEntries(Object.entries(headers || {}).filter(([name]) => !/^sec-fetch-/i.test(name)));
+  const hasCredentials = Object.keys(requestHeaders).some(name => /^(cookie|authorization)$/i.test(name));
+  const timeout = Math.max(1000, Math.min(Number(timeoutMs) || 15000, 30000));
+  const request = net.request({ url, method: requestMethod, headers: requestHeaders, redirect: 'manual' });
+  let redirectCount = 0;
+  let timer;
 
-  for (let redirectCount = 0; redirectCount <= MAX_HTTP_REDIRECTS; redirectCount += 1) {
-    if (!isAllowedParserUrl(currentUrl)) throw new Error('不允许的请求地址');
-    const response = await fetchImpl(currentUrl, {
-      method: requestMethod,
-      headers: headers || undefined,
-      body: requestBody,
-      redirect: 'manual',
+  try {
+    return await new Promise((resolve, reject) => {
+      timer = setTimeout(() => {
+        reject(new Error('网络请求超时'));
+        request.abort();
+      }, timeout);
+      request.on('redirect', (_status, _method, location) => {
+        try {
+          if (!readOnly) throw new Error('提交请求不能自动重定向');
+          if (++redirectCount > MAX_HTTP_REDIRECTS) throw new Error('重定向次数过多');
+          const nextUrl = resolveAllowedRedirect(currentUrl, location, isAllowedParserUrl);
+          if (hasCredentials && new URL(nextUrl).origin !== new URL(currentUrl).origin) {
+            throw new Error('带凭据的请求不能跨站重定向');
+          }
+          currentUrl = nextUrl;
+          // Electron 要求在 redirect 事件回调内同步调用。
+          request.followRedirect();
+        } catch (error) {
+          reject(error);
+          request.abort();
+        }
+      });
+      request.once('error', reject);
+      request.once('response', (response) => {
+        const chunks = [];
+        response.once('error', reject);
+        response.once('end', () => {
+          const responseHeaders = { ...response.headers };
+          if (Array.isArray(responseHeaders['set-cookie'])) {
+            responseHeaders['set-cookie'] = responseHeaders['set-cookie'].join('; ');
+          }
+          resolve({
+            status: response.statusCode,
+            data: Buffer.concat(chunks).toString('utf8'),
+            headers: responseHeaders,
+            url: currentUrl,
+          });
+        });
+        response.on('data', (chunk) => chunks.push(chunk));
+      });
+      request.end(readOnly ? undefined : String(body ?? ''));
     });
-    const location = response.headers.get('location');
-    if (response.status >= 300 && response.status < 400 && location) {
-      if (redirectCount >= MAX_HTTP_REDIRECTS) throw new Error('重定向次数过多');
-      currentUrl = resolveAllowedRedirect(currentUrl, location, isAllowedParserUrl);
-      continue;
-    }
-    return {
-      status: response.status,
-      data: await response.text(),
-      headers: collectResponseHeaders(response),
-      url: response.url || currentUrl,
-    };
+  } finally {
+    clearTimeout(timer);
   }
-  throw new Error('重定向次数过多');
 }
 
 function setupParserIpc() {
@@ -483,6 +493,7 @@ function setupParserIpc() {
         method: payload?.method,
         headers: payload?.headers,
         body: payload?.body,
+        timeoutMs: payload?.timeoutMs,
       });
     } catch (error) {
       throw new Error('网络请求失败: ' + String((error && error.message) || error));

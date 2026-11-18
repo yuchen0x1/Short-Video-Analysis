@@ -23,7 +23,7 @@ contextBridge.exposeInMainWorld('appShell', {
   openExternal: (url) => {
     if (/^https?:\/\//i.test(String(url))) shell.openExternal(String(url));
   },
-  // 本地解析 HTTP 传输桥（主进程 net.fetch，无 CORS 限制）
+  // 本地解析 HTTP 传输桥（主进程 net.request，无 CORS 限制）
   httpRequest: (payload) => ipcRenderer.invoke('app.httpRequest', payload),
   // 本地媒体代理地址（注入 Referer/UA 绕过防盗链）
   mediaProxyUrl: (url, filename) => localMediaProxyUrl(url, filename),

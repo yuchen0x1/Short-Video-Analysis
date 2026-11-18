@@ -28,9 +28,9 @@
 
 <!-- github-release:start -->
 
-**[v1.1.12](https://github.com/yuchen0x1/Short-Video-Analysis/releases/tag/v1.1.12)** · 2026-11-17
+**[v1.1.13](https://github.com/yuchen0x1/Short-Video-Analysis/releases/tag/v1.1.13)** · 2026-11-18
 
-本版为网页和 Windows Electron 壳层加入自动语言检测、手动中文/English 切换和持久化设置。导航、解析输入、按钮和错误状态即时更新；视频、作者、封面和平台返回数据保持原样。共享解析器包和 PHP 网页解析逻辑未在本版重写。
+Windows 电脑版修复主页与合集的解析入口、封面与图集预览，以及切换语言时跳离当前页面的问题。Windows 下的 `composer serve:full` 现在会同时启动 PHP 网页版与抖音签名服务。
 
 [全部发行记录](https://github.com/yuchen0x1/Short-Video-Analysis/releases)
 
@@ -189,7 +189,7 @@ start.bat
 ./start.sh
 ```
 
-两个脚本会从 `APP_PORT=18180` 和 `A_BOGUS_PORT=9876` 开始寻找空闲端口，并启动 PHP 内置服务器。
+两个脚本会从 `APP_PORT=18180` 和 `A_BOGUS_PORT=9876` 开始寻找空闲端口，并启动 PHP 内置服务器。`composer serve:full` 直接使用这两个端口，可通过环境变量指定。
 
 ### 方式二：Docker 一键部署
 
