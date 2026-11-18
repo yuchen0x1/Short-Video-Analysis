@@ -222,12 +222,24 @@ function setupWeiboLoginIpc() {
 }
 
 function setupAutoUpdater() {
-  autoUpdater.autoDownload = true;
-  autoUpdater.autoInstallOnAppQuit = true;
+  autoUpdater.autoDownload = false;
+  autoUpdater.autoInstallOnAppQuit = false;
   autoUpdater.allowPrerelease = false;
+  autoUpdater.allowDowngrade = false;
 
   autoUpdater.on('checking-for-update', () => sendUpdate({ status: 'checking' }));
-  autoUpdater.on('update-available', (info) => sendUpdate({ status: 'available', version: info.version }));
+  autoUpdater.on('update-available', (info) => {
+    const installer = info.files?.find((file) => file.url.endsWith('.exe'));
+    const notes = Array.isArray(info.releaseNotes) ? info.releaseNotes.find((entry) => entry.version === info.version)?.note : info.releaseNotes;
+    sendUpdate({
+      status: 'available',
+      version: info.version,
+      releaseDate: info.releaseDate,
+      size: installer?.size,
+      releaseNotes: typeof notes === 'string' ? notes.slice(0, 3500) : '',
+      canDownload: trustedUpdatePublisher,
+    });
+  });
   autoUpdater.on('update-not-available', (info) => sendUpdate({ status: 'none', version: info.version }));
   autoUpdater.on('download-progress', (progress) => sendUpdate({
     status: 'downloading',
@@ -236,47 +248,57 @@ function setupAutoUpdater() {
     transferred: Number(progress.transferred) || 0,
     total: Number(progress.total) || 0,
   }));
-  autoUpdater.on('update-downloaded', async (info) => {
+  autoUpdater.on('update-downloaded', (info) => {
     sendUpdate({ status: 'downloaded', version: info.version });
-    if (mainWindow && !mainWindow.isDestroyed()) {
-      const { response } = await dialog.showMessageBox(mainWindow, {
-        type: 'info',
-        title: '更新已就绪',
-        message: `新版本 ${info.version} 已下载完成。`,
-        detail: '重启应用即可完成安装。',
-        buttons: ['立即重启', '稍后'],
-        defaultId: 0,
-      });
-      if (response === 0) autoUpdater.quitAndInstall();
-    }
   });
-  autoUpdater.on('error', (error) => sendUpdate({ status: 'error', message: String((error && error.message) || error) }));
+  autoUpdater.on('error', (error) => sendUpdate({ status: 'error', message: friendlyUpdateError(error) }));
 
   // 在线更新统一使用 GitHub Releases。
   ipcMain.on('app.update.check', async (event) => {
     try { assertTrustedRenderer(event); } catch (error) { sendUpdate({ status: 'error', message: error.message }); return; }
     if (!app.isPackaged) {
-      sendUpdate({ status: 'dev', message: '正常更新中' });
+      sendUpdate({ status: 'dev' });
       return;
     }
+    if (['checking', 'downloading', 'downloaded'].includes(lastUpdateStatus.status)) return;
+    sendUpdate({ status: 'checking' });
     try {
       await checkForUpdatesWithChannel();
     } catch (error) {
       sendUpdate({ status: 'error', message: friendlyUpdateError(error) });
     }
   });
+  ipcMain.on('app.update.download', async (event) => {
+    try { assertTrustedRenderer(event); } catch { return; }
+    if (!trustedUpdatePublisher || lastUpdateStatus.status !== 'available') return;
+    sendUpdate({ status: 'downloading' });
+    try {
+      await autoUpdater.downloadUpdate();
+    } catch (error) {
+      sendUpdate({ status: 'error', message: friendlyUpdateError(error) });
+    }
+  });
   ipcMain.on('app.update.install', (event) => {
     try { assertTrustedRenderer(event); } catch { return; }
-    if (app.isPackaged) autoUpdater.quitAndInstall();
+    if (trustedUpdatePublisher && lastUpdateStatus.status === 'downloaded') autoUpdater.quitAndInstall();
   });
   ipcMain.handle('app.version', (event) => { assertTrustedRenderer(event); return app.getVersion(); });
   ipcMain.handle('app.update.status', (event) => { assertTrustedRenderer(event); return lastUpdateStatus; });
   ipcMain.handle('app.changelog', (event) => { assertTrustedRenderer(event); return readChangelog(); });
 }
 
+let trustedUpdatePublisher = false;
+
 async function checkForUpdatesWithChannel() {
   // electron-builder 已把 GitHub provider 写入打包产物的 app-update.yml。
-  // 不在运行时调用 setFeedURL，避免覆盖构建时的 feed 和签名配置。
+  const config = await autoUpdater.configOnDisk.value;
+  if (config.provider !== 'github' || config.owner !== 'yuchen0x1' || config.repo !== 'Short-Video-Analysis') {
+    throw new Error('更新源配置无效');
+  }
+  const publishers = [].concat(config.publisherName ?? []);
+  trustedUpdatePublisher = process.platform === 'win32' && !process.env.PORTABLE_EXECUTABLE_FILE
+    && publishers.length > 0 && publishers.every((name) => typeof name === 'string' && name.trim() !== '');
+  // NSIS 仅在构建时配置了发布者时验证 Authenticode。
   return autoUpdater.checkForUpdates();
 }
 
@@ -747,10 +769,6 @@ app.whenReady().then(async () => {
     return;
   }
   createWindow();
-  if (app.isPackaged) {
-    // 启动时静默检查 GitHub Releases，失败时不打扰用户。
-    checkForUpdatesWithChannel().catch(() => {});
-  }
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();
   });

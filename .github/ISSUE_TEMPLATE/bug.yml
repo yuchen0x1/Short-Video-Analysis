@@ -1,0 +1,23 @@
+name: 报告故障
+description: 解析、平台兼容性、安装或更新失败
+body:
+  - type: dropdown
+    id: area
+    attributes:
+      label: 受影响的功能
+      options: [解析或下载, Windows 兼容性, 网页或 API 兼容性, 安装或更新, 其他]
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: 应用版本、系统与架构、浏览器或 PHP 版本
+    validations:
+      required: true
+  - type: textarea
+    id: symptom
+    attributes:
+      label: 复现步骤、预期行为和错误信息
+      description: 如需示例，仅提供可公开访问的链接。请先移除 Cookie、访问令牌、私有链接及个人信息。
+    validations:
+      required: true

@@ -10,7 +10,7 @@
 
 [![Version](https://img.shields.io/github/v/release/yuchen0x1/Short-Video-Analysis?display_name=tag&sort=date)](https://github.com/yuchen0x1/Short-Video-Analysis/releases/latest) [![Platforms](https://img.shields.io/badge/平台-12个-8b5cf6)](#覆盖平台) [![PHP](https://img.shields.io/badge/PHP-8.1%2B-777bb4)](#技术选型与环境要求) [![License](https://img.shields.io/badge/License-AGPL--3.0--only-9cf)](LICENSE)
 
-![网页版工作台](assets/screenshots/web-home.png)
+![网页版工作台](docs/screenshots/web-workbench-v1.2.png)
 
 **[⬇ 下载最新版本](https://github.com/yuchen0x1/Short-Video-Analysis/releases/latest)** ｜ [更新日志](CHANGELOG.md) ｜ [API 手册](#api-手册) ｜ [答疑与排障](#答疑与排障)
 
@@ -18,9 +18,9 @@
 
 ---
 
-## 当前工作区升级审计
+## 开发与维护
 
-2026-11-16 的 v1.1.11 发布审计已完成：本轮研究 15 个开源项目，建立 36 项升级路线，并实施 9 项安全、可靠性、缓存、HLS 子路径和可访问性改进。审计与路线图见 [PROJECT_AUDIT.md](PROJECT_AUDIT.md)、[COMPETITOR_ANALYSIS.md](COMPETITOR_ANALYSIS.md)、[UPGRADE_ROADMAP.md](UPGRADE_ROADMAP.md) 和 [UPGRADE_REPORT.md](UPGRADE_REPORT.md)。
+查看产品范围、技术基线、竞品研究与待办事项。 [平台与架构](docs/maintenance/ecosystem-baseline.md) · [竞品研究](docs/maintenance/competitive-research.md) · [维护路线图](docs/maintenance/roadmap.md) · [逆向暴露面审计](docs/maintenance/reverse-engineering-audit.md) · [贡献指南](CONTRIBUTING.md)
 
 ---
 
@@ -28,9 +28,9 @@
 
 <!-- github-release:start -->
 
-**[v1.1.13](https://github.com/yuchen0x1/Short-Video-Analysis/releases/tag/v1.1.13)** · 2026-11-18
+**[v1.2.0](https://github.com/yuchen0x1/Short-Video-Analysis/releases/tag/v1.2.0)** · 2026-11-18
 
-Windows 电脑版修复主页与合集的解析入口、封面与图集预览，以及切换语言时跳离当前页面的问题。Windows 下的 `composer serve:full` 现在会同时启动 PHP 网页版与抖音签名服务。
+去水印解析新增 Windows 更新确认与稍后处理、网页 PWA 更新前的输入恢复，以及单独的 PHP 部署压缩包。Windows 解析页支持快捷键和拖放分享链接。
 
 [全部发行记录](https://github.com/yuchen0x1/Short-Video-Analysis/releases)
 
@@ -39,6 +39,15 @@ Windows 电脑版修复主页与合集的解析入口、封面与图集预览，
 [完整更新日志](docs/releases/release-notes.md)
 
 [产品范围](docs/PRODUCT_SCOPE.md)
+
+| 功能 | Windows x64 | PHP 网页 / PWA |
+| --- | --- | --- |
+| 单条、主页/合集、直播、发现 | 本机解析 | 通过 PHP 服务解析 |
+| 批量链接、收藏与备份 | 主页/合集作品批量下载、本地历史 | 批量链接、收藏、历史、备份 |
+| 交付 | 安装版和便携版 | PHP ZIP、Docker、版本化 API |
+| 更新 | 应用内检查，按发行签名与安装类型选择路径 | 部署更新后可确认刷新 PWA |
+
+可在发布页下载任一构建。问题反馈使用 GitHub Issue，安全问题请提交私密报告。 [功能演示截图](docs/screenshots/web-workbench-v1.2.png) · [问题反馈](https://github.com/yuchen0x1/Short-Video-Analysis/issues/new/choose) · [安全政策](SECURITY.md)
 
 ## 推广介绍图
 

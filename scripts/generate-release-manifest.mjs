@@ -18,7 +18,7 @@ const excluded = new Set(['SHA256SUMS.txt', 'update-manifest.json', 'builder-deb
 const files = fs.readdirSync(releaseDir, { withFileTypes: true })
   .filter((entry) => entry.isFile() && !excluded.has(entry.name))
   .map((entry) => entry.name)
-  .filter((name) => /\.(?:exe|yml|blockmap)$/i.test(name))
+  .filter((name) => /\.(?:exe|yml|blockmap|zip)$/i.test(name))
   .filter((name) => /\.yml$/i.test(name) ? /^(?:latest|alpha|beta)\.yml$/i.test(name) : name.includes(version))
   .sort((a, b) => a.localeCompare(b));
 

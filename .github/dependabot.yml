@@ -1,0 +1,23 @@
+version: 2
+updates:
+  - package-ecosystem: composer
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 3
+  - package-ecosystem: npm
+    directory: /apps/app-shell
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 3
+    groups:
+      electron-toolchain:
+        patterns: ['electron', 'electron-builder', 'electron-updater']
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+  - package-ecosystem: docker
+    directory: /
+    schedule:
+      interval: monthly

@@ -1,0 +1,54 @@
+name: Maintenance checks
+
+on:
+  schedule:
+    - cron: '18 4 * * 1'
+  workflow_dispatch:
+  workflow_run:
+    workflows: [release]
+    types: [completed]
+
+permissions:
+  contents: read
+
+jobs:
+  release-health:
+    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
+        with:
+          node-version: '22'
+          package-manager-cache: false
+      - name: Verify latest public release and update feed
+        run: |
+          gh api "repos/$GITHUB_REPOSITORY/releases/latest" > "$RUNNER_TEMP/latest.json"
+          tag=$(jq -r .tag_name "$RUNNER_TEMP/latest.json")
+          mkdir "$RUNNER_TEMP/metadata"
+          gh release download "$tag" --dir "$RUNNER_TEMP/metadata" --pattern latest.yml --pattern update-manifest.json --pattern SHA256SUMS.txt
+          node scripts/check-published-release.mjs "$RUNNER_TEMP/latest.json" "$RUNNER_TEMP/metadata"
+          gh release verify "$tag" >> "$GITHUB_STEP_SUMMARY"
+          printf 'Verified release and updater feed for %s\n' "$tag" >> "$GITHUB_STEP_SUMMARY"
+      - name: Check dependency advisories
+        run: npm --prefix apps/app-shell audit --omit=dev --audit-level=high
+
+  peers:
+    if: github.event_name != 'workflow_run'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - run: |
+          printf '### Upstream development\n\n| Project | Last push | Latest release |\n|---|---|---|\n' >> "$GITHUB_STEP_SUMMARY"
+          for repo in yt-dlp/yt-dlp alexta69/metube mediago-dev/mediago electron/electron electron-userland/electron-builder GoogleChrome/workbox; do
+            created=$(gh api "repos/$repo" --jq .pushed_at)
+            release=$(gh api "repos/$repo/releases/latest" --jq .tag_name)
+            printf '| %s | %s | %s |\n' "$repo" "$created" "$release" >> "$GITHUB_STEP_SUMMARY"
+          done
