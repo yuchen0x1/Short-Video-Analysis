@@ -30,7 +30,7 @@
 
 **[v1.1.13](https://github.com/yuchen0x1/Short-Video-Analysis/releases/tag/v1.1.13)** · 2026-11-18
 
-Windows 电脑版修复主页与合集的解析入口、封面与图集预览，以及切换语言时跳离当前页面的问题。Windows 下的 `composer serve:full` 现在会同时启动 PHP 网页版与抖音签名服务。
+Windows 电脑版修复主页与合集的解析入口、封面与图集预览，以及切换语言时跳离当前页面的问题。Windows 下的 composer serve:full 现在会同时启动 PHP 网页版与抖音签名服务。
 
 [全部发行记录](https://github.com/yuchen0x1/Short-Video-Analysis/releases)
 
