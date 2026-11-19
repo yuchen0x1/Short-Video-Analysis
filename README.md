@@ -28,7 +28,7 @@
 
 <!-- github-release:start -->
 
-**[v1.2.0](https://github.com/yuchen0x1/Short-Video-Analysis/releases/tag/v1.2.0)** · 2026-11-18
+**[v1.2.0](https://github.com/yuchen0x1/Short-Video-Analysis/releases/tag/v1.2.0)** · 2026-11-19
 
 去水印解析新增 Windows 更新确认与稍后处理、网页 PWA 更新前的输入恢复，以及单独的 PHP 部署压缩包。Windows 解析页支持快捷键和拖放分享链接。
 
