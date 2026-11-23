@@ -136,7 +136,13 @@
     });
   }
 
+  /**
+   * 并发数钳制。
+   * 未设置时 localStorage.getItem 返回 null，Number(null) 是 0，会被误判成「整数 1 路」，
+   * 因此空值必须先回落到默认 3 路，再做 1..MAX_CONCURRENCY 的钳制。
+   */
   function clampConcurrency(value) {
+    if (value === null || value === undefined || value === '') return 3;
     const parsed = Number(value);
     return Number.isInteger(parsed) ? Math.min(Math.max(parsed, 1), MAX_CONCURRENCY) : 3;
   }

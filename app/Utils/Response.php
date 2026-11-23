@@ -109,14 +109,36 @@ class Response
         header('Cache-Control: no-store');
         self::addRequestHeaders();
 
+        $payload = self::errorPayload($message, $httpCode, $errors, $code, $retryable, $retryAfter);
+        if (isset($payload['retry_after'])) {
+            header('Retry-After: ' . $payload['retry_after']);
+        }
+
+        echo json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR);
+        exit;
+    }
+
+    /**
+     * 构造错误响应体。
+     *
+     * 与 error() 拆开是为了能在不 exit 的前提下被单元测试直接断言，
+     * 避免只对源码做字符串匹配而漏掉真实取值逻辑（如 retry_after 钳制、retryable 推导）。
+     *
+     * @param mixed $errors
+     * @return array<string, mixed>
+     */
+    public static function errorPayload(
+        string $message,
+        int $httpCode = 400,
+        $errors = null,
+        ?string $code = null,
+        ?bool $retryable = null,
+        ?int $retryAfter = null
+    ): array {
         $resolvedCode = $code ?? (self::ERROR_CODES[$httpCode] ?? 'error');
         $resolvedRetryable = $retryable ?? in_array($resolvedCode, self::RETRYABLE_CODES, true);
-        if ($retryAfter !== null) {
-            $retryAfter = max(1, $retryAfter);
-            header('Retry-After: ' . $retryAfter);
-        }
-        
-        $response = [
+
+        $payload = [
             'success' => false,
             'message' => $message,
             'code' => $resolvedCode,
@@ -125,15 +147,15 @@ class Response
         ];
 
         if ($retryAfter !== null) {
-            $response['retry_after'] = $retryAfter;
+            // 至少 1 秒且不超过 1 小时，避免异常配置产生不可用的超长等待。
+            $payload['retry_after'] = min(max(1, $retryAfter), 3600);
         }
-        
+
         if ($errors !== null) {
-            $response['errors'] = $errors;
+            $payload['errors'] = $errors;
         }
-        
-        echo json_encode($response, JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR);
-        exit;
+
+        return $payload;
     }
 
     /**

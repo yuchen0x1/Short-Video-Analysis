@@ -78,11 +78,34 @@ final class RegressionFixesTest extends TestCase
 
     public function testApiErrorsExposeStableCodeAndRetryContract(): void
     {
-        $source = (string) file_get_contents($this->root . '/app/Utils/Response.php');
-        $this->assertStringContainsString("'rate_limited'", $source);
-        $this->assertStringContainsString('\'retryable\' => $resolvedRetryable', $source);
-        $this->assertStringContainsString("'retry_after'", $source);
-        $this->assertStringContainsString('\'rate_limited\', true, $retryAfter', $source);
+        // 429：稳定性错误码 + 可重试 + 等待秒数（真实取值，不是源码字符串匹配）
+        $limited = \App\Utils\Response::errorPayload('请求过于频繁', 429, null, null, null, 42);
+        $this->assertSame(false, $limited['success']);
+        $this->assertSame('rate_limited', $limited['code']);
+        $this->assertTrue($limited['retryable']);
+        $this->assertSame(42, $limited['retry_after']);
+        $this->assertMatchesRegularExpression('/^[0-9a-f]{24}$/', $limited['request_id']);
+
+        // 上游失败：502 默认推导为 upstream_error 且可重试
+        $upstream = \App\Utils\Response::errorPayload('上游失败', 502);
+        $this->assertSame('upstream_error', $upstream['code']);
+        $this->assertTrue($upstream['retryable']);
+        $this->assertArrayNotHasKey('retry_after', $upstream, '未传 retryAfter 时不应出现该字段');
+
+        // 客户端错误：不可重试
+        $invalid = \App\Utils\Response::errorPayload('参数错误', 422);
+        $this->assertSame('invalid_input', $invalid['code']);
+        $this->assertFalse($invalid['retryable']);
+
+        // retry_after 钳制到 1..3600，避免异常配置产生超长等待
+        $this->assertSame(1, \App\Utils\Response::errorPayload('x', 429, null, null, null, 0)['retry_after']);
+        $this->assertSame(1, \App\Utils\Response::errorPayload('x', 429, null, null, null, -5)['retry_after']);
+        $this->assertSame(3600, \App\Utils\Response::errorPayload('x', 429, null, null, null, 999999)['retry_after']);
+
+        // 旧字段保持兼容：success/message/errors 名称不变
+        $legacy = \App\Utils\Response::errorPayload('字段错误', 422, ['url' => '必填']);
+        $this->assertSame(['url' => '必填'], $legacy['errors']);
+        $this->assertSame('字段错误', $legacy['message']);
     }
 
     public function testApiKeyMediaCookieIsSignedAndExpires(): void
@@ -95,6 +118,45 @@ final class RegressionFixesTest extends TestCase
         $this->assertTrue(\App\Utils\ApiAuth::mediaCookieIsValid($value, $now));
         $this->assertFalse(\App\Utils\ApiAuth::mediaCookieIsValid($value, $now + 601));
         $this->assertFalse(\App\Utils\ApiAuth::mediaCookieIsValid($now . '.invalid', $now));
+        putenv('API_KEY_ENABLED');
+        putenv('API_KEY');
+        Config::clearCache();
+    }
+
+    /**
+     * 滑动续期必须有绝对上限，且伪造的签发时间/过期时间不能被接受。
+     */
+    public function testMediaCookieHasAbsoluteLifetimeLimit(): void
+    {
+        putenv('API_KEY_ENABLED=true');
+        putenv('API_KEY=test-api-key');
+        Config::clearCache();
+
+        $now = time();
+        // 用一个自身 12 小时都不过期的 Cookie，才能单独验证绝对寿命上限
+        $value = \App\Utils\ApiAuth::mediaCookieValue($now, 43200);
+        $this->assertMatchesRegularExpression('/^\d{10,12}\.\d{10,12}\.[a-f0-9]{64}$/', $value);
+
+        // 12 小时内有效（绝对上限 43200 秒）
+        $this->assertTrue(\App\Utils\ApiAuth::mediaCookieIsValid($value, $now + 36000));
+        // 超过绝对寿命后即使自身仍未过期也必须拒绝
+        $this->assertFalse(\App\Utils\ApiAuth::mediaCookieIsValid($value, $now + 43201));
+
+        // 隔离验证绝对寿命：签发于 50000 秒前、自身还有 50000 秒有效期 → 仅因绝对上限被拒
+        $stale = \App\Utils\ApiAuth::mediaCookieValue($now - 50000, 100000);
+        $this->assertFalse(\App\Utils\ApiAuth::mediaCookieIsValid($stale, $now));
+        // 同样形式的 Cookie 在绝对寿命内则有效
+        $fresh = \App\Utils\ApiAuth::mediaCookieValue($now - 1000, 100000);
+        $this->assertTrue(\App\Utils\ApiAuth::mediaCookieIsValid($fresh, $now));
+
+        // 篡改签发时间会破坏签名
+        [$issued, $expiry, $sig] = explode('.', $value);
+        $tampered = ((int) $issued - 1000) . '.' . $expiry . '.' . $sig;
+        $this->assertFalse(\App\Utils\ApiAuth::mediaCookieIsValid($tampered, $now));
+
+        // 旧的两段格式不再被接受（避免绕过绝对寿命检查）
+        $this->assertFalse(\App\Utils\ApiAuth::mediaCookieIsValid($issued . '.' . $expiry, $now));
+
         putenv('API_KEY_ENABLED');
         putenv('API_KEY');
         Config::clearCache();
@@ -479,6 +541,27 @@ final class RegressionFixesTest extends TestCase
         $source = (string) file_get_contents($this->root . '/public/api/v1.php');
         $this->assertStringNotContainsString('qushuiyin-web-updater/1.', $source, 'User-Agent 不应硬编码版本');
         $this->assertSame(2, substr_count($source, 'AppVersion::version()'));
+    }
+
+    /**
+     * OpenAPI 必须声明实现真实会返回的 502，否则按契约生成的客户端会把上游失败当成未知状态。
+     */
+    public function testOpenApiDeclaresUpstreamErrorForParseEndpoints(): void
+    {
+        $spec = (string) file_get_contents($this->root . '/public/openapi.yaml');
+        $this->assertStringContainsString('UpstreamUnavailable:', $spec);
+
+        $api = (string) file_get_contents($this->root . '/public/api/v1.php');
+        $upstreamCalls = substr_count($api, "Response::error(\$e->getMessage(), 502, null, 'upstream_error', true)");
+        $this->assertSame(7, $upstreamCalls, '解析/主页/合集/直播/热榜/搜索/评论共 7 处上游失败应返回 502');
+
+        foreach (['/parse', '/profile', '/collection', '/live', '/hot', '/search', '/comments'] as $path) {
+            $this->assertMatchesRegularExpression(
+                '#^  ' . preg_quote($path, '#') . ':\r?\n.*?"502":#ms',
+                $spec,
+                $path . ' 的 OpenAPI 响应应声明 502'
+            );
+        }
     }
 
     /**

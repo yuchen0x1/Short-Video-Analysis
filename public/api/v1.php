@@ -252,6 +252,14 @@ if ($path === "/api/v1/health") {
         $warnings[] = "a_bogus 签名服务未启动，抖音主页、合集、热榜与搜索不可用";
     }
 
+    // 部署陷阱：只开开关、不设密钥会让所有接口 fail-closed 返回 401，
+    // 健康检查必须显式提示，避免被误判为服务故障。
+    $apiKeyEnabled = (bool) Config::get('api.key_enabled', false);
+    $apiKeyConfigured = trim((string) Config::get('api.key', '')) !== '';
+    if ($apiKeyEnabled && !$apiKeyConfigured) {
+        $warnings[] = "API_KEY_ENABLED=true 但 API_KEY 为空，所有受保护接口都会返回 401";
+    }
+
     // 版本统一由 AppVersion 解析（以 composer.json 为准，vendor 元数据仅作回退）
     $version = AppVersion::version();
     Response::success([
@@ -263,6 +271,10 @@ if ($path === "/api/v1/health") {
         "sidecar" => [
             "port" => $aBogusPort,
             "reachable" => $sidecarReachable,
+        ],
+        "api_key" => [
+            "enabled" => $apiKeyEnabled,
+            "configured" => $apiKeyConfigured,
         ],
         "warnings" => $warnings,
         "timestamp" => time(),

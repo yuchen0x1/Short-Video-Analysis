@@ -93,7 +93,9 @@ paths:
         "429":
           $ref: "#/components/responses/RateLimited"
         "500":
-          description: 解析失败或平台接口异常
+          description: 解析失败或结果无法序列化
+        "502":
+          $ref: "#/components/responses/UpstreamUnavailable"
     post:
       summary: 解析视频/图文链接（表单或 JSON body）
       operationId: parsePost
@@ -135,7 +137,9 @@ paths:
         "429":
           $ref: "#/components/responses/RateLimited"
         "500":
-          description: 解析失败
+          description: 解析失败或结果无法序列化
+        "502":
+          $ref: "#/components/responses/UpstreamUnavailable"
   /profile:
     post:
       summary: 解析抖音个人主页公开作品单页
@@ -173,7 +177,9 @@ paths:
         "429":
           $ref: "#/components/responses/RateLimited"
         "500":
-          description: 主页解析失败或平台接口异常
+          description: 主页解析失败或结果无法序列化
+        "502":
+          $ref: "#/components/responses/UpstreamUnavailable"
   /collection:
     post:
       summary: 解析抖音合集公开作品单页
@@ -211,7 +217,9 @@ paths:
         "429":
           $ref: "#/components/responses/RateLimited"
         "500":
-          description: 合集解析失败或平台接口异常
+          description: 合集解析失败或结果无法序列化
+        "502":
+          $ref: "#/components/responses/UpstreamUnavailable"
   /live:
     post:
       summary: 解析直播间拉流地址
@@ -244,7 +252,9 @@ paths:
         "429":
           $ref: "#/components/responses/RateLimited"
         "500":
-          description: 直播解析失败或平台接口异常
+          description: 直播解析失败或结果无法序列化
+        "502":
+          $ref: "#/components/responses/UpstreamUnavailable"
   /hot:
     get:
       summary: 平台公开热榜（用户主动查看）
@@ -353,6 +363,18 @@ components:
             $ref: "#/components/schemas/Error"
     MethodNotAllowed:
       description: 不支持的请求方法
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    UpstreamUnavailable:
+      description: 上游平台接口暂时不可用；响应 code 为 upstream_error、retryable 为 true
+      headers:
+        Retry-After:
+          description: 服务端可估算时的建议等待秒数
+          schema:
+            type: integer
+            minimum: 1
       content:
         application/json:
           schema:
