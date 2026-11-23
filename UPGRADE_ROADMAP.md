@@ -16,8 +16,8 @@
 | EV-007 | Electron IPC sender 校验 | 桌面安全 | 关键 IPC 只依赖 preload 暴露面 | Electron 安全实践 | 校验 sender webContents、来源和主窗口 | `apps/app-shell/electron/main.cjs` | 中 | P0 | 非信任 frame 调 IPC 被拒绝 | 已完成 |
 | EV-008 | 文件导航限制到 dist | 桌面安全 | 生产环境 `file:` 过宽 | Electron 安全实践 | 仅允许打包 `dist` 目录下文件 | `main.cjs` | 中 | P0 | dist 外 file URL 导航被阻止 | 已完成 |
 | EV-009 | 网页结果区可访问性 | Web UX | 异步结果缺少统一 live region/焦点目标 | Cobalt/成熟 Web UI | 结果标题可聚焦，加载状态 role=status | `public/app.php` | 低 | P1 | 屏幕阅读器可感知加载和结果 | 已完成 |
-| EV-010 | 统一错误码 | API 契约 | 客户端只能解析中文 message | Douyin_TikTok_Download_API REST | 增加稳定 code、retryable、字段错误 | `Response.php`、`public/api/v1.php`、JS | 中 | P1 | 同一错误跨 Web/桌面返回同 code | 计划 |
-| EV-011 | 客户端消费 Retry-After | Web/桌面 | 服务端给出等待值，客户端仍立即重试 | yt-dlp/MeTube 重试策略 | 读取 429 头并做上限退避 | `public/app.php`、`packages/parsers/src/http.js` | 中 | P1 | 429 后不立即打满限额，提示剩余等待 | 计划 |
+| EV-010 | 统一错误码 | API 契约 | 客户端只能解析中文 message | Douyin_TikTok_Download_API REST | 增加稳定 code、retryable、字段错误 | `Response.php`、`public/api/v1.php`、JS | 中 | P1 | 同一错误跨 Web/桌面返回同 code | 已完成（v1.3.0） |
+| EV-011 | 客户端消费 Retry-After | Web/桌面 | 服务端给出等待值，客户端仍立即重试 | yt-dlp/MeTube 重试策略 | 读取 429 头并做上限退避 | `public/app.php`、`packages/parsers/src/http.js` | 中 | P1 | 429 后不立即打满限额，提示剩余等待 | 已完成（网页版，v1.3.0） |
 | EV-012 | 解析总时间预算 | 稳定性 | 多级重定向/回退可能占满 worker | yt-dlp 网络超时分层 | 传播 request deadline，统一剩余预算 | `HttpClient.php`、`BaseParser.php` | 中 | P1 | 单次解析超过预算进入受控失败 | 计划 |
 | EV-013 | ParseCache 单飞 | 性能 | 同 URL 并发 miss 会同时回源 | MeTube 队列/缓存思想 | 文件/Redis 锁 + 短等待，防 cache stampede | `ParseCache.php`、`VideoParser.php` | 中 | P1 | 并发同 key 只有一个上游请求 | 计划 |
 | EV-014 | PHP/JS 跨语言 fixture | 架构 | 双解析器结果一致性靠手写断言 | yt-dlp extractor tests | 为 12 平台保存脱敏 fixture，双端对比字段 | `tests/fixtures`、JS/PHP tests | 中 | P1 | fixture 在 PHP/JS 两端输出等价契约 | 计划 |
@@ -25,8 +25,8 @@
 | EV-016 | 抖音搜索桌面对齐 | 解析/发现 | PHP 支持，JS 明确拒绝 | Douyin_TikTok_Download_API | 复用签名传输或在 UI 明确 Web-only | `packages/parsers/src/discovery.js`、桌面 UI | 中 | P1 | 能力矩阵和 UI 与实际行为一致 | 计划 |
 | EV-017 | B站音视频字段 | API/下载 | DASH 视频轨与音乐轨分开，下载文案不够明确 | yt-dlp format selection | 增加 `audio_url`/轨道信息和合并提示 | `BilibiliParser.php`、JS、OpenAPI | 中 | P1 | B站结果显式标注视频轨/音频轨 | 计划 |
 | EV-018 | 失败分类与可重试标记 | 队列 | 所有失败都显示同一字符串 | MeTube completed/failed 状态 | 增加 invalid/auth/rate-limit/upstream/timeout 分类 | Web/桌面队列 | 中 | P1 | 仅 retryable 项显示重试；提示可行动 | 计划 |
-| EV-019 | 批量队列持久化 | Web | 刷新后批量队列丢失 | MeTube 状态目录 | 本地版本化保存待处理项，不保存 Cookie | `workbench.js`、`public/app.php` | 中 | P2 | 刷新可恢复未完成任务，容量有界 | 计划 |
-| EV-020 | 可配置并发数 | Web/桌面 | 并发固定 3 路 | MeTube `MAX_CONCURRENT_DOWNLOADS` | 设置页提供 1-6 上限并按平台限流 | Web/桌面设置 | 中 | P2 | 修改后队列按配置执行并不突破硬上限 | 计划 |
+| EV-019 | 批量队列持久化 | Web | 刷新后批量队列丢失 | MeTube 状态目录 | 本地版本化保存待处理项，不保存 Cookie | `workbench.js`、`public/app.php` | 中 | P2 | 刷新可恢复未完成任务，容量有界 | 已完成（v1.3.0） |
+| EV-020 | 可配置并发数 | Web/桌面 | 并发固定 3 路 | MeTube `MAX_CONCURRENT_DOWNLOADS` | 设置页提供 1-6 上限并按平台限流 | Web/桌面设置 | 中 | P2 | 修改后队列按配置执行并不突破硬上限 | 已完成（网页版，v1.3.0） |
 | EV-021 | 下载文件名模板 | 下载体验 | 当前主要使用标题 + 固定扩展名 | gallery-dl/MeTube 模板 | 支持安全的标题、作者、日期模板 | Web/桌面 ZIP/下载 | 中 | P2 | 路径穿越和控制字符被清理 | 计划 |
 | EV-022 | 断点/校验下载任务 | 下载器 | 代理支持 Range，但没有任务状态与校验 | aria2 | 先做分片状态、SHA256、失败续传 | Electron 本地下载器 | 高 | P2 | 中断后可恢复，完成后校验一致 | 计划 |
 | EV-023 | 外部播放器打开流 | 直播 | 当前只复制地址和手工设置 Referer | Streamlink | Windows 注册 VLC/PotPlayer 命令或复制配置 | `apps/app-shell` | 中 | P2 | 选择播放器能打开正确流和 Referer 说明 | 计划 |
@@ -40,7 +40,7 @@
 | EV-031 | 更新检查客户端缓存 | Web/PWA | Service Worker 仍靠手工版本字符串 | Workbox | 构建注入版本并显示“新版本可用” | `service-worker.js`、build script | 中 | P2 | 新资源可回源，旧页面提示更新 | 计划 |
 | EV-032 | Web UI 模块化 | 架构 | `public/app.php` 内嵌约 2000 行脚本 | Vite/Cobalt Web monorepo | 保持功能不变，拆 API/storage/renderers | `src/web`、构建配置 | 高 | P2 | 单模块可测试，构建产物可缓存 | 计划 |
 | EV-033 | 统一安全 URL 工具 | 安全/维护 | PHP/Electron/JS 各自解析 URL | Electron/MeTube SSRF 修复思路 | 生成共享域名/协议/文件名规则 | `config`、JS、Electron | 中 | P1 | 白名单和校验规则跨运行时一致 | 计划 |
-| EV-034 | Cookie 加密存储 | 隐私 | Web Cookie 在 localStorage；桌面依赖 partition | Electron safeStorage/本地优先产品 | 桌面使用 safeStorage；Web 明确浏览器边界 | Web/桌面设置 | 中 | P1 | Cookie 不进入日志、备份、URL | 计划 |
+| EV-034 | Cookie 加密存储 | 隐私 | Web Cookie 在 localStorage；桌面依赖 partition | Electron safeStorage/本地优先产品 | 桌面使用 safeStorage；Web 明确浏览器边界 | Web/桌面设置 | 中 | P1 | Cookie 不进入日志、备份、URL | 部分完成：API Key 已改为 HttpOnly 媒体 Cookie（v1.3.0） |
 | EV-035 | 国际化基础层 | UX/生态 | UI 硬编码简体中文，TikTok 面向国际平台 | Seal/Media Downloader 多语言 | 抽 `t()` 与 zh-CN 字典，先不改默认语言 | Web/桌面 | 高 | P3 | 文案集中管理，默认界面不变 | 计划 |
 | EV-036 | 发布脚本与证据包 | DevOps | 版本、构建、校验和、Release 仍多步手工 | electron-builder/yt-dlp release cadence | 统一检查版本、构建、manifest、notes、GitHub Release | `scripts/release.mjs` | 中 | P1 | 一个命令生成可审计发布目录 | 计划 |
 
