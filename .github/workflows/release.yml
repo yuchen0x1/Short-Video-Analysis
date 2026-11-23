@@ -114,9 +114,9 @@ jobs:
             gh release create "$RELEASE_TAG" --draft --verify-tag --title "$RELEASE_TAG" --notes-file "$RUNNER_TEMP/release-notes.md"
           fi
           gh release upload "$RELEASE_TAG" release-assets/* --clobber
-          # `/releases/tags/{tag}` 不返回草稿，必须按 release id 读取后再校验上传结果。
-          release_id="$(gh api "repos/$GITHUB_REPOSITORY/releases/tags/$RELEASE_TAG" --jq .id 2>/dev/null \
-            || gh api "repos/$GITHUB_REPOSITORY/releases?per_page=100" --jq "[.[] | select(.tag_name == \"$RELEASE_TAG\")][0].id")"
+          # `/releases/tags/{tag}` 不返回草稿，且 404 时 gh 会把错误 JSON 写到 stdout，
+          # 因此改用 gh release view 读取 databaseId，再按 id 取草稿元数据。
+          release_id="$(gh release view "$RELEASE_TAG" --json databaseId --jq .databaseId)"
           test -n "$release_id" && test "$release_id" != "null"
           gh api "repos/$GITHUB_REPOSITORY/releases/$release_id" > "$RUNNER_TEMP/draft.json"
           node scripts/verify-release-artifacts.mjs release-assets "$RELEASE_TAG" "$RUNNER_TEMP/draft.json"
