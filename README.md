@@ -28,9 +28,9 @@
 
 <!-- github-release:start -->
 
-**[v1.3.1](https://github.com/yuchen0x1/Short-Video-Analysis/releases/tag/v1.3.1)** · 2026-11-23
+**[v1.3.2](https://github.com/yuchen0x1/Short-Video-Analysis/releases/tag/v1.3.2)** · 2026-11-23
 
-本补丁只修复发布流程，功能与 v1.3.0 一致；用新标签端到端验证草稿 Release 资产校验。
+发布后审计发现的三处缺陷修复版：批量并发默认值、媒体 Cookie 生命周期和 OpenAPI 契约，并补上版本号单一来源。
 
 [全部发行记录](https://github.com/yuchen0x1/Short-Video-Analysis/releases)
 
