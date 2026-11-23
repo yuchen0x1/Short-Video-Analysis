@@ -437,7 +437,7 @@ if ($path === "/api/v1/parse" || $path === "/api/v1/parse/") {
     } catch (\RuntimeException $e) {
         CookieManager::clear("weibo");
         Logger::error("解析失败", ["url" => $url, "ip" => $ip, "error" => $e->getMessage()]);
-        Response::error($e->getMessage(), 500);
+        Response::error($e->getMessage(), 502, null, 'upstream_error', true);
     } catch (\Throwable $e) {
         CookieManager::clear("weibo");
         Logger::exception($e, ["url" => $url, "ip" => $ip]);
@@ -505,7 +505,7 @@ if ($path === "/api/v1/profile" || $path === "/api/v1/profile/") {
         Response::error($e->getMessage(), 400);
     } catch (\RuntimeException $e) {
         Logger::error("主页解析失败", ["url" => $url, "cursor" => $cursor, "ip" => $ip, "error" => $e->getMessage()]);
-        Response::error($e->getMessage(), 500);
+        Response::error($e->getMessage(), 502, null, 'upstream_error', true);
     } catch (\Throwable $e) {
         Logger::exception($e, ["url" => $url, "cursor" => $cursor, "ip" => $ip]);
         Response::error("主页解析失败，请稍后再试", 500);
@@ -562,7 +562,7 @@ if ($path === "/api/v1/collection" || $path === "/api/v1/collection/") {
         Response::error($e->getMessage(), 400);
     } catch (\RuntimeException $e) {
         Logger::error("合集解析失败", ["url" => $url, "cursor" => $cursor, "ip" => $ip, "error" => $e->getMessage()]);
-        Response::error($e->getMessage(), 500);
+        Response::error($e->getMessage(), 502, null, 'upstream_error', true);
     } catch (\Throwable $e) {
         Logger::exception($e, ["url" => $url, "cursor" => $cursor, "ip" => $ip]);
         Response::error("合集解析失败，请稍后再试", 500);
@@ -603,7 +603,7 @@ if ($path === "/api/v1/live" || $path === "/api/v1/live/") {
         Response::error($e->getMessage(), 400);
     } catch (\RuntimeException $e) {
         Logger::error("直播解析失败", ["url" => $url, "ip" => $ip, "error" => $e->getMessage()]);
-        Response::error($e->getMessage(), 500);
+        Response::error($e->getMessage(), 502, null, 'upstream_error', true);
     } catch (\Throwable $e) {
         Logger::exception($e, ["url" => $url, "ip" => $ip]);
         Response::error("直播解析失败，请稍后再试", 500);
@@ -630,7 +630,7 @@ if ($path === "/api/v1/hot" || $path === "/api/v1/hot/") {
         Response::error($e->getMessage(), 400);
     } catch (\RuntimeException $e) {
         Logger::error("热榜获取失败", ["platform" => $platform, "ip" => $ip, "error" => $e->getMessage()]);
-        Response::error($e->getMessage(), 502);
+        Response::error($e->getMessage(), 502, null, 'upstream_error', true);
     } catch (\Throwable $e) {
         Logger::exception($e, ["platform" => $platform, "ip" => $ip]);
         Response::error("热榜获取失败，请稍后再试", 500);
@@ -662,7 +662,7 @@ if ($path === "/api/v1/search" || $path === "/api/v1/search/") {
         Response::error($e->getMessage(), 400);
     } catch (\RuntimeException $e) {
         Logger::error("搜索失败", ["platform" => $platform, "ip" => $ip, "error" => $e->getMessage()]);
-        Response::error($e->getMessage(), 502);
+        Response::error($e->getMessage(), 502, null, 'upstream_error', true);
     } catch (\Throwable $e) {
         Logger::exception($e, ["platform" => $platform, "ip" => $ip]);
         Response::error("搜索失败，请稍后再试", 500);
@@ -696,7 +696,7 @@ if ($path === "/api/v1/comments" || $path === "/api/v1/comments/") {
         Response::error($e->getMessage(), 400);
     } catch (\RuntimeException $e) {
         Logger::error("评论获取失败", ["url" => $url, "ip" => $ip, "error" => $e->getMessage()]);
-        Response::error($e->getMessage(), 502);
+        Response::error($e->getMessage(), 502, null, 'upstream_error', true);
     } catch (\Throwable $e) {
         Logger::exception($e, ["url" => $url, "ip" => $ip]);
         Response::error("评论获取失败，请稍后再试", 500);

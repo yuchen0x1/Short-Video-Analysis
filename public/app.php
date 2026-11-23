@@ -1350,6 +1350,10 @@ footer {
 #batch-summary { font-variant-numeric:tabular-nums; }
 @media (max-width:520px) { .mode-switch { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); } .mode-btn { white-space:nowrap; } }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior:auto !important; animation:none !important; transition:none !important; } }
+.batch-concurrency-label { color:var(--muted); font-size:12px; }
+.batch-concurrency { appearance:none; background:var(--soft); border:1px solid var(--line); border-radius:var(--r); color:var(--ink); font:inherit; font-size:13px; padding:8px 26px 8px 10px; background-image:linear-gradient(45deg,transparent 50%,var(--muted) 50%),linear-gradient(135deg,var(--muted) 50%,transparent 50%); background-position:calc(100% - 14px) 50%,calc(100% - 9px) 50%; background-size:5px 5px,5px 5px; background-repeat:no-repeat; }
+.batch-concurrency:focus-visible { outline:2px solid var(--neon-cyan); outline-offset:2px; }
+#api-key-status.is-ready { color:var(--neon-cyan); }
 </style>
 </head>
 <body>
@@ -1361,7 +1365,7 @@ footer {
       <div class="panel-heading"><div><p class="panel-kicker">Import link</p><h2 class="panel-title">从一个链接开始</h2><p class="panel-note">支持公开分享链接，不需要登录第三方平台。</p></div><div class="mode-switch" role="group" aria-label="解析模式"><button id="single-mode-btn" class="mode-btn active" type="button" aria-pressed="true">单个解析</button><button id="batch-mode-btn" class="mode-btn" type="button" aria-pressed="false">批量处理</button><button id="profile-mode-btn" class="mode-btn" type="button" aria-pressed="false">主页解析</button><button id="collection-mode-btn" class="mode-btn" type="button" aria-pressed="false">合集解析</button><button id="live-mode-btn" class="mode-btn" type="button" aria-pressed="false">直播解析</button><button id="discover-mode-btn" class="mode-btn" type="button" aria-pressed="false">发现</button></div></div>
       <div id="single-panel"><label id="mode-label" class="field-label" for="video-url">视频分享链接</label><div class="input-row"><div class="input-wrap"><input id="video-url" type="url" placeholder="粘贴抖音、快手、B站、小红书等链接" autocomplete="off" spellcheck="false"></div><button id="paste-btn" class="icon-btn" type="button" title="从剪贴板粘贴" aria-label="从剪贴板粘贴"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="8" y="3" width="8" height="4" rx="1"></rect><path d="M16 5h2a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h2"></path></svg></button><button id="parse-btn" class="btn btn-primary" type="button"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"></path><path d="m13 6 6 6-6 6"></path></svg><span>开始解析</span></button></div><p class="input-hint">小提示：也可以直接粘贴包含文字的整段分享文案，系统会自动提取链接。</p></div>
       <div class="input-context"><span><i></i>自动识别平台</span><span><i></i>视频与图集均支持</span><span><i></i>链接不会保存到服务器</span></div>
-      <div id="batch-panel" hidden><label class="field-label" for="batch-input">每行放一个视频链接</label><textarea id="batch-input" class="batch-input" rows="5" placeholder="https://...&#10;https://...&#10;https://..." autocomplete="off" spellcheck="false" aria-label="批量视频链接"></textarea><p class="input-hint">最多处理 20 条链接，同时进行 3 路解析。</p><div class="batch-actions"><button id="batch-parse-btn" class="btn btn-primary" type="button"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 6h13"></path><path d="M8 12h13"></path><path d="M8 18h13"></path><path d="M3 6h.01"></path><path d="M3 12h.01"></path><path d="M3 18h.01"></path></svg><span>开始批量处理</span></button><button id="batch-stop-btn" class="btn btn-quiet" type="button" hidden>停止处理</button></div></div>
+      <div id="batch-panel" hidden><label class="field-label" for="batch-input">每行放一个视频链接</label><textarea id="batch-input" class="batch-input" rows="5" placeholder="https://...&#10;https://...&#10;https://..." autocomplete="off" spellcheck="false" aria-label="批量视频链接"></textarea><p class="input-hint" id="batch-hint">最多处理 20 条链接；刷新页面后可恢复最近一批任务。</p><div class="batch-actions"><label class="batch-concurrency-label" for="batch-concurrency">并发</label><select id="batch-concurrency" class="batch-concurrency" aria-label="批量解析并发数"><option value="1">1 路</option><option value="2">2 路</option><option value="3" selected>3 路</option><option value="4">4 路</option><option value="5">5 路</option><option value="6">6 路</option></select><button id="batch-parse-btn" class="btn btn-primary" type="button"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 6h13"></path><path d="M8 12h13"></path><path d="M8 18h13"></path><path d="M3 6h.01"></path><path d="M3 12h.01"></path><path d="M3 18h.01"></path></svg><span>开始批量处理</span></button><button id="batch-restore-btn" class="btn btn-quiet" type="button" hidden>恢复上次任务</button><button id="batch-clear-btn" class="btn btn-quiet" type="button" hidden>清除本地任务</button><button id="batch-stop-btn" class="btn btn-quiet" type="button" hidden>停止处理</button></div></div>
       <div class="platform-strip" aria-label="支持平台"><span class="platform-chip" style="--chip:#2d6cdf"><i></i>抖音</span><span class="platform-chip" style="--chip:#10a77a"><i></i>快手</span><span class="platform-chip" style="--chip:#e86d94"><i></i>B站</span><span class="platform-chip" style="--chip:#e64555"><i></i>小红书</span><span class="platform-chip" style="--chip:#f19a42"><i></i>皮皮虾</span><span class="platform-chip" style="--chip:#5e83d7"><i></i>微博</span><span class="platform-chip" style="--chip:#4d9d91"><i></i>视频号</span><span class="platform-chip" style="--chip:#25f4ee"><i></i>TikTok</span><span class="platform-chip" style="--chip:#8d6fc1"><i></i>更多平台</span></div>
       <div id="loading" class="state-row" role="status" aria-live="polite" aria-busy="true" hidden><span class="spinner" aria-hidden="true"></span><span id="loading-text">正在读取视频信息…</span></div><div id="batch-progress" class="state-row" role="status" aria-live="polite" aria-busy="true" hidden><span class="spinner" aria-hidden="true"></span><span id="batch-progress-text"></span></div>
       <div id="error" class="error-alert" role="alert" aria-live="assertive" hidden><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M12 8v5"></path><path d="M12 16h.01"></path></svg><span id="error-text"></span></div>
@@ -1425,6 +1429,12 @@ installAppBtn?.addEventListener('click',async()=>{if(!deferredInstallPrompt)retu
 const input=$('#video-url'),parseBtn=$('#parse-btn'),pasteBtn=$('#paste-btn'),singleModeBtn=$('#single-mode-btn'),batchModeBtn=$('#batch-mode-btn'),profileModeBtn=$('#profile-mode-btn'),collectionModeBtn=$('#collection-mode-btn'),liveModeBtn=$('#live-mode-btn'),discoverModeBtn=$('#discover-mode-btn'),singlePanel=$('#single-panel'),batchPanel=$('#batch-panel'),batchInput=$('#batch-input'),batchParseBtn=$('#batch-parse-btn'),batchStopBtn=$('#batch-stop-btn'),loading=$('#loading'),loadingText=$('#loading-text'),batchProgress=$('#batch-progress'),batchProgressText=$('#batch-progress-text'),errorBox=$('#error'),errorText=$('#error-text'),result=$('#result'),video=$('#result-video'),avatar=$('#result-avatar'),titleEl=$('#result-title'),metaEl=$('#result-meta'),authorEl=$('#result-author'),likeEl=$('#result-like'),timeEl=$('#result-time'),platformEl=$('#result-platform'),downloadBtn=$('#download-btn'),zipBtn=$('#zip-btn'),musicBtn=$('#music-btn'),copyBtn=$('#copy-btn'),copyTextBtn=$('#copy-text-btn'),openBtn=$('#open-btn'),favBtn=$('#fav-btn'),historyList=$('#history-list'),historyEmpty=$('#history-empty'),historyCount=$('#history-count'),clearHistoryBtn=$('#clear-history-btn'),batchSection=$('#batch-results'),batchList=$('#batch-list'),batchEmpty=$('#batch-empty'),batchSummary=$('#batch-summary'),batchExportBtn=$('#batch-export'),batchZipBtn=$('#batch-zip'),batchRetryBtn=$('#batch-retry'),themeToggle=$('#theme-toggle'),modeLabel=$('#mode-label'),serviceStatus=$('#service-status'),weiboCookieInput=$('#weibo-cookie-input'),weiboCookieSave=$('#weibo-cookie-save'),weiboCookieClear=$('#weibo-cookie-clear'),weiboCookieStatus=$('#weibo-cookie-status'),favoritesList=$('#favorites-list'),favoritesEmpty=$('#favorites-empty'),favoritesCount=$('#favorites-count'),favoritesExportBtn=$('#favorites-export'),inputHint=document.querySelector('#single-panel .input-hint');
 const HISTORY_KEY='watermark-parse-history-v1',WEIBO_COOKIE_KEY='watermark-weibo-cookie-v1',HISTORY_LIMIT=20,BATCH_LIMIT=20,FAVORITE_KEY='watermark-parse-favorites-v1',URL_PATTERN=/https?:\/\/[^\s"'<>，。；：！？【】（）《》]+/i;
 let ignoreMediaError=false,currentResult=null,batchItems=[],batchRunning=false,batchCancelRequested=false,singleAbortController=null,batchAbortController=null,mediaRefreshKey='';
+const batchStore=Workbench.createBatchStore({getItem:key=>localStorage.getItem(key),setItem:(key,value)=>localStorage.setItem(key,value),removeItem:key=>localStorage.removeItem(key)});
+const enhancements=Workbench.mountEnhancements(document,localStorage);
+const API_KEY_STORAGE=Workbench.API_KEY_STORAGE;
+let apiKey=localStorage.getItem(API_KEY_STORAGE)||'';
+let batchConcurrency=batchStore.readConcurrency();
+if(enhancements.batchConcurrency)enhancements.batchConcurrency.value=String(batchConcurrency);
 const state={mode:'single',profile:null,discover:{tab:'hot',platform:'bilibili',page:1,items:[],hasMore:false,total:0,keyword:''},comments:{url:'',page:1,total:0,comments:[],hasMore:false}};
 const PLAY_ICON='<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="6 3 20 12 6 21 6 3"></polygon></svg>',DOWNLOAD_ICON='<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12"></path><path d="m7 10 5 5 5-5"></path><path d="M5 21h14"></path></svg>',COPY_ICON='<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v1"></path></svg>',TRASH_ICON='<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>',STAR_ICON='<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>',STAR_FILLED_ICON='<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>';
 
@@ -1501,6 +1511,15 @@ function setLoading(on,text){
   loadingText.textContent=on?(text||'正在读取视频信息…'):'';
   input.setAttribute('aria-busy',String(on));
 }
+function errorMessage(error){
+  const message=error&&error.message||'解析失败，请稍后再试';
+  if(error&&error.code==='unauthorized'){
+    if(enhancements.apiCard)enhancements.apiCard.hidden=false;
+    return apiKey?message+'。请在侧栏更新访问密钥后重试。':message+'。请在侧栏填写访问密钥后重试。';
+  }
+  if(error&&error.retryAfter)return message+'（约 '+error.retryAfter+' 秒后可重试）';
+  return message;
+}
 function showError(m){errorText.textContent=m||'解析失败，请稍后再试';errorBox.hidden=false}
 function hideError(){errorBox.hidden=true;errorText.textContent=''}
 function hideResult(){
@@ -1516,7 +1535,27 @@ function hideResult(){
   if(typeof commentsSection!=='undefined'&&commentsSection)commentsSection.hidden=true;
 }
 
-async function requestParse(url,signal,force){const payload={url};if(force)payload.force=true;if(isWeiboUrl(url)){const weiboCookie=getWeiboCookie().trim();if(weiboCookie)payload.weiboCookie=weiboCookie}const options={method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)};if(signal)options.signal=signal;const r=await fetch('api/v1/parse',options),j=await r.json().catch(()=>null);if(!r.ok||!j||!j.success||!j.data||!j.data.url)throw new Error(j&&j.message||'解析失败，请稍后再试');return{url,data:j.data}}
+async function apiJson(url,options={}){
+  const headers={...(options.headers||{}),...Workbench.apiKeyHeaders(apiKey)};
+  const response=await fetch(url,{...options,headers}),payload=await response.json().catch(()=>null);
+  if(!response.ok||!payload||!payload.success)throw Workbench.apiError(response,payload);
+  return payload;
+}
+async function requestParse(url,signal,force,retried){
+  const payload={url};if(force)payload.force=true;if(isWeiboUrl(url)){const weiboCookie=getWeiboCookie().trim();if(weiboCookie)payload.weiboCookie=weiboCookie}
+  const options={method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)};if(signal)options.signal=signal;
+  try{
+    const json=await apiJson('api/v1/parse',options);
+    if(!json.data||!json.data.url)throw new Error('解析结果缺少媒体地址');
+    return{url,data:json.data};
+  }catch(error){
+    if(error.code==='rate_limited'&&error.retryAfter&&!retried){
+      await Workbench.wait(error.retryAfter*1000,signal);
+      return requestParse(url,signal,force,true);
+    }
+    throw error;
+  }
+}
 async function parseUrlIntoResult(url){
   hideError();hideResult();
   singleAbortController=new AbortController();
@@ -1527,7 +1566,7 @@ async function parseUrlIntoResult(url){
     addHistory(item);renderHistory();
     result.scrollIntoView({behavior:'smooth',block:'start'});
   }catch(e){
-    showError(e.name==='AbortError'?'已取消解析':(e.message||'解析失败，请稍后再试'));
+    showError(e.name==='AbortError'?'已取消解析':errorMessage(e));
   }finally{
     singleAbortController=null;setLoading(false);
   }
@@ -1637,14 +1676,14 @@ async function runBatchIndices(indices,force=false){
   hideError();batchCancelRequested=false;batchAbortController=new AbortController();
   const items=batchItems,controller=batchAbortController;
   indices.forEach(i=>{items[i]={url:items[i].url,loading:true}});
-  setBatchRunning(true);renderBatchList();
+  setBatchRunning(true);renderBatchList();saveBatchState();
   try{
-    await Workbench.runQueue(items,indices,(url,signal)=>requestParse(url,signal,force),{signal:controller.signal,onChange:i=>{
+    await Workbench.runQueue(items,indices,(url,signal)=>requestParse(url,signal,force),{signal:controller.signal,concurrency:batchConcurrency,onChange:i=>{
       if(items[i].data){addHistory(items[i]);renderHistory()}
       batchProgressText.textContent='已处理 '+indices.filter(n=>!items[n].loading).length+'/'+indices.length;
-      renderBatchList();
+      renderBatchList();saveBatchState();
     }});
-  }finally{batchAbortController=null;setBatchRunning(false);renderBatchList();renderHistory()}
+  }finally{batchAbortController=null;setBatchRunning(false);renderBatchList();renderHistory();saveBatchState()}
 }
 async function parseBatch(){
   if(batchRunning)return;
@@ -1655,6 +1694,30 @@ async function parseBatch(){
   await runBatchIndices(batchItems.map((_,i)=>i));
   batchSection.scrollIntoView({behavior:'smooth',block:'start'});
 }
+function saveBatchState(){
+  try{
+    if(!batchItems.length){batchStore.clear();updateBatchMemoryButtons();return}
+    batchStore.write(batchItems.map(item=>item.loading?{url:item.url}:item),{pendingCount:itemsPending()});
+    updateBatchMemoryButtons();
+  }catch(error){libraryStatus('批量任务无法保存到本机：'+error.message)}
+}
+function itemsPending(){return batchItems.filter(x=>x.loading).length}
+function updateBatchMemoryButtons(){
+  let saved={items:[]};try{saved=batchStore.read()}catch{}
+  const hasSaved=saved.items.length>0;
+  if(enhancements.batchRestore){enhancements.batchRestore.hidden=!hasSaved||batchRunning;enhancements.batchRestore.textContent='恢复上次任务 ('+saved.items.length+')'}
+  if(enhancements.batchClear)enhancements.batchClear.hidden=!hasSaved||batchRunning;
+}
+function restoreBatchState(){
+  if(batchRunning)return;
+  let saved;try{saved=batchStore.read()}catch(error){showError('无法读取本地批量任务：'+error.message);return}
+  if(!saved.items.length)return;
+  batchItems=saved.items.map(item=>item.data?item:(item.error?item:{url:item.url,error:'页面刷新后任务已停止',retryable:true,interrupted:true}));
+  batchInput.value=batchItems.map(item=>item.url).join('\n');
+  batchSection.hidden=false;renderBatchList();updateBatchMemoryButtons();
+  batchSection.scrollIntoView({behavior:'smooth',block:'start'});
+}
+function clearBatchState(){if(batchRunning)return;batchItems=[];batchStore.clear();batchInput.value='';batchSection.hidden=true;renderBatchList();updateBatchMemoryButtons()}
 async function retryBatchItem(i){if(batchItems[i]?.error)await runBatchIndices([i],true)}
 async function copyText(text){try{await navigator.clipboard.writeText(text)}catch(e){const t=document.createElement('textarea');t.value=text;t.style.position='fixed';t.style.opacity='0';document.body.appendChild(t);t.select();document.execCommand('copy');t.remove()}}
 function flashButton(b,text){const s=b.querySelector('span'),target=s||b;if(!target)return;const old=target.textContent;target.textContent=text;setTimeout(()=>target.textContent=old,1200)}
@@ -1696,8 +1759,8 @@ function renderProfilePage(pageIndex){
   profilePrev.disabled=pageIndex===0;
   profileNext.disabled=!page.has_more;
 }
-async function requestProfile(url,cursor){const response=await fetch('api/v1/profile',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({url,cursor})}),json=await response.json().catch(()=>null);if(!response.ok||!json||!json.success||!json.data||!Array.isArray(json.data.items))throw new Error(json&&json.message||'主页解析失败，请稍后再试');return json.data}
-async function requestCollection(url,cursor){const response=await fetch('api/v1/collection',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({url,cursor})}),json=await response.json().catch(()=>null);if(!response.ok||!json||!json.success||!json.data||!Array.isArray(json.data.items))throw new Error(json&&json.message||'合集解析失败，请稍后再试');return json.data}
+async function requestProfile(url,cursor){const json=await apiJson('api/v1/profile',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({url,cursor})});if(!json.data||!Array.isArray(json.data.items))throw new Error('主页解析失败，请稍后再试');return json.data}
+async function requestCollection(url,cursor){const json=await apiJson('api/v1/collection',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({url,cursor})});if(!json.data||!Array.isArray(json.data.items))throw new Error('合集解析失败，请稍后再试');return json.data}
 async function parseProfile(url){
   hideError();setMode('profile');
   profileSection.hidden=false;profileList.innerHTML='';
@@ -1767,7 +1830,7 @@ liveSection.innerHTML='<div class="section-heading"><div><h2>直播间信息</h2
 if(typeof profileSection!=='undefined'&&profileSection)profileSection.after(liveSection);else if(batchSection)batchSection.after(liveSection);
 const liveList=liveSection.querySelector('#live-stream-list'),liveSummary=liveSection.querySelector('#live-summary'),liveEmpty=liveSection.querySelector('#live-empty'),liveStatusBadge=liveSection.querySelector('#live-status-badge');
 
-async function requestLive(url){const response=await fetch('api/v1/live',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({url})}),json=await response.json().catch(()=>null);if(!response.ok||!json||!json.success||!json.data)throw new Error(json&&json.message||'直播解析失败，请稍后再试');return json.data}
+async function requestLive(url){const json=await apiJson('api/v1/live',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({url})});if(!json.data)throw new Error('直播解析失败，请稍后再试');return json.data}
 function renderLive(data){
   const live=data.live||{};
   const isLive=live.status==='live';
@@ -1821,7 +1884,7 @@ const discoverList=discoverSection.querySelector('#discover-list'),discoverSumma
 discoverList.addEventListener('error',event=>{const image=event.target.closest('img.batch-thumb');if(!image)return;const fallback=image.dataset.fallback;if(fallback&&!image.dataset.fallbackTried&&validMediaUrl(fallback)){image.dataset.fallbackTried='true';image.src=fallback;return}image.replaceWith(Object.assign(document.createElement('span'),{className:'batch-thumb-placeholder','aria-hidden':'true'}))},true);
 const discoverTabHot=discoverSection.querySelector('#discover-tab-hot'),discoverTabSearch=discoverSection.querySelector('#discover-tab-search'),discoverPlatformBili=discoverSection.querySelector('#discover-platform-bilibili'),discoverPlatformDouyin=discoverSection.querySelector('#discover-platform-douyin');
 
-async function fetchDiscoverJson(url){const r=await fetch(url),j=await r.json().catch(()=>null);if(!r.ok||!j||!j.success||!j.data)throw new Error(j&&j.message||'请求失败，请稍后再试');return j.data}
+async function fetchDiscoverJson(url){const j=await apiJson(url);if(!j.data)throw new Error('请求失败，请稍后再试');return j.data}
 function isParseableVideoUrl(url){return/^https?:\/\/(www\.)?(bilibili\.com|b23\.tv)\//i.test(String(url))||/^https?:\/\/(www\.)?(douyin\.com)\/(video|note|share\/video)\//i.test(String(url))}
 function renderDiscover(){
   const d=state.discover;
@@ -2265,6 +2328,51 @@ document.addEventListener('keydown',event=>{
   if(key==='enter'){event.preventDefault();if(state.mode==='batch'){if(!batchRunning)parseBatch()}else if(!parseBtn.disabled)parseVideo();}
   else if(key==='k'){event.preventDefault();(batchPanel.hidden?input:batchInput).focus();(batchPanel.hidden?input:batchInput).select();}
 });
+// API Key：检测实例是否开启鉴权，保存后由健康接口旁的平台接口验证；Key 不进入备份/URL。
+async function checkApiKeyRequirement(){
+  try{
+    const response=await fetch('api/v1/platforms',{cache:'no-store'}),payload=await response.json().catch(()=>null);
+    if(response.status===401){
+      if(enhancements.apiCard)enhancements.apiCard.hidden=false;
+      if(apiKey)setApiKeyStatus('密钥无效，请更新',false);
+      return;
+    }
+    if(enhancements.apiCard)enhancements.apiCard.hidden=true;
+  }catch{}
+}
+function setApiKeyStatus(message,ok){
+  if(!enhancements.apiStatus)return;
+  enhancements.apiStatus.classList.toggle('is-ready',ok);
+  const label=enhancements.apiStatus.querySelector('span');
+  if(label)label.textContent=message;
+}
+enhancements.apiSave?.addEventListener('click',async()=>{
+  const value=(enhancements.apiInput?.value||'').trim();
+  if(!value){setApiKeyStatus('请输入访问密钥',false);return}
+  try{
+    const response=await fetch('api/v1/platforms',{headers:{'X-API-Key':value},cache:'no-store'});
+    const payload=await response.json().catch(()=>null);
+    if(!response.ok||!payload||!payload.success)throw new Error(payload&&payload.message||'密钥验证失败');
+    apiKey=value;localStorage.setItem(API_KEY_STORAGE,value);setApiKeyStatus('已保存并验证',true);
+    if(enhancements.apiInput)enhancements.apiInput.value=value;
+    renderHistory();renderFavorites();
+  }catch(error){setApiKeyStatus(error.message||'密钥验证失败',false)}
+});
+enhancements.apiClear?.addEventListener('click',()=>{
+  apiKey='';localStorage.removeItem(API_KEY_STORAGE);
+  if(enhancements.apiInput)enhancements.apiInput.value='';
+  setApiKeyStatus('已清除',false);
+});
+if(enhancements.apiInput&&apiKey)enhancements.apiInput.value=apiKey;
+if(enhancements.apiCard&&apiKey)enhancements.apiCard.hidden=false;
+checkApiKeyRequirement();
+enhancements.batchConcurrency?.addEventListener('change',()=>{
+  batchConcurrency=batchStore.writeConcurrency(enhancements.batchConcurrency.value);
+  enhancements.batchConcurrency.value=String(batchConcurrency);
+});
+enhancements.batchRestore?.addEventListener('click',restoreBatchState);
+enhancements.batchClear?.addEventListener('click',clearBatchState);
+updateBatchMemoryButtons();
 </script>
 <script>
 (function(){
@@ -2276,7 +2384,7 @@ document.addEventListener('keydown',event=>{
     const list=Array.isArray(keys)&&keys.length?keys:Object.keys(labels);
     strip.innerHTML=list.map((key,i)=>'<span class="platform-chip" style="--chip:'+colors[i%colors.length]+'"><i></i>'+esc(labels[key]||key)+'</span>').join('');
   }
-  fetch('api/v1/platforms')
+  fetch('api/v1/platforms',{headers:Workbench.apiKeyHeaders(apiKey)})
     .then(r=>r.json())
     .then(j=>{if(j&&j.success)renderPlatforms(j.data)})
     .catch(()=>renderPlatforms());

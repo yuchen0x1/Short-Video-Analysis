@@ -10,6 +10,35 @@ class Response
 {
     private static ?string $requestId = null;
 
+    /**
+     * 稳定错误码：客户端按 code 分支，message 只用于展示。
+     *
+     * @var array<int, string>
+     */
+    private const ERROR_CODES = [
+        400 => 'invalid_request',
+        401 => 'unauthorized',
+        403 => 'forbidden',
+        404 => 'not_found',
+        405 => 'method_not_allowed',
+        409 => 'conflict',
+        413 => 'payload_too_large',
+        422 => 'invalid_input',
+        429 => 'rate_limited',
+        500 => 'internal_error',
+        502 => 'upstream_error',
+        503 => 'service_unavailable',
+        504 => 'upstream_timeout',
+    ];
+
+    private const RETRYABLE_CODES = [
+        'rate_limited',
+        'internal_error',
+        'upstream_error',
+        'service_unavailable',
+        'upstream_timeout',
+    ];
+
     private static function getRequestId(): string
     {
         if (self::$requestId !== null) {
@@ -66,18 +95,38 @@ class Response
      * @param mixed $errors 详细错误信息（可选）
      * @return void
      */
-    public static function error(string $message, int $httpCode = 400, $errors = null): void
+    public static function error(
+        string $message,
+        int $httpCode = 400,
+        $errors = null,
+        ?string $code = null,
+        ?bool $retryable = null,
+        ?int $retryAfter = null
+    ): void
     {
         http_response_code($httpCode);
         header('Content-Type: application/json; charset=utf-8');
         header('Cache-Control: no-store');
         self::addRequestHeaders();
+
+        $resolvedCode = $code ?? (self::ERROR_CODES[$httpCode] ?? 'error');
+        $resolvedRetryable = $retryable ?? in_array($resolvedCode, self::RETRYABLE_CODES, true);
+        if ($retryAfter !== null) {
+            $retryAfter = max(1, $retryAfter);
+            header('Retry-After: ' . $retryAfter);
+        }
         
         $response = [
             'success' => false,
             'message' => $message,
+            'code' => $resolvedCode,
+            'retryable' => $resolvedRetryable,
             'request_id' => self::getRequestId(),
         ];
+
+        if ($retryAfter !== null) {
+            $response['retry_after'] = $retryAfter;
+        }
         
         if ($errors !== null) {
             $response['errors'] = $errors;
@@ -93,8 +142,7 @@ class Response
     public static function rateLimited(string $message, int $resetTime): void
     {
         $retryAfter = max(1, $resetTime - time());
-        header('Retry-After: ' . $retryAfter);
-        self::error($message, 429);
+        self::error($message, 429, null, 'rate_limited', true, $retryAfter);
     }
 
     /**
