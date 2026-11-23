@@ -13,6 +13,8 @@ final class ApiAuth
 {
     private const MEDIA_COOKIE = 'qushuiyin_media';
     private const MEDIA_COOKIE_TTL = 7200;
+    /** 媒体 Cookie 的绝对寿命上限：滑动续期也不能无限延长同一个会话。 */
+    private const MEDIA_COOKIE_MAX_LIFETIME = 43200;
 
     /**
      * 校验请求携带的 API Key；未开启或校验通过时静默返回，否则输出 401 并退出。
@@ -67,37 +69,59 @@ final class ApiAuth
     }
 
     /**
-     * 生成供测试与 Cookie 复用的签名值，格式为 `expiry.signature`。
+     * 生成供测试与 Cookie 复用的签名值，格式为 `issuedAt.expiry.signature`。
+     * 带上签发时间才能在滑动续期之上再加一道绝对寿命上限。
      */
     public static function mediaCookieValue(int $now, int $ttl = self::MEDIA_COOKIE_TTL): string
     {
         $expiry = $now + max(60, $ttl);
-        $key = (string) Config::get('api.key', '');
-        $signature = hash_hmac('sha256', 'media|' . $expiry, $key);
-        return $expiry . '.' . $signature;
+        return $now . '.' . $expiry . '.' . self::mediaSignature($now, $expiry);
     }
 
     public static function mediaCookieIsValid(string $value, ?int $now = null): bool
     {
-        if (!preg_match('/^(\d{10,12})\.([a-f0-9]{64})$/', $value, $matches)) {
+        if (!preg_match('/^(\d{10,12})\.(\d{10,12})\.([a-f0-9]{64})$/', $value, $matches)) {
             return false;
         }
-        $expiry = (int) $matches[1];
-        if ($expiry < ($now ?? time())) {
+        $issuedAt = (int) $matches[1];
+        $expiry = (int) $matches[2];
+        $current = $now ?? time();
+        if ($expiry < $current || $issuedAt > $current + 60) {
+            return false;
+        }
+        if ($current - $issuedAt > self::MEDIA_COOKIE_MAX_LIFETIME) {
             return false;
         }
         $key = (string) Config::get('api.key', '');
         if ($key === '') {
             return false;
         }
-        return hash_equals(hash_hmac('sha256', 'media|' . $expiry, $key), $matches[2]);
+        return hash_equals(self::mediaSignature($issuedAt, $expiry), $matches[3]);
+    }
+
+    private static function mediaSignature(int $issuedAt, int $expiry): string
+    {
+        $key = (string) Config::get('api.key', '');
+        return hash_hmac('sha256', 'media|' . $issuedAt . '|' . $expiry, $key);
     }
 
     private static function issueMediaCookie(): void
     {
-        $value = self::mediaCookieValue(time());
+        $now = time();
+        // 已携带仍有效的 Cookie 时保留原签发时间，避免无限制滑动续期。
+        $issuedAt = $now;
+        $existing = (string) ($_COOKIE[self::MEDIA_COOKIE] ?? '');
+        if (preg_match('/^(\d{10,12})\.(\d{10,12})\.([a-f0-9]{64})$/', $existing, $matches)) {
+            $existingIssuedAt = (int) $matches[1];
+            if ($now - $existingIssuedAt <= self::MEDIA_COOKIE_MAX_LIFETIME) {
+                $issuedAt = $existingIssuedAt;
+            }
+        }
+        $value = self::mediaCookieValue($issuedAt);
+        $remaining = max(60, $issuedAt + self::MEDIA_COOKIE_MAX_LIFETIME - $now);
+
         setcookie(self::MEDIA_COOKIE, $value, [
-            'expires' => time() + self::MEDIA_COOKIE_TTL,
+            'expires' => $now + min(self::MEDIA_COOKIE_TTL, $remaining),
             'path' => '/',
             'secure' => (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off'),
             'httponly' => true,

@@ -100,6 +100,18 @@ test('API errors preserve stable code, retryability and bounded Retry-After', ()
   assert.equal(error.requestId, 'req-1');
   assert.equal(clampConcurrency(99), 6);
   assert.equal(clampConcurrency(0), 1);
+  // 未设置时 localStorage.getItem 返回 null，必须回落到默认 3 路而不是 1 路
+  assert.equal(clampConcurrency(null), 3);
+  assert.equal(clampConcurrency(undefined), 3);
+  assert.equal(clampConcurrency(''), 3);
+  assert.equal(clampConcurrency('4'), 4);
+});
+
+test('batch store defaults to three lanes before the user picks a value', () => {
+  const batch = createBatchStore(storage());
+  assert.equal(batch.readConcurrency(), 3, '首次访问应为 3 路并发');
+  batch.writeConcurrency(1);
+  assert.equal(batch.readConcurrency(), 1);
 });
 
 test('batch store bounds state and marks interrupted work as retryable', () => {
