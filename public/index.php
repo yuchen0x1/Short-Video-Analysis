@@ -57,8 +57,8 @@ if ($method === 'GET' && ($_GET['action'] ?? '') === 'media') {
         Response::validationError(['url' => $e->getMessage()]);
     }
 
-    // 开启 API Key 时媒体代理一并校验，避免鉴权被 action=media 绕过
-    ApiAuth::verify();
+    // 开启 API Key 时媒体代理一并校验；浏览器播放/下载可复用短期媒体 Cookie
+    ApiAuth::verifyMediaRequest();
 
     // 独立限额：媒体转发流量大且此前完全绕过限流，防止被当作流量中转滥用
     if (Config::get('rate_limit.enabled', true)) {
@@ -119,7 +119,7 @@ try {
 
 } catch (\RuntimeException $e) {
     Logger::error('解析失败', ['url' => $url, 'ip' => $ip ?? 'unknown', 'error' => $e->getMessage()]);
-    Response::error($e->getMessage(), 500);
+    Response::error($e->getMessage(), 502, null, 'upstream_error', true);
 
 } catch (\Throwable $e) {
     Logger::exception($e, ['url' => $url, 'ip' => $ip ?? 'unknown']);

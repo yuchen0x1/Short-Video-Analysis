@@ -1,9 +1,9 @@
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
-const { createLibrary, matches, csvCell, runQueue, readLimited } = require('../public/workbench.js');
+const { createLibrary, createBatchStore, matches, csvCell, apiError, clampConcurrency, runQueue, readLimited } = require('../public/workbench.js');
 const record = (id, extra = {}) => ({ rawUrl: `https://www.douyin.com/video/${id}`, title: `作品 ${id}`, ...extra });
 function storage(values = {}) {
-  return { values, getItem(key) { return this.values[key] ?? null; }, setItem(key, value) { this.values[key] = value; } };
+  return { values, getItem(key) { return this.values[key] ?? null; }, setItem(key, value) { this.values[key] = value; }, removeItem(key) { delete this.values[key]; } };
 }
 const backup = (history, favorites = []) => JSON.stringify({ app: 'short-video-analysis', version: 2, history, favorites });
 
@@ -89,4 +89,30 @@ test('media streaming enforces size without trusting Content-Length', async () =
   await assert.rejects(readLimited(new Response('abcd'),3),/128 MiB/);
   await assert.rejects(readLimited(new Response('x',{headers:{'content-length':'999'}}),3),/128 MiB/);
   await assert.rejects(readLimited(new Response('',{status:403}),3),/403/);
+});
+
+test('API errors preserve stable code, retryability and bounded Retry-After', () => {
+  const response = new Response('', { status: 429, headers: { 'Retry-After': '9999' } });
+  const error = apiError(response, { message: '太快了', code: 'rate_limited', retryable: true, request_id: 'req-1' });
+  assert.equal(error.code, 'rate_limited');
+  assert.equal(error.retryable, true);
+  assert.equal(error.retryAfter, 300);
+  assert.equal(error.requestId, 'req-1');
+  assert.equal(clampConcurrency(99), 6);
+  assert.equal(clampConcurrency(0), 1);
+});
+
+test('batch store bounds state and marks interrupted work as retryable', () => {
+  const store = storage();
+  const batch = createBatchStore(store);
+  batch.write([{ url: 'https://www.douyin.com/video/1', loading: true }, { url: 'https://www.douyin.com/video/2', error: '失败', retryable: false }]);
+  const saved = batch.read();
+  assert.equal(saved.items.length, 2);
+  assert.equal(saved.items[0].error, '页面刷新后任务已停止');
+  assert.equal(saved.items[0].retryable, true);
+  assert.equal(saved.items[1].retryable, false);
+  assert.equal(batch.writeConcurrency(8), 6);
+  assert.equal(batch.readConcurrency(), 6);
+  batch.clear();
+  assert.deepEqual(batch.read().items, []);
 });

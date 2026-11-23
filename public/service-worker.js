@@ -1,5 +1,5 @@
 // 缓存名带版本：发布新版本时改这里即可让旧缓存整体失效，避免新旧外壳混用。
-const CACHE_NAME = 'qushuiyin-shell-v1.2.0';
+const CACHE_NAME = 'qushuiyin-shell-v1.3.0';
 const SHELL_ASSETS = ['./workbench.js', './web-update-preference.js', './manifest.webmanifest', './icon.svg', './icon-192.png', './icon-512.png'];
 // 离线兜底入口：/ 与 /index.php 都映射到同一份导航缓存
 const NAV_FALLBACK_KEY = './';

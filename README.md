@@ -38,6 +38,12 @@
 
 [完整更新日志](docs/releases/release-notes.md)
 
+### v1.3.0 重点变化
+
+- API 错误现在带稳定 `code`、`retryable` 与 `request_id`；限流响应提供 `Retry-After`，网页端会按等待时间再尝试。
+- 开启 API Key 的自托管实例可在网页侧栏保存并验证密钥。视频播放与下载通过短期 HttpOnly 媒体 Cookie 鉴权，密钥不会写入 URL 或 JSON 备份。
+- 批量工作台支持 1–6 路并发设置，并将最近 20 条任务保存在当前浏览器；刷新后可恢复中断项或清除本地任务。
+
 [产品范围](docs/PRODUCT_SCOPE.md)
 
 | 功能 | Windows x64 | PHP 网页 / PWA |

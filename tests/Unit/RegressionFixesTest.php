@@ -76,6 +76,30 @@ final class RegressionFixesTest extends TestCase
         $this->assertSame(2, substr_count($source, "header('Cache-Control: no-store');"));
     }
 
+    public function testApiErrorsExposeStableCodeAndRetryContract(): void
+    {
+        $source = (string) file_get_contents($this->root . '/app/Utils/Response.php');
+        $this->assertStringContainsString("'rate_limited'", $source);
+        $this->assertStringContainsString('\'retryable\' => $resolvedRetryable', $source);
+        $this->assertStringContainsString("'retry_after'", $source);
+        $this->assertStringContainsString('\'rate_limited\', true, $retryAfter', $source);
+    }
+
+    public function testApiKeyMediaCookieIsSignedAndExpires(): void
+    {
+        putenv('API_KEY_ENABLED=true');
+        putenv('API_KEY=test-api-key');
+        Config::clearCache();
+        $now = time();
+        $value = \App\Utils\ApiAuth::mediaCookieValue($now, 600);
+        $this->assertTrue(\App\Utils\ApiAuth::mediaCookieIsValid($value, $now));
+        $this->assertFalse(\App\Utils\ApiAuth::mediaCookieIsValid($value, $now + 601));
+        $this->assertFalse(\App\Utils\ApiAuth::mediaCookieIsValid($now . '.invalid', $now));
+        putenv('API_KEY_ENABLED');
+        putenv('API_KEY');
+        Config::clearCache();
+    }
+
     public function testParserFetchFailuresThrowCleanErrors(): void
     {
         foreach (['WeiboParser.php', 'IzuiyouParser.php', 'PipigxParser.php'] as $file) {
