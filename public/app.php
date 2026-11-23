@@ -1,7 +1,8 @@
 <?php
-$webAppVersion = class_exists(\Composer\InstalledVersions::class)
-    ? (string) (\Composer\InstalledVersions::getPrettyVersion('yuchen0x1/short-video-watermark-remover') ?? 'dev')
-    : 'dev';
+require_once __DIR__ . '/../vendor/autoload.php';
+
+// 版本统一由 AppVersion 解析（以 composer.json 为准，避免仅改版本号未重装依赖时显示过期版本）
+$webAppVersion = \App\Utils\AppVersion::version();
 ?>
 <!doctype html>
 <html lang="zh-CN">

@@ -449,6 +449,39 @@ final class RegressionFixesTest extends TestCase
     }
 
     /**
+     * 版本号只能有一个权威来源（composer.json）。
+     * 回归背景：v1.3.1 只刷新了 composer.lock 的 content-hash，
+     * /api/v1/health 仍从 vendor/composer/installed.php 读到旧版本 1.3.0。
+     */
+    public function testAppVersionComesFromComposerJson(): void
+    {
+        $composer = json_decode((string) file_get_contents($this->root . '/composer.json'), true);
+        $this->assertIsArray($composer);
+        $declared = (string) ($composer['version'] ?? '');
+        $this->assertMatchesRegularExpression('/^\d+\.\d+\.\d+$/', $declared);
+
+        $this->assertSame($declared, \App\Utils\AppVersion::version());
+        $this->assertSame(
+            sprintf('qushuiyin-web-updater/%s (+https://github.com/yuchen0x1/Short-Video-Analysis)', $declared),
+            \App\Utils\AppVersion::userAgent()
+        );
+    }
+
+    /**
+     * 页面与 API 不得再各自直读 Composer 安装清单，避免版本表现分叉。
+     */
+    public function testVersionIsNotReadDirectlyFromInstalledVersions(): void
+    {
+        foreach (['public/app.php', 'public/api/v1.php'] as $file) {
+            $source = (string) file_get_contents($this->root . '/' . $file);
+            $this->assertStringNotContainsString('getPrettyVersion', $source, $file . ' 应改用 AppVersion');
+        }
+        $source = (string) file_get_contents($this->root . '/public/api/v1.php');
+        $this->assertStringNotContainsString('qushuiyin-web-updater/1.', $source, 'User-Agent 不应硬编码版本');
+        $this->assertSame(2, substr_count($source, 'AppVersion::version()'));
+    }
+
+    /**
      * @dataProvider redirectProvider
      */
     public function testRelativeRedirectsResolveAgainstBase(string $base, string $location, string|false $expected): void
