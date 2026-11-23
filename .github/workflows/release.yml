@@ -114,7 +114,11 @@ jobs:
             gh release create "$RELEASE_TAG" --draft --verify-tag --title "$RELEASE_TAG" --notes-file "$RUNNER_TEMP/release-notes.md"
           fi
           gh release upload "$RELEASE_TAG" release-assets/* --clobber
-          gh api "repos/$GITHUB_REPOSITORY/releases/tags/$RELEASE_TAG" > "$RUNNER_TEMP/draft.json"
+          # `/releases/tags/{tag}` 不返回草稿，必须按 release id 读取后再校验上传结果。
+          release_id="$(gh api "repos/$GITHUB_REPOSITORY/releases/tags/$RELEASE_TAG" --jq .id 2>/dev/null \
+            || gh api "repos/$GITHUB_REPOSITORY/releases?per_page=100" --jq "[.[] | select(.tag_name == \"$RELEASE_TAG\")][0].id")"
+          test -n "$release_id" && test "$release_id" != "null"
+          gh api "repos/$GITHUB_REPOSITORY/releases/$release_id" > "$RUNNER_TEMP/draft.json"
           node scripts/verify-release-artifacts.mjs release-assets "$RELEASE_TAG" "$RUNNER_TEMP/draft.json"
       - name: Publish and confirm public metadata
         run: |
