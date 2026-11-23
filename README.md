@@ -28,9 +28,9 @@
 
 <!-- github-release:start -->
 
-**[v1.3.0](https://github.com/yuchen0x1/Short-Video-Analysis/releases/tag/v1.3.0)** · 2026-11-23
+**[v1.3.1](https://github.com/yuchen0x1/Short-Video-Analysis/releases/tag/v1.3.1)** · 2026-11-23
 
-本版把 API 错误、限流等待和浏览器鉴权统一成可消费的契约，并让网页批量任务在刷新后可恢复；同时保留本地优先和无 Cookie 备份设计。
+本补丁只修复发布流程，功能与 v1.3.0 一致；用新标签端到端验证草稿 Release 资产校验。
 
 [全部发行记录](https://github.com/yuchen0x1/Short-Video-Analysis/releases)
 
