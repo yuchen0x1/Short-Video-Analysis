@@ -33,6 +33,7 @@ use App\Utils\Logger;
 use App\Utils\CookieManager;
 use App\Utils\HttpClient;
 use App\Utils\SharedUrl;
+use App\Utils\AppVersion;
 
 function requestJsonBody(): array {
     static $parsed = null;
@@ -251,10 +252,8 @@ if ($path === "/api/v1/health") {
         $warnings[] = "a_bogus 签名服务未启动，抖音主页、合集、热榜与搜索不可用";
     }
 
-    // 版本从 composer 安装清单读取，避免与 composer.json 漂移
-    $version = class_exists(\Composer\InstalledVersions::class)
-        ? (\Composer\InstalledVersions::getPrettyVersion("yuchen0x1/short-video-watermark-remover") ?? "dev")
-        : "dev";
+    // 版本统一由 AppVersion 解析（以 composer.json 为准，vendor 元数据仅作回退）
+    $version = AppVersion::version();
     Response::success([
         "status" => $ready ? ($warnings === [] ? "ok" : "degraded") : "unavailable",
         "version" => $version,
@@ -287,9 +286,7 @@ if ($path === "/api/v1/update" || $path === "/api/v1/update/") {
         Response::error('更新源地址配置无效', 500);
     }
 
-    $currentVersion = class_exists(\Composer\InstalledVersions::class)
-        ? (string) (\Composer\InstalledVersions::getPrettyVersion("yuchen0x1/short-video-watermark-remover") ?? "dev")
-        : "dev";
+    $currentVersion = AppVersion::version();
     // 短 TTL 缓存：避免每次页面加载都消耗 GitHub 匿名配额（按出口 IP 计算）
     $cacheKey = 'desktop-web|' . $currentVersion . '|' . $apiUrl;
     if (($_GET['force'] ?? '') === '') {
@@ -300,7 +297,7 @@ if ($path === "/api/v1/update" || $path === "/api/v1/update/") {
     }
     $headers = [
         'Accept' => 'application/vnd.github+json',
-        'User-Agent' => 'qushuiyin-web-updater/1.1.11 (+https://github.com/yuchen0x1/Short-Video-Analysis)',
+        'User-Agent' => AppVersion::userAgent(),
     ];
     $response = HttpClient::request($apiUrl, null, $headers, 1, $respHeaders, 8);
     $release = $response['success']
@@ -311,7 +308,7 @@ if ($path === "/api/v1/update" || $path === "/api/v1/update/") {
         // GitHub 匿名 REST API 按出口 IP 限流；回退到官方 Release Atom 与附件页。
         $atomResponse = HttpClient::request($atomUrl, null, [
             'Accept' => 'application/atom+xml',
-            'User-Agent' => 'qushuiyin-web-updater/1.1.11 (+https://github.com/yuchen0x1/Short-Video-Analysis)',
+            'User-Agent' => AppVersion::userAgent(),
         ], 1, $respHeaders, 8);
         $release = $atomResponse['success']
             ? parseGithubReleaseAtom((string) $atomResponse['data'], $owner, $repo)
@@ -320,7 +317,7 @@ if ($path === "/api/v1/update" || $path === "/api/v1/update/") {
             $assetsUrl = sprintf('https://github.com/%s/%s/releases/expanded_assets/%s', rawurlencode($owner), rawurlencode($repo), rawurlencode((string) $release['tag_name']));
             $assetsResponse = HttpClient::request($assetsUrl, null, [
                 'Accept' => 'text/html',
-                'User-Agent' => 'qushuiyin-web-updater/1.1.11 (+https://github.com/yuchen0x1/Short-Video-Analysis)',
+                'User-Agent' => AppVersion::userAgent(),
             ], 1, $respHeaders, 8);
             if ($assetsResponse['success']) {
                 $release['assets'] = parseGithubExpandedAssets((string) $assetsResponse['data'], $owner, $repo, (string) $release['tag_name']);
