@@ -38,6 +38,10 @@
 
 [完整更新日志](docs/releases/release-notes.md)
 
+### v1.3.1 重点变化
+
+v1.3.1 是发布流程补丁：修复草稿 Release 资产校验读取 404，版本号同步到各端，功能与 v1.3.0 一致。
+
 ### v1.3.0 重点变化
 
 - API 错误现在带稳定 `code`、`retryable` 与 `request_id`；限流响应提供 `Retry-After`，网页端会按等待时间再尝试。
