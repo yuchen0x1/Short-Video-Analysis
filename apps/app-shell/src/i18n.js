@@ -30,6 +30,7 @@ export function writeLocaleSetting(value, store = storage()) {
 export const messages = {
   'zh-CN': {
     brandName: '去水印解析', brandSub: 'DESKTOP WORKSPACE', service: '检查服务', theme: '切换主题',
+    collapseNavigation: '收起导航', expandNavigation: '展开导航',
     workspace: '工作区', parse: '解析', profile: '主页', discover: '发现', history: '记录', about: '关于',
     noWatermark: '无水印', sideNote: '把分享链接变成可用媒体', inputKicker: '解析输入', inputTitle: '解析分享链接',
     inputNote: '粘贴分享文案，自动提取真正的链接和无水印媒体。', single: '单条', collection: '合集', live: '直播',
@@ -48,6 +49,7 @@ export const messages = {
   },
   'en-US': {
     brandName: 'Watermark Remover', brandSub: 'DESKTOP WORKSPACE', service: 'Check service', theme: 'Toggle theme',
+    collapseNavigation: 'Collapse navigation', expandNavigation: 'Expand navigation',
     workspace: 'Workspace', parse: 'Parse', profile: 'Profile', discover: 'Discover', history: 'History', about: 'About',
     noWatermark: 'No watermark', sideNote: 'Turn shared links into usable media', inputKicker: 'Parse input', inputTitle: 'Parse a shared link',
     inputNote: 'Paste a share message to extract the real link and watermark-free media.', single: 'Single', collection: 'Collection', live: 'Live',
