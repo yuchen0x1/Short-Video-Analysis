@@ -28,9 +28,9 @@
 
 <!-- github-release:start -->
 
-**[v1.3.2](https://github.com/yuchen0x1/Short-Video-Analysis/releases/tag/v1.3.2)** · 2026-11-23
+**[v1.3.3](https://github.com/yuchen0x1/Short-Video-Analysis/releases/tag/v1.3.3)** · 2026-11-24
 
-发布后审计发现的三处缺陷修复版：批量并发默认值、媒体 Cookie 生命周期和 OpenAPI 契约，并补上版本号单一来源。
+Aqua Studio 视觉重构版：保留现有解析、下载、发现、历史、收藏、备份、PWA 和媒体代理能力，统一 Windows 与 PHP 网页版的专业媒体工作台体验。
 
 [全部发行记录](https://github.com/yuchen0x1/Short-Video-Analysis/releases)
 
