@@ -4,11 +4,26 @@ import { applyLocale, readLocaleSetting, resolveLocale, t, writeLocaleSetting } 
 
 const HISTORY_STORAGE = 'qushuiyin-app-history-v1';
 const THEME_STORAGE = 'qushuiyin-app-theme-v1';
+const NAV_COLLAPSED_STORAGE = 'qushuiyin-app-nav-collapsed-v1';
 const WEIBO_COOKIE_STORAGE = 'qushuiyin-app-weibo-cookie-v1';
 const UPDATE_AUTOCHECK_STORAGE = 'qushuiyin-update-autocheck-v1';
 const UPDATE_DEFERRED_STORAGE = 'qushuiyin-update-deferred-v1';
 const RELEASES_URL = 'https://github.com/yuchen0x1/Short-Video-Analysis/releases';
 const URL_PATTERN = /https?:\/\/[^\s"'<>，。；：！？【】（）《》]+/i;
+const PLATFORM_LABELS = {
+  douyin: ['抖音', 'Douyin'],
+  kuaishou: ['快手', 'Kuaishou'],
+  bilibili: ['B站', 'Bilibili'],
+  pipixia: ['皮皮虾', 'PiPiXia'],
+  weibo: ['微博', 'Weibo'],
+  ixigua: ['西瓜视频', 'Xigua'],
+  shipinhao: ['视频号', 'Channels'],
+  izuiyou: ['最右', 'Zuiyou'],
+  pipigx: ['皮皮搞笑', 'PiPiGX'],
+  weishi: ['微视', 'Weishi'],
+  xiaohongshu: ['小红书', 'RED'],
+  tiktok: ['TikTok', 'TikTok'],
+};
 
 const shell = window.appShell || {};
 const localeState = {
@@ -36,6 +51,7 @@ parsers.setWeiboCookie(localStorage.getItem(WEIBO_COOKIE_STORAGE) || '');
 
 const state = {
   theme: localStorage.getItem(THEME_STORAGE) || 'dark',
+  navCollapsed: localStorage.getItem(NAV_COLLAPSED_STORAGE) === 'true',
   view: 'single',
   mode: 'single',
   busy: null,
@@ -67,12 +83,17 @@ app.innerHTML = `
 
     <div class="app-body">
       <nav class="side-nav" aria-label="主导航">
-        <div class="side-nav-label" data-i18n="workspace">工作区</div>
-        <button class="nav-button active" type="button" data-view="single"><span class="nav-name" data-i18n="parse">解析</span><small>01</small></button>
-        <button class="nav-button" type="button" data-view="profile"><span class="nav-name" data-i18n="profile">主页</span><small>02</small></button>
-        <button class="nav-button" type="button" data-view="discover"><span class="nav-name" data-i18n="discover">发现</span><small>03</small></button>
-        <button class="nav-button" type="button" data-view="history"><span class="nav-name" data-i18n="history">记录</span><small>04</small></button>
-        <button class="nav-button" type="button" data-view="about"><span class="nav-name" data-i18n="about">关于</span><small>05</small></button>
+        <div class="side-nav-heading">
+          <div class="side-nav-label" data-i18n="workspace">工作区</div>
+          <button id="nav-collapse" class="nav-collapse-button" type="button" aria-expanded="true" aria-label="收起导航" title="收起导航">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m14 6-6 6 6 6"></path><path d="M20 4v16"></path></svg>
+          </button>
+        </div>
+        <button class="nav-button active" type="button" data-view="single" title="解析" aria-current="page"><span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.1 0l2-2a5 5 0 0 0-7.1-7.1l-1.1 1.1"></path><path d="M14 11a5 5 0 0 0-7.1 0l-2 2a5 5 0 0 0 7.1 7.1l1.1-1.1"></path></svg></span><span class="nav-name" data-i18n="parse">解析</span><small>01</small></button>
+        <button class="nav-button" type="button" data-view="profile" title="主页"><span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.5"></circle><path d="M5 20a7 7 0 0 1 14 0"></path></svg></span><span class="nav-name" data-i18n="profile">主页</span><small>02</small></button>
+        <button class="nav-button" type="button" data-view="discover" title="发现"><span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="10.8" cy="10.8" r="6.8"></circle><path d="m16 16 4.5 4.5"></path><path d="m8.5 11 1.7 1.7 3.3-3.4"></path></svg></span><span class="nav-name" data-i18n="discover">发现</span><small>03</small></button>
+        <button class="nav-button" type="button" data-view="history" title="记录"><span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 7.5h16v13H4z"></path><path d="M8 7.5V4h8v3.5"></path><path d="M8 12h8M8 16h5"></path></svg></span><span class="nav-name" data-i18n="history">记录</span><small>04</small></button>
+        <button class="nav-button" type="button" data-view="about" title="关于"><span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"></circle><path d="M12 11v5"></path><path d="M12 7.5h.01"></path></svg></span><span class="nav-name" data-i18n="about">关于</span><small>05</small></button>
         <div class="side-nav-note"><span data-i18n="noWatermark">无水印</span><strong data-i18n="sideNote">把分享链接变成可用媒体</strong></div>
       </nav>
 
@@ -99,7 +120,7 @@ app.innerHTML = `
           </div>
           <p id="input-hint" class="field-hint">粘贴时会自动提取真正的链接。</p>
           <div class="input-context"><span><i></i><span data-i18n="local">本地优先解析</span></span><span><i></i><span data-i18n="videoImages">支持视频与图集</span></span><span><i></i><span data-i18n="noUpload">无后台上传</span></span></div>
-          <div class="quick-platforms" aria-label="支持平台"><span>抖音</span><span>快手</span><span>B站</span><span>小红书</span><span>微博</span><span>更多平台</span></div>
+          <div id="supported-platforms" class="quick-platforms" aria-label="支持平台"></div>
         </section>
 
         <section class="view active" data-view-panel="single">
@@ -206,15 +227,48 @@ const profilePanel = $('#profile-panel');
 const historyPanel = $('#history-panel');
 const toast = $('#toast');
 
+function applyNavigationState() {
+  const frame = $('.app-frame');
+  const button = $('#nav-collapse');
+  frame.classList.toggle('nav-collapsed', state.navCollapsed);
+  button.setAttribute('aria-expanded', String(!state.navCollapsed));
+  button.setAttribute('aria-label', t(localeState.locale, state.navCollapsed ? 'expandNavigation' : 'collapseNavigation'));
+  button.title = t(localeState.locale, state.navCollapsed ? 'expandNavigation' : 'collapseNavigation');
+  $$('.nav-button').forEach((navButton) => {
+    navButton.title = $('.nav-name', navButton).textContent;
+  });
+}
+
+$('#nav-collapse').addEventListener('click', () => {
+  state.navCollapsed = !state.navCollapsed;
+  localStorage.setItem(NAV_COLLAPSED_STORAGE, String(state.navCollapsed));
+  applyNavigationState();
+});
+applyNavigationState();
+
 function applyAppLocale() {
   document.documentElement.lang = localeState.locale;
   document.title = t(localeState.locale, 'brandName');
   applyLocale(app, localeState.locale);
   localeSelect.value = localeState.setting;
+  applyNavigationState();
+  renderSupportedPlatforms();
   $('#platform-label').textContent = t(localeState.locale, shell.platform === 'desktop' ? 'desktop' : 'web');
   syncParseControls();
   if (state.view === 'profile') renderProfile();
   checkHealth();
+}
+
+function renderSupportedPlatforms() {
+  const container = $('#supported-platforms');
+  const english = localeState.locale === 'en-US';
+  const platforms = parsers.getSupportedPlatforms();
+  container.replaceChildren(...platforms.map((platform) => {
+    const label = document.createElement('span');
+    label.textContent = PLATFORM_LABELS[platform]?.[english ? 1 : 0] || platform;
+    return label;
+  }));
+  container.setAttribute('aria-label', english ? 'Supported platforms' : '支持平台');
 }
 
 localeSelect?.addEventListener('change', (event) => {
@@ -999,7 +1053,12 @@ async function renderAbout() {
 function setView(view) {
   state.view = view;
   parsePanel.hidden = view !== 'single' && view !== 'profile';
-  $$('.nav-button').forEach((button) => button.classList.toggle('active', button.dataset.view === view));
+  $$('.nav-button').forEach((button) => {
+    const active = button.dataset.view === view;
+    button.classList.toggle('active', active);
+    if (active) button.setAttribute('aria-current', 'page');
+    else button.removeAttribute('aria-current');
+  });
   $$('[data-view-panel]').forEach((panel) => { panel.hidden = panel.dataset.viewPanel !== view; panel.classList.toggle('active', panel.dataset.viewPanel === view); });
   if (view === 'profile') renderProfile();
   if (view === 'discover' && !state.discover.items.length) loadDiscover(true);

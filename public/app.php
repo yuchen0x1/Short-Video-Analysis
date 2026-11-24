@@ -1355,6 +1355,317 @@ footer {
 .batch-concurrency { appearance:none; background:var(--soft); border:1px solid var(--line); border-radius:var(--r); color:var(--ink); font:inherit; font-size:13px; padding:8px 26px 8px 10px; background-image:linear-gradient(45deg,transparent 50%,var(--muted) 50%),linear-gradient(135deg,var(--muted) 50%,transparent 50%); background-position:calc(100% - 14px) 50%,calc(100% - 9px) 50%; background-size:5px 5px,5px 5px; background-repeat:no-repeat; }
 .batch-concurrency:focus-visible { outline:2px solid var(--neon-cyan); outline-offset:2px; }
 #api-key-status.is-ready { color:var(--neon-cyan); }
+
+/* AQUA STUDIO: quieter surfaces, clear contrast and touch-friendly controls. */
+:root {
+  --bg-base: #080d12;
+  --bg-gradient: #080d12;
+  --grid-line: transparent;
+  --paper: #111c25;
+  --paper-solid: #111c25;
+  --paper-hover: #172631;
+  --soft: #172631;
+  --warm: rgba(255, 255, 255, .03);
+  --ink: #f0f7f8;
+  --muted: #a1b2ba;
+  --faint: #81949d;
+  --line: #273943;
+  --line-strong: #3c515b;
+  --neon-cyan: #36e5cf;
+  --neon-cyan-soft: rgba(54, 229, 207, .12);
+  --neon-cyan-glow: none;
+  --neon-blue: #21b8c7;
+  --neon-blue-glow: none;
+  --neon-purple: #a78bfa;
+  --shadow: 0 12px 32px rgba(0, 0, 0, .2);
+  --small-shadow: 0 4px 14px rgba(0, 0, 0, .16);
+  --r: 8px;
+}
+
+:root:not(.dark) {
+  --bg-base: #f2f6f7;
+  --bg-gradient: #f2f6f7;
+  --grid-line: transparent;
+  --paper: #ffffff;
+  --paper-solid: #ffffff;
+  --paper-hover: #f6fafb;
+  --soft: #edf3f5;
+  --warm: #f8fbfb;
+  --ink: #15252c;
+  --muted: #52666e;
+  --faint: #6d8189;
+  --line: #dce6e9;
+  --line-strong: #b8cbd0;
+  --neon-cyan: #087f73;
+  --neon-cyan-soft: rgba(8, 127, 115, .1);
+  --neon-cyan-glow: none;
+  --neon-blue: #167c8a;
+  --neon-blue-glow: none;
+  --neon-purple: #7555a4;
+  --shadow: 0 10px 28px rgba(26, 54, 63, .07);
+  --small-shadow: 0 4px 12px rgba(26, 54, 63, .06);
+}
+
+body { background: var(--bg-base); }
+body::before, body::after { display: none; }
+:focus-visible { box-shadow: none; }
+
+.topbar {
+  background: var(--paper-solid);
+  border-bottom-color: var(--line);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, .08);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+.brand-mark {
+  background: var(--neon-cyan);
+  color: #09201f;
+  box-shadow: none;
+}
+.brand-mark::after { display: none; }
+.brand-name {
+  background: none;
+  -webkit-text-fill-color: currentColor;
+  color: var(--ink);
+  letter-spacing: 0;
+}
+.online {
+  border-radius: 6px;
+  background: var(--soft);
+  border-color: var(--line);
+  font-family: inherit;
+}
+.online-dot { box-shadow: none; }
+.theme-toggle:hover {
+  transform: none;
+  box-shadow: none;
+}
+
+.workspace { gap: 22px; }
+.intro h1 {
+  font-size: 38px;
+  letter-spacing: 0;
+  line-height: 1.2;
+}
+.intro h1 em {
+  background: none;
+  -webkit-text-fill-color: currentColor;
+  color: var(--neon-cyan);
+  text-shadow: none;
+}
+.intro-metrics > div {
+  background: var(--paper-solid);
+  box-shadow: none;
+  backdrop-filter: none;
+}
+.panel {
+  background: var(--paper-solid);
+  border-color: var(--line);
+  box-shadow: var(--small-shadow);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+.panel::before { display: none; }
+.panel:hover {
+  border-color: var(--line-strong);
+  box-shadow: var(--small-shadow);
+}
+.ingest-panel {
+  background: var(--paper-solid);
+  border-color: var(--line);
+}
+.ingest-panel::after { display: none; }
+
+.mode-switch {
+  background: var(--soft);
+  border-color: var(--line);
+}
+.mode-btn {
+  min-height: 36px;
+  font-family: inherit;
+}
+.mode-btn.active {
+  background: var(--neon-cyan);
+  color: #08201e;
+  box-shadow: none;
+}
+.input-wrap input, .batch-input {
+  border-color: var(--line-strong);
+  background: var(--bg-base);
+  box-shadow: none;
+}
+.input-wrap input:focus, .batch-input:focus {
+  border-color: var(--neon-cyan);
+  background: var(--paper-solid);
+  box-shadow: 0 0 0 3px var(--neon-cyan-soft);
+}
+.icon-btn {
+  border-color: var(--line-strong);
+  background: var(--paper-solid);
+}
+.icon-btn:hover, .btn:hover:not(:disabled) {
+  transform: none;
+  box-shadow: none;
+}
+.btn-primary, .btn-teal {
+  border-color: var(--neon-cyan);
+  background: var(--neon-cyan);
+  color: #08201e;
+  box-shadow: none;
+}
+.btn-primary::after { display: none; }
+.btn-primary:hover:not(:disabled), .btn-teal:hover:not(:disabled) {
+  border-color: #59edda;
+  background: #59edda;
+  box-shadow: none;
+}
+:root:not(.dark) .btn-primary, :root:not(.dark) .btn-teal {
+  color: #ffffff;
+}
+:root:not(.dark) .btn-primary:hover:not(:disabled),
+:root:not(.dark) .btn-teal:hover:not(:disabled) {
+  border-color: #096f65;
+  background: #096f65;
+}
+.btn { border-color: var(--line); }
+.btn-quiet:hover { background: var(--soft); }
+.platform-strip { border-top-style: solid; }
+.platform-chip {
+  background: var(--soft);
+  border-color: var(--line);
+}
+.platform-chip:hover {
+  background: var(--neon-cyan-soft);
+  box-shadow: none;
+  transform: none;
+}
+.platform-chip i { box-shadow: none; }
+
+.state-row {
+  background: var(--neon-cyan-soft);
+  border-color: var(--line);
+  color: var(--ink);
+  font-family: inherit;
+}
+.spinner { box-shadow: none; }
+.error-alert { box-shadow: none; }
+.result-video-wrap { background: #080d12; }
+.result-video-wrap video { box-shadow: none; }
+.result-info { background: transparent; }
+.result-tag { border-radius: 6px; }
+.result-image-card:hover {
+  border-color: var(--line-strong);
+  box-shadow: var(--small-shadow);
+  transform: none;
+}
+.result-image-download {
+  border-color: var(--line-strong);
+  color: var(--ink);
+  backdrop-filter: none;
+}
+.result-image-download:hover { box-shadow: none; }
+.avatar {
+  border-color: var(--line-strong);
+  box-shadow: none;
+}
+.creator-row, .history-entry {
+  background: var(--soft);
+}
+.history-entry:hover {
+  background: var(--paper-hover);
+  border-color: var(--line-strong);
+  box-shadow: none;
+}
+.history-thumb, .batch-thumb, .profile-thumb { border-color: var(--line); }
+.history-actions button:hover {
+  background: var(--neon-cyan-soft);
+}
+.count-badge {
+  background: var(--soft);
+  color: var(--ink);
+  box-shadow: none;
+}
+.account-status.is-ready i, .update-status i, .update-status.is-ready i, .update-status.is-error i {
+  box-shadow: none;
+}
+.account-form input {
+  border-color: var(--line);
+  background: var(--bg-base);
+}
+.account-form input:focus { box-shadow: 0 0 0 3px var(--neon-cyan-soft); }
+.batch-item:hover, .profile-item:hover { background: var(--soft); }
+.batch-concurrency { background-color: var(--paper-solid); }
+.profile-toolbar { flex-wrap: wrap; }
+
+@media (max-width: 720px) {
+  .workspace { gap: 18px; }
+  .intro h1 { font-size: 30px; }
+  .panel-heading { align-items: stretch; }
+  .mode-switch { width: 100%; }
+  .mode-btn { min-height: 40px; }
+  .section-heading {
+    align-items: stretch;
+    flex-direction: column;
+  }
+  .profile-toolbar { justify-content: flex-start; }
+}
+
+@media (max-width: 520px) {
+  .topbar-inner { gap: 8px; min-height: 60px; }
+  .brand { gap: 9px; }
+  .brand-mark { width: 34px; height: 34px; flex-basis: 34px; font-size: 17px; }
+  .brand-name { font-size: 15px; }
+  .brand-sub {
+    max-width: 150px;
+    overflow: hidden;
+    font-size: 10px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    letter-spacing: 0;
+  }
+  .topbar-actions { gap: 6px; }
+  .theme-toggle { width: 40px; height: 40px; }
+  .online {
+    width: 32px;
+    height: 32px;
+    justify-content: center;
+    padding: 0;
+  }
+  .online span, .update-status span {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+  .update-status { width: 8px; }
+  .intro-metrics { gap: 7px; }
+  .intro-metrics > div { gap: 5px; padding: 7px 9px; }
+  .intro-metrics span { font-size: 10px; }
+  .input-row .icon-btn { width: 44px; }
+  .batch-actions, .profile-actions { flex-wrap: wrap; }
+  .result-actions .btn { min-height: 44px; }
+}
+
+@media (max-width: 360px) {
+  .topbar-inner, .workspace, footer { width: calc(100% - 20px); }
+  .brand-sub { max-width: 124px; }
+  .intro h1 { font-size: 28px; }
+  .intro-metrics { flex-wrap: wrap; }
+  .mode-btn { padding: 0 4px; font-size: 11px; }
+  .ingest-panel { padding: 14px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .online-dot { animation: none; }
+  .intro, .ingest-panel, .sidebar .panel, .result-panel, .batch-panel {
+    animation: none;
+  }
+}
 </style>
 </head>
 <body>
