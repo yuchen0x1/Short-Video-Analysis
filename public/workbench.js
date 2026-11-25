@@ -88,6 +88,15 @@
     return [item.title, item.author, item.rawUrl].join(' ').toLocaleLowerCase().includes(query.trim().toLocaleLowerCase());
   }
 
+  function createRequestGuard() {
+    let sequence = 0;
+    return {
+      start() { sequence += 1; return sequence; },
+      invalidate() { sequence += 1; return sequence; },
+      isCurrent(request) { return request === sequence; },
+    };
+  }
+
   function csvCell(value) {
     let text = String(value ?? '');
     // Quoting alone does not prevent spreadsheet formula execution.
@@ -345,7 +354,7 @@
   }
 
   const api = {
-    createLibrary, createBatchStore, mountEnhancements, apiKeyHeaders, API_KEY_STORAGE,
+    createLibrary, createBatchStore, createRequestGuard, mountEnhancements, apiKeyHeaders, API_KEY_STORAGE,
     matches, csvCell, apiError, wait, clampConcurrency,
     runQueue, readLimited, MAX_BACKUP_BYTES, BATCH_LIMIT, MAX_CONCURRENCY,
   };

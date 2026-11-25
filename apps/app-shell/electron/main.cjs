@@ -7,6 +7,7 @@ const nodeNet = require('node:net');
 const path = require('node:path');
 const { fileURLToPath } = require('node:url');
 const { autoUpdater } = require('electron-updater');
+const APP_VERSION = require('../package.json').version;
 
 const isDevelopment = Boolean(process.env.APP_DEV_SERVER_URL);
 const WEIBO_PARTITION = 'persist:weibo-login-v1';
@@ -282,7 +283,7 @@ function setupAutoUpdater() {
     try { assertTrustedRenderer(event); } catch { return; }
     if (trustedUpdatePublisher && lastUpdateStatus.status === 'downloaded') autoUpdater.quitAndInstall();
   });
-  ipcMain.handle('app.version', (event) => { assertTrustedRenderer(event); return app.getVersion(); });
+  ipcMain.handle('app.version', (event) => { assertTrustedRenderer(event); return APP_VERSION; });
   ipcMain.handle('app.update.status', (event) => { assertTrustedRenderer(event); return lastUpdateStatus; });
   ipcMain.handle('app.changelog', (event) => { assertTrustedRenderer(event); return readChangelog(); });
 }
@@ -721,7 +722,7 @@ function createWindow() {
     height: 900,
     minWidth: 960,
     minHeight: 680,
-    backgroundColor: '#0b1718',
+    backgroundColor: '#090D18',
     title: '去水印解析',
     icon: path.join(__dirname, '..', 'build', 'icon.png'),
     autoHideMenuBar: true,
