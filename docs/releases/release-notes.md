@@ -56,8 +56,8 @@
 
 - 共享解析器离线契约：56/56；解析器缓存测试：2/2；工作台、PWA 更新、备份和签名服务测试：27/27；桌面收藏测试：7/7。
 - Windows x64 安装版与便携版已在本地构建；Electron smoke 核对版本、12 个解析平台入口、收藏行为、发现真实公开内容及 1280×720 至 2560×1440 等七种 viewport 的横向溢出。
-- 桌面生产依赖审计：0 vulnerabilities。仓库卫生、版本一致性和 `git diff --check` 通过；GitHub 当前无开放 Issue、Dependabot 告警或 Secret Scanning 告警。
-- **尚待本次 PR 的 GitHub Actions 验证**：PHP lint、PHPUnit、PHP smoke、Composer audit 和网页构建。
+- 桌面生产依赖审计：0 vulnerabilities。仓库卫生、版本一致性和 `git diff --check` 通过。
+- GitHub Actions 必需检查通过：PHP 8.1/8.3 lint、PHPUnit、PHP smoke、Composer audit，JS 契约与桌面构建，仓库卫生及依赖审查。
 
 ## ⚠️ 已知问题
 
