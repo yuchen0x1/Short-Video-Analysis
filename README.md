@@ -28,9 +28,9 @@
 
 <!-- github-release:start -->
 
-**[v1.3.3](https://github.com/yuchen0x1/Short-Video-Analysis/releases/tag/v1.3.3)** · 2026-11-25
+**[v1.3.4](https://github.com/yuchen0x1/Short-Video-Analysis/releases/tag/v1.3.4)** · 2026-11-25
 
-Aqua Studio 视觉重构版：保留现有解析、下载、发现、历史、收藏、备份、PWA 和媒体代理能力，统一 Windows 与 PHP 网页版的媒体工作台体验。
+本次更新为 Windows 电脑版和 PHP 网页版引入极夜蓝紫与冰川蓝视觉系统，整理主要工作区的层级与响应式布局。桌面端新增本地收藏入口，并改善发现内容刷新时的状态处理；现有解析、安全代理、下载和数据格式保持不变。
 
 [全部发行记录](https://github.com/yuchen0x1/Short-Video-Analysis/releases)
 
@@ -38,7 +38,7 @@ Aqua Studio 视觉重构版：保留现有解析、下载、发现、历史、�
 
 [完整更新日志](docs/releases/release-notes.md)
 
-### 待发布 v1.3.4 变更
+### v1.3.4 变更
 
 - Windows 电脑版与 PHP 网页版重整为极夜蓝紫与冰川蓝工作台，并支持跟随系统、深色和浅色主题。
 - 调整解析、主页/合集、发现、记录和资料库的布局层级；桌面端增加独立的本地收藏入口与历史搜索操作。
