@@ -133,6 +133,10 @@ final class CoreBehaviorTest extends TestCase
     {
         $this->assertTrue(self::isAllowed('https://www.douyinvod.com/v.mp4', ['93.184.216.34']));
         $this->assertTrue(self::isAllowed('https://cdn.douyinvod.com/v.mp4', ['93.184.216.34']), '白名单域名的子域名应放行');
+        $this->assertTrue(
+            self::isAllowed('https://tf11t9dahf11111r99e1tqbtdbjvdwmj.v1d.pkoplink.com/video.mp4', ['93.184.216.34']),
+            '抖音视频重定向到 pkoplink.com CDN 时应放行'
+        );
     }
 
     public function testMediaProxyPrefersIpv4WhenBuildingDnsResolveEntries(): void

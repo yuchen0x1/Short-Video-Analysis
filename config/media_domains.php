@@ -20,6 +20,7 @@ return [
     'douyinpic.com',
     'bytecdn.cn',
     'ibytedtos.com',
+    'pkoplink.com',
     // B站
     'bilivideo.com',
     'hdslb.com',

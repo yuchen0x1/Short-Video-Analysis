@@ -4,7 +4,65 @@
 
 日期统一使用北京时间（UTC+8）：公开版本按 GitHub 发布时间，仅有标签的版本按对应提交日期。早期 2.x 记录随 v1.0.0 初始提交归档，原始发布日期未保留，不补造日期。历史条目描述当时变化，当前平台可用性以实际请求为准。
 
-## v1.3.4 · 待发布
+## v1.3.5 · 待发布
+
+## 📢 版本概述
+
+本次更新修复抖音视频无法播放的问题。抖音当前会把视频请求重定向到 `pkoplink.com` CDN，代理此前会因默认域名白名单缺少该 CDN 而拒绝请求；Windows 电脑版和 PHP 网页版现已同步放行。
+
+## 🔧 改进与优化
+
+- **抖音媒体 CDN 兼容**：将 `pkoplink.com` 加入桌面与网页媒体代理默认白名单，确保视频重定向链路可继续转发。
+
+## 🐛 问题修复
+
+- **抖音视频停留在 0:00、无法播放**：媒体代理此前拒绝抖音视频重定向到 `pkoplink.com` 的请求；现在该受支持 CDN 可通过原有代理播放与下载。
+
+## 🔒 安全与兼容性
+
+- 仅新增明确的媒体 CDN 域名；HTTP/HTTPS 限制、域名白名单、DNS 公网地址校验及逐跳重定向校验保持不变。
+- Windows 安装版未配置 Authenticode 签名。请从本仓库 GitHub Release 下载并使用 `SHA256SUMS.txt` 校验；Windows 可能显示未知发布者提示。
+- 已安装的 Windows 客户端继续通过 GitHub 稳定 Release 检查更新；发布资产保留 `latest.yml`，可按既有方式提示升级。
+
+## 📦 下载与安装
+
+| 文件名 | 平台 / 架构 | 说明 |
+|---|---|---|
+| `qushuiyin-desktop-client-setup-1.3.5.exe` | Windows x64 | 安装版 |
+| `qushuiyin-desktop-client-portable-1.3.5.exe` | Windows x64 | 便携版 |
+| `short-video-analysis-web-1.3.5.zip` | PHP 网页版 / PWA / API | 网页源码分发包 |
+| `SHA256SUMS.txt` | 全部发行文件 | SHA-256 校验清单 |
+| `latest.yml` | Windows 更新器 | 安装版更新元数据 |
+| `update-manifest.json` | 全部发行文件 | 版本和资产校验元数据 |
+
+- 首次安装：从[本次 GitHub Release](https://github.com/yuchen0x1/Short-Video-Analysis/releases/tag/v1.3.5)下载 Windows 安装版并按系统提示安装。
+- 已安装用户：可使用应用内更新提示；未收到提示时，在“关于”页检查更新或从官方 Release 手动安装。
+
+## 🔄 升级与数据迁移
+
+- **兼容性**：Windows 安装版沿用既有稳定更新通道；PHP 网页版按部署方既有源码更新流程发布。
+- **配置和数据**：不改变本地历史、收藏、配置或服务端数据格式。
+- **回退方式**：当前不提供自动回滚。回退前请备份用户数据，再从旧版 GitHub Release 重新安装或恢复旧网页部署目录。
+
+## 🧪 验证结果
+
+- 媒体白名单安全回归：新增 `pkoplink.com` CDN 放行测试，并沿用跨运行时白名单一致性、其他域名拒绝和私网拦截测试。
+- 共享解析器、桌面构建、PHP lint / PHPUnit / smoke 与发布包运行检查：由本版本 GitHub Actions 发布流水线执行；仅在必需检查通过后发布。
+- Windows 打包版通过本地媒体代理实际加载截图中同一抖音视频，Chromium 成功读取视频元数据；源站 Range 响应为 `206 video/mp4`。
+
+## ⚠️ 已知问题
+
+- 视频是否可播放仍取决于平台内容权限、签名链接有效期及当前网络能否访问源站 CDN。
+
+---
+
+**项目地址：** [Short-Video-Analysis](https://github.com/yuchen0x1/Short-Video-Analysis)
+
+**问题反馈：** [GitHub Issues](https://github.com/yuchen0x1/Short-Video-Analysis/issues)
+
+**版本下载：** [GitHub Releases](https://github.com/yuchen0x1/Short-Video-Analysis/releases/tag/v1.3.5)
+
+## v1.3.4 · 2026-11-25
 
 ## 📢 版本概述
 
