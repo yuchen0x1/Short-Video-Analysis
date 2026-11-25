@@ -20,6 +20,7 @@ const MAX_HTTP_REDIRECTS = 5;
 const MEDIA_ALLOWED_DOMAINS = [
   // 抖音
   'douyin.com', 'douyinvod.com', 'douyinvod.com.cn', 'douyinstatic.com', 'douyinpic.com', 'bytecdn.cn', 'ibytedtos.com',
+  'pkoplink.com',
   // B站 / 西瓜
   'bilivideo.com', 'hdslb.com', 'mcdn.bilivideo.cn', 'ixigua.com', 'ixiguavideo.com',
   // 微视 / 皮皮 / TikTok
