@@ -28,9 +28,9 @@
 
 <!-- github-release:start -->
 
-**[v1.3.4](https://github.com/yuchen0x1/Short-Video-Analysis/releases/tag/v1.3.4)** · 2026-11-25
+**[v1.3.5](https://github.com/yuchen0x1/Short-Video-Analysis/releases/tag/v1.3.5)** · 2026-11-25
 
-本次更新为 Windows 电脑版和 PHP 网页版引入极夜蓝紫与冰川蓝视觉系统，整理主要工作区的层级与响应式布局。桌面端新增本地收藏入口，并改善发现内容刷新时的状态处理；现有解析、安全代理、下载和数据格式保持不变。
+本次更新修复抖音视频无法播放的问题。抖音当前会把视频请求重定向到 pkoplink.com CDN，代理此前会因默认域名白名单缺少该 CDN 而拒绝请求；Windows 电脑版和 PHP 网页版现已同步放行。
 
 [全部发行记录](https://github.com/yuchen0x1/Short-Video-Analysis/releases)
 
@@ -38,7 +38,7 @@
 
 [完整更新日志](docs/releases/release-notes.md)
 
-### 待发布 v1.3.5 变更
+### v1.3.5 变更
 
 - 修复抖音视频因媒体代理未允许 `pkoplink.com` CDN 重定向而无法播放的问题；Windows 电脑版和 PHP 网页版同步更新白名单。
 - 保持媒体白名单、DNS 公网地址校验和逐跳重定向安全策略。
