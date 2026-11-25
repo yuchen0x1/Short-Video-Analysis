@@ -1,6 +1,6 @@
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
-const { createLibrary, createBatchStore, matches, csvCell, apiError, clampConcurrency, runQueue, readLimited } = require('../public/workbench.js');
+const { createLibrary, createBatchStore, createRequestGuard, matches, csvCell, apiError, clampConcurrency, runQueue, readLimited } = require('../public/workbench.js');
 const record = (id, extra = {}) => ({ rawUrl: `https://www.douyin.com/video/${id}`, title: `作品 ${id}`, ...extra });
 function storage(values = {}) {
   return { values, getItem(key) { return this.values[key] ?? null; }, setItem(key, value) { this.values[key] = value; }, removeItem(key) { delete this.values[key]; } };
@@ -61,6 +61,16 @@ test('search covers title, author and URL without changing order', () => {
   const item = record(42, { title: '测试 Coffee', author: '作者甲' });
   for (const query of [' coffee ', '作者甲', '/42', '']) assert.ok(matches(item, query));
   assert.equal(matches(item, 'missing'), false);
+});
+test('new discovery requests and explicit query changes invalidate older responses', () => {
+  const requests = createRequestGuard();
+  const first = requests.start();
+  assert.equal(requests.isCurrent(first), true);
+  const second = requests.start();
+  assert.equal(requests.isCurrent(first), false);
+  assert.equal(requests.isCurrent(second), true);
+  requests.invalidate();
+  assert.equal(requests.isCurrent(second), false);
 });
 test('CSV escapes quotes and neutralizes formula/control prefixes', () => {
   for (const value of ['=1+1', '+cmd', '-2', '@SUM(A1)', '  =1', '\ttext', '\n=1']) assert.ok(csvCell(value).startsWith('"\''));

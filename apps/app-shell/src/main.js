@@ -1,5 +1,6 @@
 import './styles.css';
 import * as parsers from '@parsers';
+import { createFavoritesStore } from './favorites.js';
 import { applyLocale, readLocaleSetting, resolveLocale, t, writeLocaleSetting } from './i18n.js';
 
 const HISTORY_STORAGE = 'qushuiyin-app-history-v1';
@@ -10,6 +11,7 @@ const UPDATE_AUTOCHECK_STORAGE = 'qushuiyin-update-autocheck-v1';
 const UPDATE_DEFERRED_STORAGE = 'qushuiyin-update-deferred-v1';
 const RELEASES_URL = 'https://github.com/yuchen0x1/Short-Video-Analysis/releases';
 const URL_PATTERN = /https?:\/\/[^\s"'<>，。；：！？【】（）《》]+/i;
+const favoritesStore = createFavoritesStore(localStorage);
 const PLATFORM_LABELS = {
   douyin: ['抖音', 'Douyin'],
   kuaishou: ['快手', 'Kuaishou'],
@@ -50,16 +52,22 @@ parsers.setTransport(ipcTransport);
 parsers.setWeiboCookie(localStorage.getItem(WEIBO_COOKIE_STORAGE) || '');
 
 const state = {
-  theme: localStorage.getItem(THEME_STORAGE) || 'dark',
+  theme: ['dark', 'light', 'system'].includes(localStorage.getItem(THEME_STORAGE))
+    ? localStorage.getItem(THEME_STORAGE)
+    : 'dark',
   navCollapsed: localStorage.getItem(NAV_COLLAPSED_STORAGE) === 'true',
   view: 'single',
   mode: 'single',
   busy: null,
   profile: null,
   history: loadHistory(),
+  historyQuery: '',
+  favoritesQuery: '',
+  currentResult: null,
+  favoritesError: '',
   activeMediaRefresh: false,
   currentSourceUrl: '',
-  discover: { tab: 'hot', platform: 'bilibili', page: 1, items: [], hasMore: false, total: 0, keyword: '', loading: false },
+  discover: { tab: 'hot', platform: 'bilibili', page: 1, items: [], hasMore: false, total: 0, keyword: '', loading: false, requestId: 0 },
 };
 
 const app = document.querySelector('#app');
@@ -84,16 +92,26 @@ app.innerHTML = `
     <div class="app-body">
       <nav class="side-nav" aria-label="主导航">
         <div class="side-nav-heading">
-          <div class="side-nav-label" data-i18n="workspace">工作区</div>
+          <div class="side-nav-label" data-i18n="workspace">工作台</div>
           <button id="nav-collapse" class="nav-collapse-button" type="button" aria-expanded="true" aria-label="收起导航" title="收起导航">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m14 6-6 6 6 6"></path><path d="M20 4v16"></path></svg>
           </button>
         </div>
-        <button class="nav-button active" type="button" data-view="single" title="解析" aria-current="page"><span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.1 0l2-2a5 5 0 0 0-7.1-7.1l-1.1 1.1"></path><path d="M14 11a5 5 0 0 0-7.1 0l-2 2a5 5 0 0 0 7.1 7.1l1.1-1.1"></path></svg></span><span class="nav-name" data-i18n="parse">解析</span><small>01</small></button>
-        <button class="nav-button" type="button" data-view="profile" title="主页"><span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.5"></circle><path d="M5 20a7 7 0 0 1 14 0"></path></svg></span><span class="nav-name" data-i18n="profile">主页</span><small>02</small></button>
-        <button class="nav-button" type="button" data-view="discover" title="发现"><span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="10.8" cy="10.8" r="6.8"></circle><path d="m16 16 4.5 4.5"></path><path d="m8.5 11 1.7 1.7 3.3-3.4"></path></svg></span><span class="nav-name" data-i18n="discover">发现</span><small>03</small></button>
-        <button class="nav-button" type="button" data-view="history" title="记录"><span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 7.5h16v13H4z"></path><path d="M8 7.5V4h8v3.5"></path><path d="M8 12h8M8 16h5"></path></svg></span><span class="nav-name" data-i18n="history">记录</span><small>04</small></button>
-        <button class="nav-button" type="button" data-view="about" title="关于"><span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"></circle><path d="M12 11v5"></path><path d="M12 7.5h.01"></path></svg></span><span class="nav-name" data-i18n="about">关于</span><small>05</small></button>
+        <div class="nav-group">
+          <div class="nav-group-label" data-i18n="workbenchNav">工作台</div>
+          <button class="nav-button active" type="button" data-view="single" title="解析" aria-current="page"><span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.1 0l2-2a5 5 0 0 0-7.1-7.1l-1.1 1.1"></path><path d="M14 11a5 5 0 0 0-7.1 0l-2 2a5 5 0 0 0 7.1 7.1l1.1-1.1"></path></svg></span><span class="nav-name" data-i18n="parse">解析</span></button>
+          <button class="nav-button" type="button" data-view="profile" title="主页与合集"><span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.5"></circle><path d="M5 20a7 7 0 0 1 14 0"></path></svg></span><span class="nav-name" data-i18n="profileCollectionNav">主页与合集</span></button>
+          <button class="nav-button" type="button" data-view="discover" title="发现"><span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="10.8" cy="10.8" r="6.8"></circle><path d="m16 16 4.5 4.5"></path><path d="m8.5 11 1.7 1.7 3.3-3.4"></path></svg></span><span class="nav-name" data-i18n="discover">发现</span></button>
+        </div>
+        <div class="nav-group">
+          <div class="nav-group-label" data-i18n="libraryNav">我的资料</div>
+          <button class="nav-button" type="button" data-view="history" title="解析记录"><span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 7.5h16v13H4z"></path><path d="M8 7.5V4h8v3.5"></path><path d="M8 12h8M8 16h5"></path></svg></span><span class="nav-name" data-i18n="historyFull">解析记录</span></button>
+          <button class="nav-button" type="button" data-view="favorites" title="我的收藏"><span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m12 3 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2-5.6-3-5.6 3 1.1-6.2L3 9.6l6.2-.9L12 3Z"></path></svg></span><span class="nav-name" data-i18n="favoritesNav">我的收藏</span></button>
+        </div>
+        <div class="nav-group">
+          <div class="nav-group-label" data-i18n="systemNav">系统</div>
+          <button class="nav-button" type="button" data-view="about" title="关于"><span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"></circle><path d="M12 11v5"></path><path d="M12 7.5h.01"></path></svg></span><span class="nav-name" data-i18n="about">关于</span></button>
+        </div>
         <div class="side-nav-note"><span data-i18n="noWatermark">无水印</span><strong data-i18n="sideNote">把分享链接变成可用媒体</strong></div>
       </nav>
 
@@ -181,11 +199,20 @@ app.innerHTML = `
 
         <section class="view" data-view-panel="history" hidden>
           <div class="page-intro compact-intro">
-            <span class="eyebrow">本地记录</span>
-            <h1>最近处理。</h1>
-            <p>历史记录仅保存在当前设备。</p>
+            <span class="eyebrow" data-i18n="localRecords">本地记录</span>
+            <h1 data-i18n="historyPanelTitle">最近处理</h1>
+            <p data-i18n="historyIntro">历史记录仅保存在当前设备。</p>
           </div>
           <section id="history-panel" class="result-panel"></section>
+        </section>
+
+        <section class="view" data-view-panel="favorites" hidden>
+          <div class="page-intro compact-intro">
+            <span class="eyebrow" data-i18n="libraryNav">我的资料</span>
+            <h1 data-i18n="favoritesTitle">收藏。</h1>
+            <p data-i18n="favoritesDescription">保存于此设备的媒体链接与作品信息。</p>
+          </div>
+          <section id="favorites-panel" class="result-panel"></section>
         </section>
 
         <section class="view" data-view-panel="about" hidden>
@@ -225,6 +252,7 @@ const inputHint = $('#input-hint');
 const singleResult = $('#single-result');
 const profilePanel = $('#profile-panel');
 const historyPanel = $('#history-panel');
+const favoritesPanel = $('#favorites-panel');
 const toast = $('#toast');
 
 function applyNavigationState() {
@@ -256,7 +284,10 @@ function applyAppLocale() {
   $('#platform-label').textContent = t(localeState.locale, shell.platform === 'desktop' ? 'desktop' : 'web');
   syncParseControls();
   if (state.view === 'profile') renderProfile();
+  if (state.view === 'history') renderHistory();
+  if (state.view === 'favorites') renderFavorites();
   checkHealth();
+  applyTheme();
 }
 
 function renderSupportedPlatforms() {
@@ -343,6 +374,15 @@ function notify(message) {
   notify.timer = setTimeout(() => { toast.hidden = true; }, 2400);
 }
 
+function isFavorite(rawUrl) {
+  try {
+    return favoritesStore.has(rawUrl);
+  } catch (error) {
+    state.favoritesError = error.message || '无法读取本地收藏。';
+    return false;
+  }
+}
+
 function setBusy(on, message = 'parsing', page = 1) {
   state.busy = on ? { message, page } : null;
   syncParseControls();
@@ -362,6 +402,7 @@ function renderSingleResult(data, rawUrl) {
   const musicUrl = /^https?:\/\//i.test(data.music?.url || '') ? data.music.url : '';
   const musicHref = musicUrl ? downloadUrl(musicUrl, (data.title || 'media').replace(/[\\/:*?"<>|]/g, '_') + '-music.mp3') : '';
   state.currentSourceUrl = rawUrl;
+  state.currentResult = data;
   singleResult.hidden = false;
   commentsPanel.hidden = true;
   const commentsButton = /bilibili\.com|b23\.tv/i.test(rawUrl)
@@ -371,7 +412,7 @@ function renderSingleResult(data, rawUrl) {
     <div class="result-heading"><div><span class="panel-kicker">解析结果</span><h2>${escapeHtml(data.title || '未命名内容')}</h2><p>${escapeHtml(data.author || '未知作者')} · ${type === 'image' ? '图集' : '视频'} · ${formatDate(data.time)}</p></div><span class="result-type">${type === 'image' ? '图集' : '视频'}</span></div>
     <div class="result-media ${type === 'image' ? 'is-gallery' : ''}">${type === 'image' ? urls.map((url, index) => `<figure class="image-tile"><img src="${escapeHtml(mediaUrl(url))}" alt="${escapeHtml(data.title || '图片')} ${index + 1}" loading="lazy"><a class="tile-download" href="${escapeHtml(downloadUrl(url, (data.title || 'image-' + (index + 1)) + '.jpg'))}" download>下载</a></figure>`).join('') : `<video controls playsinline preload="metadata" poster="${escapeHtml(data.cover ? mediaUrl(data.cover) : '')}" src="${escapeHtml(mediaUrl(first))}"></video>`}</div>
     <div class="result-details"><div><span>点赞</span><strong>${escapeHtml(formatCount(data.like))}</strong></div><div><span>平台</span><strong>${escapeHtml(platformName(rawUrl))}</strong></div><div><span>作者</span><strong>${escapeHtml(data.author || '未知作者')}</strong></div></div>
-    <div class="result-actions"><a class="primary-button" href="${escapeHtml(downloadUrl(first, (data.title || 'media') + (type === 'image' ? '.jpg' : '.mp4')))}" download>下载${type === 'image' ? '首图' : '视频'}</a>${type === 'image' && urls.length > 1 ? `<button id="desktop-zip-btn" class="primary-button" type="button">打包下载图集 (${urls.length}张 ZIP)</button>` : ''}${musicHref ? `<a class="secondary-button" href="${escapeHtml(musicHref)}" download>下载音乐</a>` : ''}${commentsButton}<button class="secondary-button" type="button" data-copy-url="${escapeHtml(downloadUrl(first, (data.title || 'media') + (type === 'image' ? '.jpg' : '.mp4')))}">复制无水印链接</button><button class="secondary-button" type="button" data-open-url="${escapeHtml(rawUrl)}">打开原链接</button></div>
+    <div class="result-actions"><a class="primary-button" href="${escapeHtml(downloadUrl(first, (data.title || 'media') + (type === 'image' ? '.jpg' : '.mp4')))}" download>下载${type === 'image' ? '首图' : '视频'}</a>${type === 'image' && urls.length > 1 ? `<button id="desktop-zip-btn" class="primary-button" type="button">打包下载图集 (${urls.length}张 ZIP)</button>` : ''}${musicHref ? `<a class="secondary-button" href="${escapeHtml(musicHref)}" download>下载音乐</a>` : ''}${commentsButton}<button class="secondary-button" type="button" data-favorite-url="${escapeHtml(rawUrl)}" aria-pressed="${isFavorite(rawUrl)}">${isFavorite(rawUrl) ? '已收藏' : '收藏'}</button><button class="secondary-button" type="button" data-copy-url="${escapeHtml(downloadUrl(first, (data.title || 'media') + (type === 'image' ? '.jpg' : '.mp4')))}">复制无水印链接</button><button class="secondary-button" type="button" data-open-url="${escapeHtml(rawUrl)}">打开原链接</button></div>
   `;
   addHistory({ rawUrl, data });
 }
@@ -627,8 +668,12 @@ function bindProfileControls() {
   $$('[data-profile-download]').forEach((button) => button.addEventListener('click', () => downloadItem(profile.pages[profile.current].items[Number(button.dataset.profileDownload)], Number(button.dataset.profileDownload))));
 }
 
+function historyRecord(entry) {
+  return { rawUrl: entry.rawUrl, title: entry.data.title || '', author: entry.data.author || '', time: entry.data.time || 0, cover: entry.data.cover || '', mediaType: mediaType(entry.data), savedAt: Date.now() };
+}
+
 function addHistory(entry) {
-  const item = { rawUrl: entry.rawUrl, title: entry.data.title || '', author: entry.data.author || '', time: entry.data.time || 0, cover: entry.data.cover || '', mediaType: mediaType(entry.data), savedAt: Date.now() };
+  const item = historyRecord(entry);
   state.history = [item, ...state.history.filter((old) => old.rawUrl !== item.rawUrl)].slice(0, 100);
   saveHistory();
 }
@@ -655,70 +700,103 @@ discoverPanel.addEventListener('error', (event) => {
 
 function renderDiscover() {
   const d = state.discover;
-  discoverSummary.textContent = d.tab === 'hot'
-    ? (d.platform === 'bilibili' ? 'B站综合热门' : '抖音热点榜')
-    : `搜索「${d.keyword}」 · 共 ${d.total} 条`;
-  discoverNote.textContent = d.tab === 'hot'
-    ? (d.platform === 'douyin' ? '条目为热点词，可打开抖音搜索页。' : '用户主动查看，按需加载下一页。')
-    : '点击「解析」直接解析无水印媒体。';
+  const shown = d.resultQuery || d;
+  discoverSummary.textContent = shown.tab === 'hot'
+    ? (shown.platform === 'bilibili' ? 'B站综合热门' : '抖音热点榜')
+    : `搜索「${shown.keyword}」 · 共 ${d.total} 条`;
+  discoverNote.textContent = d.loading
+    ? '正在获取新结果；当前内容保留至请求完成。'
+    : shown.tab === 'hot'
+      ? (shown.platform === 'douyin' ? '条目为热点词，可打开抖音搜索页。' : '用户主动查看，按需加载下一页。')
+      : '点击「解析」直接解析无水印媒体。';
   if (!d.items.length) {
     discoverPanel.innerHTML = '<div class="workspace-empty"><div><strong>暂无内容</strong><span>换个关键词或平台再试试。</span></div></div>';
     return;
   }
+  const resultsMatchSelection = d.resultQuery
+    && d.resultQuery.tab === d.tab
+    && d.resultQuery.platform === d.platform
+    && d.resultQuery.keyword === d.keyword;
   discoverPanel.innerHTML = `<div class="discover-list">${d.items.map((item) => {
     const parseable = /bilibili\.com|b23\.tv/i.test(item.url);
     const cover = safeHttpUrl(item.cover) ? mediaUrl(item.cover) : '';
     return `<article class="discover-item">${cover ? `<img src="${escapeHtml(cover)}" data-fallback="${escapeHtml(item.cover)}" alt="" loading="lazy">` : '<span class="discover-thumb-placeholder" aria-hidden="true"></span>'}<div class="profile-copy"><h3>${escapeHtml(item.title)}</h3><p>${escapeHtml(item.author || '')}${item.hot ? ` · 热度 ${escapeHtml(formatCount(item.hot))}` : ''}</p></div><div class="discover-actions">${parseable ? `<button class="primary-button compact" type="button" data-discover-parse="${escapeHtml(item.url)}">解析</button>` : ''}<a class="secondary-button compact" href="${escapeHtml(item.url)}" target="_blank" rel="noopener">打开</a></div></article>`;
-  }).join('')}</div>${d.hasMore ? '<div class="discover-more"><button id="discover-more" class="secondary-button" type="button">加载更多</button></div>' : ''}`;
+  }).join('')}</div>${d.hasMore && resultsMatchSelection ? '<div class="discover-more"><button id="discover-more" class="secondary-button" type="button">加载更多</button></div>' : ''}`;
   $('#discover-more')?.addEventListener('click', () => {
-    const d2 = state.discover;
-    d2.page += 1;
     loadDiscover(false);
   });
 }
 
 async function loadDiscover(reset) {
   const d = state.discover;
-  if (d.loading) return;
+  if (d.loading && !reset) return;
   if (d.tab === 'search' && !d.keyword) return notify('请输入搜索关键词');
-  if (reset) {
-    d.page = 1;
-    d.items = [];
-  }
+  const page = reset ? 1 : d.page + 1;
+  const requestId = ++d.requestId;
+  const request = { tab: d.tab, platform: d.platform, page, keyword: d.keyword };
   d.loading = true;
-  discoverPanel.innerHTML = '<div class="workspace-empty"><div><strong>正在加载…</strong></div></div>';
+  discoverPanel.setAttribute('aria-busy', 'true');
+  if (!d.items.length) discoverPanel.innerHTML = '<div class="workspace-empty"><div><strong>正在加载…</strong></div></div>';
+  else renderDiscover();
   try {
-    const data = d.tab === 'hot'
-      ? await parsers.hotList(d.platform, d.page)
-      : await parsers.search(d.platform, d.keyword, d.page);
+    const data = request.tab === 'hot'
+      ? await parsers.hotList(request.platform, request.page)
+      : await parsers.search(request.platform, request.keyword, request.page);
+    if (requestId !== d.requestId) return;
     d.items = reset ? (data.items || []) : d.items.concat(data.items || []);
+    d.page = request.page;
     d.hasMore = Boolean(data.has_more);
     d.total = data.total || d.items.length;
+    d.resultQuery = request;
     renderDiscover();
   } catch (error) {
-    notify(error.message || '获取失败');
-    renderDiscover();
+    if (requestId === d.requestId) {
+      notify(error.message || '获取失败');
+      renderDiscover();
+    }
   } finally {
-    d.loading = false;
+    if (requestId === d.requestId) {
+      d.loading = false;
+      discoverPanel.setAttribute('aria-busy', 'false');
+      renderDiscover();
+    }
   }
 }
 
 function runDiscover() {
   const d = state.discover;
   d.keyword = (discoverInput?.value || '').trim();
-  if (d.tab === 'search' && !d.keyword) return notify('请输入搜索关键词');
+  if (d.tab === 'search' && !d.keyword) {
+    invalidateDiscoverRequest();
+    return notify('请输入搜索关键词');
+  }
   loadDiscover(true);
 }
 
+function invalidateDiscoverRequest() {
+  const d = state.discover;
+  d.requestId += 1;
+  d.loading = false;
+  discoverPanel.setAttribute('aria-busy', 'false');
+  renderDiscover();
+}
+
 $$('[data-discover-tab]').forEach((button) => button.addEventListener('click', () => {
-  state.discover.tab = button.dataset.discoverTab;
+  const d = state.discover;
+  if (d.tab === button.dataset.discoverTab) return;
+  d.tab = button.dataset.discoverTab;
   $$('[data-discover-tab]').forEach((b) => b.classList.toggle('active', b === button));
-  if (state.discover.tab === 'hot') loadDiscover(true);
+  d.keyword = (discoverInput?.value || '').trim();
+  invalidateDiscoverRequest();
+  if (d.tab === 'hot' || d.keyword) loadDiscover(true);
 }));
 $$('[data-discover-platform]').forEach((button) => button.addEventListener('click', () => {
-  state.discover.platform = button.dataset.discoverPlatform;
+  const d = state.discover;
+  if (d.platform === button.dataset.discoverPlatform) return;
+  d.platform = button.dataset.discoverPlatform;
   $$('[data-discover-platform]').forEach((b) => b.classList.toggle('active', b === button));
-  loadDiscover(true);
+  invalidateDiscoverRequest();
+  if (d.tab === 'hot' || d.keyword) loadDiscover(true);
 }));
 $('#discover-search')?.addEventListener('click', runDiscover);
 discoverInput?.addEventListener('keydown', (event) => { if (event.key === 'Enter') runDiscover(); });
@@ -765,6 +843,28 @@ async function loadComments(url, existing = []) {
 }
 
 document.addEventListener('click', (event) => {
+  const favoriteButton = event.target.closest('[data-favorite-url]');
+  if (favoriteButton) {
+    const rawUrl = favoriteButton.dataset.favoriteUrl;
+    const record = state.history.find((item) => item.rawUrl === rawUrl)
+      || (state.currentSourceUrl === rawUrl && state.currentResult
+        ? historyRecord({ rawUrl, data: state.currentResult })
+        : null);
+    if (!record) return notify('找不到可保存的作品信息');
+    try {
+      const isSaved = favoritesStore.toggle(record);
+      $$('[data-favorite-url]').filter((button) => button.dataset.favoriteUrl === rawUrl).forEach((button) => {
+        button.textContent = isSaved ? '已收藏' : '收藏';
+        button.setAttribute('aria-pressed', String(isSaved));
+      });
+      if (state.view === 'history') renderHistory();
+      if (state.view === 'favorites') renderFavorites();
+      notify(isSaved ? '已加入收藏' : '已取消收藏');
+    } catch (error) {
+      notify(error.message || '收藏操作失败');
+    }
+    return;
+  }
   const parse = event.target.closest('[data-discover-parse]');
   if (parse) {
     setMode('single');
@@ -817,9 +917,83 @@ document.addEventListener('click', (event) => {
 });
 
 function renderHistory() {
-  historyPanel.innerHTML = state.history.length ? `<div class="panel-heading"><div><span class="panel-kicker">本地记录</span><h2>最近处理</h2></div><button id="clear-history" class="secondary-button compact" type="button">清空记录</button></div><div class="history-list">${state.history.map((item, index) => `<article class="history-item"><div><span class="history-index">${String(index + 1).padStart(2, '0')}</span><div><h3>${escapeHtml(item.title || '未命名内容')}</h3><p>${escapeHtml(item.author || '未知作者')} · ${escapeHtml(item.mediaType === 'image' ? '图集' : '视频')} · ${formatDate(item.time)}</p></div></div><button class="secondary-button compact" type="button" data-history-url="${escapeHtml(item.rawUrl)}">重新解析</button></article>`).join('')}</div>` : '<div class="empty-state">还没有解析记录。</div>';
-  $('#clear-history')?.addEventListener('click', () => { state.history = []; saveHistory(); renderHistory(); });
-  $$('[data-history-url]').forEach((button) => button.addEventListener('click', () => { setMode('single'); linkInput.value = button.dataset.historyUrl; parseButton.click(); }));
+  const query = state.historyQuery.trim().toLocaleLowerCase();
+  const items = state.history.filter((item) => !query || `${item.title} ${item.author} ${item.rawUrl}`.toLocaleLowerCase().includes(query));
+  const locale = localeState.locale;
+  const copy = (key) => t(locale, key);
+  historyPanel.innerHTML = `<div class="panel-heading"><div><span class="panel-kicker">${copy('localRecords')}</span><h2>${copy('historyPanelTitle')}</h2></div><div class="library-toolbar"><input id="history-search" type="search" aria-label="${copy('historyFull')}" placeholder="${copy('searchLibrary')}" value="${escapeHtml(state.historyQuery)}"><button id="clear-history" class="secondary-button compact" type="button" ${state.history.length ? '' : 'disabled'}>${copy('clearHistory')}</button></div></div>${items.length ? `<div class="library-list">${items.map((item) => `<article class="library-item"><div class="library-thumb">${item.cover && safeHttpUrl(item.cover) ? `<img src="${escapeHtml(mediaUrl(item.cover))}" alt="" loading="lazy">` : '<span aria-hidden="true"></span>'}</div><div class="library-copy"><h3>${escapeHtml(item.title || (locale === 'en-US' ? 'Untitled item' : '未命名内容'))}</h3><p>${escapeHtml(item.author || (locale === 'en-US' ? 'Unknown author' : '未知作者'))} · ${escapeHtml(platformName(item.rawUrl))} · ${copy(item.mediaType === 'image' ? 'imageSet' : 'video')} · ${formatDate(item.time)}</p></div><div class="library-actions"><button class="secondary-button compact" type="button" data-history-url="${escapeHtml(item.rawUrl)}">${copy('reparse')}</button><button class="secondary-button compact" type="button" data-favorite-url="${escapeHtml(item.rawUrl)}" aria-pressed="${isFavorite(item.rawUrl)}">${copy(isFavorite(item.rawUrl) ? 'favorited' : 'favorite')}</button><button class="secondary-button compact" type="button" data-history-delete="${escapeHtml(item.rawUrl)}" aria-label="${copy('deleteRecord')} ${escapeHtml(item.title || '')}">${copy('deleteRecord')}</button></div></article>`).join('')}</div>` : `<div class="empty-state">${copy(state.history.length ? 'noHistoryMatches' : 'noHistory')}</div>`}`;
+  $('#clear-history')?.addEventListener('click', () => {
+    if (!window.confirm(copy('confirmClearHistory'))) return;
+    state.history = [];
+    saveHistory();
+    renderHistory();
+  });
+  $('#history-search')?.addEventListener('input', (event) => {
+    state.historyQuery = event.target.value;
+    const position = event.target.selectionStart;
+    renderHistory();
+    $('#history-search')?.focus();
+    $('#history-search')?.setSelectionRange(position, position);
+  });
+  $$('[data-history-url]').forEach((button) => button.addEventListener('click', () => {
+    setMode('single');
+    linkInput.value = button.dataset.historyUrl;
+    parseButton.click();
+  }));
+  $$('[data-history-delete]').forEach((button) => button.addEventListener('click', () => {
+    state.history = state.history.filter((item) => item.rawUrl !== button.dataset.historyDelete);
+    saveHistory();
+    renderHistory();
+  }));
+}
+
+function renderFavorites() {
+  let items;
+  try {
+    items = favoritesStore.list();
+    state.favoritesError = '';
+  } catch (error) {
+    state.favoritesError = error.message || '无法读取本地收藏。';
+  }
+  if (state.favoritesError) {
+    favoritesPanel.innerHTML = `<div class="empty-state error-state">${escapeHtml(state.favoritesError)}</div>`;
+    return;
+  }
+  const query = state.favoritesQuery.trim().toLocaleLowerCase();
+  const filtered = items.filter((item) => !query || `${item.title} ${item.author} ${item.rawUrl}`.toLocaleLowerCase().includes(query));
+  const locale = localeState.locale;
+  const copy = (key) => t(locale, key);
+  favoritesPanel.innerHTML = `<div class="panel-heading"><div><span class="panel-kicker">${copy('localRecords')}</span><h2>${copy('favoriteCount').replace('{count}', items.length)}</h2></div><div class="library-toolbar"><input id="favorites-search" type="search" aria-label="${copy('favoritesNav')}" placeholder="${copy('searchLibrary')}" value="${escapeHtml(state.favoritesQuery)}"><button id="clear-favorites" class="secondary-button compact" type="button" ${items.length ? '' : 'disabled'}>${copy('clearFavorites')}</button></div></div>${filtered.length ? `<div class="library-list">${filtered.map((item) => `<article class="library-item"><div class="library-thumb">${item.cover && safeHttpUrl(item.cover) ? `<img src="${escapeHtml(mediaUrl(item.cover))}" alt="" loading="lazy">` : '<span aria-hidden="true"></span>'}</div><div class="library-copy"><h3>${escapeHtml(item.title || (locale === 'en-US' ? 'Untitled item' : '未命名内容'))}</h3><p>${escapeHtml(item.author || (locale === 'en-US' ? 'Unknown author' : '未知作者'))} · ${escapeHtml(platformName(item.rawUrl))} · ${copy(item.mediaType === 'image' ? 'imageSet' : 'video')} · ${copy('savedAt')} ${formatDate(item.savedAt / 1000)}</p></div><div class="library-actions"><button class="primary-button compact" type="button" data-history-url="${escapeHtml(item.rawUrl)}">${copy('reparse')}</button><button class="secondary-button compact" type="button" data-favorite-remove="${escapeHtml(item.rawUrl)}">${copy('removeFavorite')}</button></div></article>`).join('')}</div>` : `<div class="empty-state">${copy(items.length ? 'noFavoritesMatches' : 'noFavorites')}</div>`}`;
+  $('#clear-favorites')?.addEventListener('click', () => {
+    if (!window.confirm(copy('confirmClearFavorites'))) return;
+    try {
+      favoritesStore.clear();
+      state.favoritesQuery = '';
+      renderFavorites();
+    } catch (error) {
+      notify(error.message || '清空收藏失败');
+    }
+  });
+  $('#favorites-search')?.addEventListener('input', (event) => {
+    state.favoritesQuery = event.target.value;
+    const position = event.target.selectionStart;
+    renderFavorites();
+    $('#favorites-search')?.focus();
+    $('#favorites-search')?.setSelectionRange(position, position);
+  });
+  $$('[data-favorite-remove]').forEach((button) => button.addEventListener('click', () => {
+    try {
+      favoritesStore.remove(button.dataset.favoriteRemove);
+      renderFavorites();
+    } catch (error) {
+      notify(error.message || '取消收藏失败');
+    }
+  }));
+  $$('[data-history-url]').forEach((button) => button.addEventListener('click', () => {
+    setMode('single');
+    linkInput.value = button.dataset.historyUrl;
+    parseButton.click();
+  }));
 }
 
 function checkHealth() {
@@ -1063,6 +1237,7 @@ function setView(view) {
   if (view === 'profile') renderProfile();
   if (view === 'discover' && !state.discover.items.length) loadDiscover(true);
   if (view === 'history') renderHistory();
+  if (view === 'favorites') renderFavorites();
   if (view === 'about') renderAbout();
 }
 
@@ -1165,15 +1340,40 @@ document.addEventListener('error', async (event) => {
     notify(error.message || '无法刷新视频地址，请重新解析链接。');
   }
 }, true);
-$('#theme-button').addEventListener('click', () => { state.theme = state.theme === 'dark' ? 'light' : 'dark'; applyTheme(); });
+const systemThemeQuery = window.matchMedia?.('(prefers-color-scheme: light)');
+
+function resolvedTheme() {
+  return state.theme === 'system' ? (systemThemeQuery?.matches ? 'light' : 'dark') : state.theme;
+}
+
+function themeLabel(preference) {
+  if (localeState.locale === 'en-US') {
+    return preference === 'system' ? 'Follow system' : preference === 'dark' ? 'Dark theme' : 'Light theme';
+  }
+  return preference === 'system' ? '跟随系统' : preference === 'dark' ? '深色主题' : '浅色主题';
+}
+
+$('#theme-button').addEventListener('click', () => {
+  state.theme = state.theme === 'system' ? 'dark' : state.theme === 'dark' ? 'light' : 'system';
+  applyTheme();
+});
 
 function applyTheme() {
-  document.documentElement.dataset.theme = state.theme;
+  const activeTheme = resolvedTheme();
+  document.documentElement.dataset.theme = activeTheme;
+  document.documentElement.dataset.themePreference = state.theme;
+  const nextTheme = state.theme === 'system' ? 'dark' : state.theme === 'dark' ? 'light' : 'system';
+  const label = `${themeLabel(state.theme)} · ${localeState.locale === 'en-US' ? 'next' : '下一项'}: ${themeLabel(nextTheme)}`;
+  $('#theme-button').title = label;
+  $('#theme-button').setAttribute('aria-label', label);
   localStorage.setItem(THEME_STORAGE, state.theme);
 }
 
 applyAppLocale();
 applyTheme();
+systemThemeQuery?.addEventListener?.('change', () => {
+  if (state.theme === 'system') applyTheme();
+});
 renderHistory();
 shell.onUpdateStatus?.(setUpdateStatus);
 if (localStorage.getItem(UPDATE_AUTOCHECK_STORAGE) !== 'off') shell.checkForUpdates?.();

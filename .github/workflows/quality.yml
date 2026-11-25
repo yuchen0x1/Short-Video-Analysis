@@ -55,6 +55,7 @@ jobs:
       - run: npm --prefix packages/parsers run test:cache
       - run: node --test tests/*.test.cjs scripts/a_bogus_server.test.mjs
       - run: npm --prefix apps/app-shell ci
+      - run: node --test apps/app-shell/test/*.test.mjs
       - run: npm --prefix apps/app-shell audit --omit=dev --audit-level=high
       - run: npm --prefix apps/app-shell run build
 

@@ -107,11 +107,12 @@ jobs:
           node scripts/verify-release-artifacts.mjs release-assets "$RELEASE_TAG"
       - name: Upload verified assets to draft
         run: |
+          release_title="短视频去水印解析工具 $RELEASE_TAG"
           if release="$(gh release view "$RELEASE_TAG" --json isDraft --jq .isDraft)"; then
             test "$release" = true
-            gh release edit "$RELEASE_TAG" --notes-file "$RUNNER_TEMP/release-notes.md"
+            gh release edit "$RELEASE_TAG" --title "$release_title" --notes-file "$RUNNER_TEMP/release-notes.md"
           else
-            gh release create "$RELEASE_TAG" --draft --verify-tag --title "$RELEASE_TAG" --notes-file "$RUNNER_TEMP/release-notes.md"
+            gh release create "$RELEASE_TAG" --draft --verify-tag --title "$release_title" --notes-file "$RUNNER_TEMP/release-notes.md"
           fi
           gh release upload "$RELEASE_TAG" release-assets/* --clobber
           # `/releases/tags/{tag}` 不返回草稿，且 404 时 gh 会把错误 JSON 写到 stdout，

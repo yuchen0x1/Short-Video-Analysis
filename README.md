@@ -28,15 +28,26 @@
 
 <!-- github-release:start -->
 
-**[v1.3.2](https://github.com/yuchen0x1/Short-Video-Analysis/releases/tag/v1.3.2)** · 2026-11-23
+**[v1.3.3](https://github.com/yuchen0x1/Short-Video-Analysis/releases/tag/v1.3.3)** · 2026-11-25
 
-发布后审计发现的三处缺陷修复版：批量并发默认值、媒体 Cookie 生命周期和 OpenAPI 契约，并补上版本号单一来源。
+Aqua Studio 视觉重构版：保留现有解析、下载、发现、历史、收藏、备份、PWA 和媒体代理能力，统一 Windows 与 PHP 网页版的媒体工作台体验。
 
 [全部发行记录](https://github.com/yuchen0x1/Short-Video-Analysis/releases)
 
 <!-- github-release:end -->
 
 [完整更新日志](docs/releases/release-notes.md)
+
+### 待发布 v1.3.4 变更
+
+- Windows 电脑版与 PHP 网页版重整为极夜蓝紫与冰川蓝工作台，并支持跟随系统、深色和浅色主题。
+- 调整解析、主页/合集、发现、记录和资料库的布局层级；桌面端增加独立的本地收藏入口与历史搜索操作。
+- 发现页保留上一次有效结果，忽略过期异步响应；保留既有解析器、下载、代理与本地数据契约。
+- 同步桌面窗口底色、网页主题元数据和 PWA 外壳缓存版本；正式发布后由 GitHub Releases 和既有客户端更新检查通道提示升级。
+
+### v1.3.3 重点变化
+
+Windows 电脑版与 PHP 网页版升级为 Aqua Studio 媒体工作台，并统一了导航、解析输入和结果区层级。
 
 ### v1.3.2 重点变化
 
@@ -57,7 +68,7 @@ v1.3.1 是发布流程补丁：修复草稿 Release 资产校验读取 404，版
 | 功能 | Windows x64 | PHP 网页 / PWA |
 | --- | --- | --- |
 | 单条、主页/合集、直播、发现 | 本机解析 | 通过 PHP 服务解析 |
-| 批量链接、收藏与备份 | 主页/合集作品批量下载、本地历史 | 批量链接、收藏、历史、备份 |
+| 批量链接、收藏与备份 | 主页/合集作品批量下载、本地历史与收藏 | 批量链接、收藏、历史、备份 |
 | 交付 | 安装版和便携版 | PHP ZIP、Docker、版本化 API |
 | 更新 | 应用内检查，按发行签名与安装类型选择路径 | 部署更新后可确认刷新 PWA |
 
