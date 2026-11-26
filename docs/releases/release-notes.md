@@ -4,7 +4,61 @@
 
 日期统一使用北京时间（UTC+8）：公开版本按 GitHub 发布时间，仅有标签的版本按对应提交日期。早期 2.x 记录随 v1.0.0 初始提交归档，原始发布日期未保留，不补造日期。历史条目描述当时变化，当前平台可用性以实际请求为准。
 
-## v1.3.5 · 待发布
+## v1.3.6 · 2026-11-26
+
+## 📢 版本概述
+
+本次更新清理仓库中的无引用截图、自动验收产物和废弃维护脚本，并加强生成文件的忽略与上传检查。Windows 电脑版与 PHP 网页版沿用现有功能和数据格式，继续通过 GitHub 正式发行提供版本提示。
+
+## 🔧 改进与优化
+
+- **仓库清理**：移除 20 张自动验收截图、1 张无引用旧页面截图和一次性抖音调试脚本；保留文档正在使用的图片、品牌资源、历史报告和发布记录。
+- **维护脚本**：删除已被实际 GitHub 更新通道取代的旧检查器，以及与当前 blockmap 校验要求不兼容的旧更新清单重算脚本；相关回归检查改为覆盖真实更新入口。
+- **文件管理**：补齐依赖、构建缓存、临时文件、系统垃圾和自动验收截图的忽略规则，并由仓库卫生检查阻止这些文件进入后续提交。
+
+## 🔒 安全与兼容性
+
+- 删除会向调试日志输出平台 Cookie 和查询参数的一次性脚本；不改变正式解析器、媒体代理或安全校验。
+- Windows 安装版未配置 Authenticode 签名。请从本仓库 GitHub Release 下载并使用 `SHA256SUMS.txt` 校验；Windows 可能显示未知发布者提示。
+- 保留 GitHub 稳定发行来源、应用标识、安装包命名规则、`latest.yml` 和更新校验元数据。已使用 GitHub 通道的旧客户端可继续检查新版。
+
+## 📦 下载与安装
+
+| 文件名 | 平台 / 架构 | 说明 |
+|---|---|---|
+| `qushuiyin-desktop-client-setup-1.3.6.exe` | Windows x64 | 安装版 |
+| `qushuiyin-desktop-client-portable-1.3.6.exe` | Windows x64 | 便携版 |
+| `qushuiyin-desktop-client-setup-1.3.6.exe.blockmap` | Windows 更新器 | 安装包差分元数据 |
+| `short-video-analysis-web-1.3.6.zip` | PHP 网页版 / PWA / API | 网页源码分发包 |
+| `SHA256SUMS.txt` | 全部发行文件 | SHA-256 校验清单 |
+| `latest.yml` | Windows 更新器 | 安装版更新元数据 |
+| `update-manifest.json` | 全部发行文件 | 版本和资产校验元数据 |
+
+- 首次安装：从[本次 GitHub Release](https://github.com/yuchen0x1/Short-Video-Analysis/releases/tag/v1.3.6)下载安装版并按系统提示安装。
+- 已安装用户：在“关于”页检查更新。当前未签名发行和便携版通过官方发布页下载安装；启动检查未关闭时仍会提示新版。
+
+## 🔄 升级与数据迁移
+
+- **兼容性**：Windows 安装版可按既有流程覆盖升级；PHP 部署方备份配置与数据后更新源码、安装锁定依赖并核验健康接口。PWA 在部署新版后仍等待用户确认刷新。
+- **早期版本**：`v1.1.1`、`v1.1.2` 仅连接旧 Gitee 更新源，需从 GitHub 手动安装一次迁移。旧 `2.x` 版本高于当前 `1.x` 版本号，亦需手动迁移；不会向 Gitee 推送更新。
+- **配置和数据**：本次不改变历史、收藏、配置或服务端数据格式。
+- **回退方式**：未提供自动回滚。回退前备份用户数据，再使用旧版 GitHub Release 安装包或恢复旧网页部署目录。
+
+## 🧪 验证结果
+
+- GitHub Actions 执行 PHP 8.1 / 8.3 lint、PHPUnit、smoke，共享解析器与网页回归、桌面构建、依赖安全和仓库卫生检查；必需检查通过后才构建发布。
+- 发布流水线实际启动 Windows 打包版，核对版本与主要入口，并校验 PHP 分发结构、文件摘要和公开更新元数据。
+- 未执行真实签名安装、用户数据迁移或旧版客户端端到端升级测试；签名状态与早期版本迁移限制见上文。
+
+---
+
+**项目地址：** [Short-Video-Analysis](https://github.com/yuchen0x1/Short-Video-Analysis)
+
+**问题反馈：** [GitHub Issues](https://github.com/yuchen0x1/Short-Video-Analysis/issues)
+
+**版本下载：** [GitHub Releases](https://github.com/yuchen0x1/Short-Video-Analysis/releases/tag/v1.3.6)
+
+## v1.3.5 · 2026-11-25
 
 ## 📢 版本概述
 

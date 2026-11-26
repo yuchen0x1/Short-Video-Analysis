@@ -12,16 +12,28 @@ local.properties
 .vscode/
 __pycache__/
 *.py[cod]
+node_modules/
+.cache/
+.vite/
+.npm/
+.parcel-cache/
+.pytest_cache/
+.ruff_cache/
+.eslintcache
+.stylelintcache
 /coverage/
 /storage/logs/*.log
 /storage/*.log
 /storage/rate_limit/*.json
 /storage/cache/
 .DS_Store
+._*
+Thumbs.db
+Desktop.ini
 .phpunit.cache/
 .phpunit.result.cache
 /upgrade-report/ui-shots/
-/apps/app-shell/node_modules/
+/docs/screenshots/ui-v*.png
 /apps/app-shell/dist/
 /apps/app-shell/runtime/
 /apps/app-shell/release/
@@ -35,6 +47,16 @@ __pycache__/
 
 # 本地构建日志
 *.log
+*.tmp
+*.temp
+*.bak
+*.orig
+*.rej
+*~
+*.swp
+*.swo
+/tmp/
+/temp/
 
 # 本项目仅维护电脑版与网页版；阻止旧移动工程重新上传
 /apps/mobile/

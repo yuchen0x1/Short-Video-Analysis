@@ -4,11 +4,16 @@ import { execFileSync } from 'node:child_process';
 // Check the index: files already tracked by Git are not protected by .gitignore.
 const paths = execFileSync('git', ['ls-files', '-z'], { encoding: 'utf8' }).split('\0').filter(Boolean);
 const forbidden = [
-  /(^|\/)(node_modules|vendor|dist|coverage|__pycache__|\.gradle|\.idea|\.evolution)(\/|$)/,
+  /(^|\/)(node_modules|vendor|dist|coverage|__pycache__|\.gradle|\.idea|\.vscode|\.evolution|\.cache|\.vite|\.npm|\.parcel-cache|\.pytest_cache|\.ruff_cache|\.phpunit\.cache)(\/|$)/,
   /(^|\/)release(?:-[^/]*)?\//,
   /(^|\/)\.env(?:\.(?!example$)[^/]+)?$/,
-  /(^|\/)(keystore\.properties|local\.properties|\.phpunit\.result\.cache)$/,
-  /\.(?:exe|apk|aab|ipa|jks|keystore|p12|pfx|log|pyc|bak|tmp)$/i,
+  /(^|\/)(keystore\.properties|local\.properties|\.phpunit\.result\.cache|\.eslintcache|\.stylelintcache)$/,
+  /(^|\/)(\.DS_Store|Thumbs\.db|Desktop\.ini|\._[^/]+)$/i,
+  /\.(?:exe|apk|aab|ipa|jks|keystore|p12|pfx|log|py[cod]|bak|tmp|temp|orig|rej|swp|swo)$/i,
+  /~$/,
+  /^(tmp|temp)\//,
+  /^docs\/screenshots\/ui-v[^/]*\.png$/i,
+  /^upgrade-report\/ui-shots\//,
   /^apps\/(?!app-shell\/)/,
   /(^|\/)(android|ios)\//,
   /^packages\/update-checker\//,

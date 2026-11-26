@@ -424,7 +424,6 @@ final class RegressionFixesTest extends TestCase
             'public/api/v1.php',
             'apps/app-shell/package.json',
             'apps/app-shell/electron/main.cjs',
-            'apps/app-shell/electron/updateChannel.cjs',
         ];
         $source = '';
         foreach ($files as $file) {
@@ -434,18 +433,21 @@ final class RegressionFixesTest extends TestCase
         $this->assertStringNotContainsString('https://gitee.com/yuchen0x1/short-video-watermark-remover/releases', $source);
         $this->assertStringNotContainsString('UPDATE_GITEE', $source);
         $this->assertStringContainsString('Short-Video-Analysis', $source);
+
+        $desktop = (string) file_get_contents($this->root . '/apps/app-shell/electron/main.cjs');
+        $this->assertStringContainsString("config.provider !== 'github'", $desktop);
+        $this->assertStringContainsString("config.owner !== 'yuchen0x1'", $desktop);
+        $this->assertStringContainsString("config.repo !== 'Short-Video-Analysis'", $desktop);
+        $this->assertStringContainsString('return autoUpdater.checkForUpdates();', $desktop);
     }
 
-    public function testOnlineUpdateFallsBackWhenGithubApiIsRateLimited(): void
+    public function testWebOnlineUpdateFallsBackWhenGithubApiIsRateLimited(): void
     {
         $api = (string) file_get_contents($this->root . '/public/api/v1.php');
-        $checker = (string) file_get_contents($this->root . '/apps/app-shell/electron/updateChannel.cjs');
 
         $this->assertStringContainsString('parseGithubReleaseAtom', $api);
         $this->assertStringContainsString('parseGithubExpandedAssets', $api);
         $this->assertStringContainsString('releases.atom', $api);
-        $this->assertStringContainsString('fetchGithubLatestTag', $checker);
-        $this->assertStringContainsString('fetchRedirectTag', $checker);
     }
 
     public function testMediaProxyPropagatesUpstreamFailureStatus(): void
