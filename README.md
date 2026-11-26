@@ -28,15 +28,21 @@
 
 <!-- github-release:start -->
 
-**[v1.3.5](https://github.com/yuchen0x1/Short-Video-Analysis/releases/tag/v1.3.5)** · 2026-11-25
+**[v1.3.6](https://github.com/yuchen0x1/Short-Video-Analysis/releases/tag/v1.3.6)** · 2026-11-26
 
-本次更新修复抖音视频无法播放的问题。抖音当前会把视频请求重定向到 pkoplink.com CDN，代理此前会因默认域名白名单缺少该 CDN 而拒绝请求；Windows 电脑版和 PHP 网页版现已同步放行。
+本次更新清理仓库中的无引用截图、自动验收产物和废弃维护脚本，并加强生成文件的忽略与上传检查。Windows 电脑版与 PHP 网页版沿用现有功能和数据格式，继续通过 GitHub 正式发行提供版本提示。
 
 [全部发行记录](https://github.com/yuchen0x1/Short-Video-Analysis/releases)
 
 <!-- github-release:end -->
 
 [完整更新日志](docs/releases/release-notes.md)
+
+### v1.3.6 变更
+
+- 清理无引用截图、自动验收产物和废弃脚本，补齐依赖、缓存与临时文件的忽略和仓库检查规则。
+- 保留当前文档插图、历史报告、源码与锁文件；本地构建产物和依赖可按锁文件重新生成。
+- 沿用 GitHub 更新通道与校验元数据，不改变现有历史、收藏、配置或服务端数据格式。
 
 ### v1.3.5 变更
 
@@ -542,7 +548,9 @@ GitHub Actions 流水线 `.github/workflows/quality.yml` 在 push 到 `main`、�
 各端统一使用 GitHub Releases 作为版本源：
 
 - **网站**：访问 `/api/v1/update`，服务端读取 GitHub 最新 Release（REST API 主路径，API 限流时自动回退 `releases.atom` 与 expanded assets 页面）；页面启动时自动检查，也可手动检查并打开发布页下载。
-- **Windows 安装版**：由 `electron-updater` 读取 GitHub Release 的 `latest.yml`，启动后自动检查、下载并提示重启安装；关于页可手动检查。
+- **Windows 安装版**：由 `electron-updater` 读取 GitHub Release 的 `latest.yml`，启动检查未关闭时会提示新版，关于页可手动检查。当前未签名发行和便携版通过官方发布页下载安装；仅构建时配置可信发布者的安装版提供应用内下载和确认重启安装。
+
+早期 `v1.1.1`、`v1.1.2` 仅连接旧 Gitee 更新源，需从 GitHub 手动安装一次迁移；后续发布仅使用 GitHub。
 
 发布新版本时，先通过 `node scripts/check-release-version.mjs vX.Y.Z`，再推送相应标签；GitHub Actions 仅构建并发布 Windows 安装版、便携版、自动更新文件和校验清单。网页版通过 PHP 部署更新，手机可直接访问响应式页面或安装 PWA。
 
